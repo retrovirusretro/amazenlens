@@ -6,6 +6,7 @@ import ProductPage from './pages/ProductPage'
 import UnavailablePage from './pages/UnavailablePage'
 import NichePage from './pages/NichePage'
 import Dashboard from './pages/Dashboard'
+import SourcingPage from './pages/SourcingPage'
 import './App.css'
 
 function PrivateRoute({ children }) {
@@ -29,6 +30,7 @@ function App() {
           <Route path="product/:asin" element={<ProductPage />} />
           <Route path="unavailable" element={<UnavailablePage />} />
           <Route path="niche" element={<NichePage />} />
+          <Route path="sourcing" element={<SourcingPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

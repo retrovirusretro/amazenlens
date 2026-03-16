@@ -80,7 +80,7 @@ def get_mock_suppliers(keyword: str):
                 "price_max": "5.00",
                 "moq": "100",
                 "company": "Guangzhou Trading Co.",
-                "url": "https://alibaba.com",
+                "url": f"https://www.alibaba.com/trade/search?SearchText={keyword.replace(' ', '+')}",
                 "image": "https://placehold.co/200x200?text=Supplier",
                 "verified": True,
                 "mock": True
@@ -91,7 +91,7 @@ def get_mock_suppliers(keyword: str):
                 "price_max": "3.50",
                 "moq": "500",
                 "company": "Shenzhen Manufacturing Ltd.",
-                "url": "https://alibaba.com",
+                "url": f"https://www.alibaba.com/trade/search?SearchText={keyword.replace(' ', '+')}",
                 "image": "https://placehold.co/200x200?text=Supplier",
                 "verified": True,
                 "mock": True
@@ -102,7 +102,7 @@ def get_mock_suppliers(keyword: str):
                 "price_max": "6.00",
                 "moq": "50",
                 "company": "Yiwu Export Co.",
-                "url": "https://alibaba.com",
+                "url": f"https://www.alibaba.com/trade/search?SearchText={keyword.replace(' ', '+')}",
                 "image": "https://placehold.co/200x200?text=Supplier",
                 "verified": False,
                 "mock": True
