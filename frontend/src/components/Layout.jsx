@@ -32,6 +32,9 @@ function Layout() {
           <NavLink to="/sourcing" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
             🏭 Tedarik & Arbitraj
           </NavLink>
+          <NavLink to="/bulk" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+  📦 Toplu Import
+</NavLink>
         </nav>
         <div style={{padding: '16px 24px', marginTop: 'auto', borderTop: '1px solid #334155'}}>
           <button
