@@ -25,8 +25,12 @@ app.add_middleware(
 )
 
 # Routers
+
 from routers.amazon import router as amazon_router
+from routers.auth import router as auth_router
+
 app.include_router(amazon_router)
+app.include_router(auth_router)
 
 @app.get("/health")
 async def health():
