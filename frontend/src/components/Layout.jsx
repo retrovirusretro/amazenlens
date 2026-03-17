@@ -1,8 +1,37 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import './Layout.css'
+
+const NAV = [
+  {
+    section: 'Ana',
+    items: [
+      { to: '/dashboard', label: 'Dashboard', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+      { to: '/search', label: 'Ürün Ara', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
+      { to: '/unavailable', label: 'Unavailable', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+    ]
+  },
+  {
+    section: 'Analiz',
+    items: [
+      { to: '/niche', label: 'Niş Skoru', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
+      { to: '/sourcing', label: 'Tedarik & Arbitraj', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> },
+      { to: '/bulk', label: 'Toplu Import', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg> },
+    ]
+  },
+  {
+    section: 'İçerik',
+    items: [
+      { to: '/blog', label: 'Blog', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> },
+      { to: '/blog-admin', label: 'Blog Yönetimi', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
+    ]
+  }
+]
 
 function Layout() {
   const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const initials = user.full_name
+    ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : user.email ? user.email[0].toUpperCase() : 'U'
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -11,51 +40,84 @@ function Layout() {
   }
 
   return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="logo">
-          <h2>🔍 AmazenLens</h2>
-        </div>
-        <nav>
-          <NavLink to="/dashboard" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            📊 Dashboard
-          </NavLink>
-          <NavLink to="/search" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            🔍 Ürün Ara
-          </NavLink>
-          <NavLink to="/unavailable" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            🚫 Unavailable Scanner
-          </NavLink>
-          <NavLink to="/niche" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            🎯 Niş Skoru
-          </NavLink>
-          <NavLink to="/sourcing" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            🏭 Tedarik & Arbitraj
-          </NavLink>
-          <NavLink to="/bulk" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            📦 Toplu Import
-          </NavLink>
-          <NavLink to="/blog-admin" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-            ✍️ Blog Yönetimi
-          </NavLink>
-        </nav>
-        <div style={{padding: '16px 24px', marginTop: 'auto', borderTop: '1px solid #334155'}}>
-          <button
-            onClick={handleLogout}
-            style={{
-              width: '100%', padding: '10px', background: 'transparent',
-              border: '1px solid #475569', borderRadius: '8px',
-              color: '#94a3b8', cursor: 'pointer', fontSize: '14px'
-            }}
-          >
-            🚪 Çıkış Yap
-          </button>
-        </div>
-      </aside>
-      <main className="main-content">
-        <Outlet />
-      </main>
-    </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .app-layout { display: flex; min-height: 100vh; background: #f5f5f7; }
+        .sidebar { width: 200px; background: #1d1d1f; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
+        .sb-logo { padding: 18px 16px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.07); }
+        .sb-logo-name { font-size: 14px; font-weight: 600; color: #f5f5f7; letter-spacing: -0.3px; }
+        .sb-logo-tag { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
+        .sb-nav { flex: 1; overflow-y: auto; padding: 10px 8px; }
+        .sb-section { margin-bottom: 4px; }
+        .sb-section-label { font-size: 9px; color: rgba(255,255,255,0.22); letter-spacing: 0.8px; text-transform: uppercase; padding: 8px 8px 4px; }
+        .nav-link { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; color: rgba(255,255,255,0.42); font-size: 12.5px; font-weight: 400; margin-bottom: 1px; cursor: pointer; text-decoration: none; transition: all 0.15s; }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); }
+        .nav-link.active { background: rgba(255,255,255,0.09); color: #f5f5f7; }
+        .nav-link svg { opacity: 0.5; flex-shrink: 0; }
+        .nav-link.active svg { opacity: 1; }
+        .sb-bottom { padding: 10px 8px; border-top: 0.5px solid rgba(255,255,255,0.07); }
+        .user-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; }
+        .user-row:hover { background: rgba(255,255,255,0.05); }
+        .user-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #0071e3, #34aadc); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: white; flex-shrink: 0; }
+        .user-name { font-size: 12px; color: rgba(255,255,255,0.6); }
+        .user-plan { font-size: 10px; color: rgba(255,255,255,0.24); }
+        .logout-btn { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; color: rgba(255,255,255,0.3); font-size: 12px; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; margin-top: 2px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
+        .main-content { margin-left: 200px; flex: 1; padding: 24px; min-height: 100vh; }
+      `}</style>
+
+      <div className="app-layout">
+        <aside className="sidebar">
+          <div className="sb-logo">
+            <div className="sb-logo-name">AmazenLens</div>
+            <div className="sb-logo-tag">Amazon Araştırma Platformu</div>
+          </div>
+
+          <nav className="sb-nav">
+            {NAV.map(group => (
+              <div key={group.section} className="sb-section">
+                <div className="sb-section-label">{group.section}</div>
+                {group.items.map(item => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+          </nav>
+
+          <div className="sb-bottom">
+            <div className="user-row">
+              <div className="user-avatar">{initials}</div>
+              <div>
+                <div className="user-name">{user.full_name || user.email?.split('@')[0] || 'Kullanıcı'}</div>
+                <div className="user-plan">Pro Plan</div>
+              </div>
+            </div>
+            <button className="logout-btn" onClick={handleLogout}>
+              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Çıkış Yap
+            </button>
+          </div>
+        </aside>
+
+        <main className="main-content">
+          <Outlet />
+        </main>
+      </div>
+    </>
   )
 }
 
