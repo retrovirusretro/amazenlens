@@ -26,6 +26,7 @@ def set_cache(key: str, data):
     print(f"[CACHE SET] {key} — toplam {len(_cache)} kayıt")
 
 async def search_products(keyword: str, page: int = 1):
+    return get_mock_search(keyword)
     cache_key = f"search:{keyword}:{page}"
     cached = get_cache(cache_key)
     if cached:
@@ -48,6 +49,7 @@ async def search_products(keyword: str, page: int = 1):
         return get_mock_search(keyword)
 
 async def get_product(asin: str):
+    return get_mock_product(asin)
     cache_key = f"product:{asin}"
     cached = get_cache(cache_key)
     if cached:
