@@ -6,6 +6,7 @@ from services.bulk_import import parse_excel_file, process_bulk_asins
 router = APIRouter(prefix="/api/bulk", tags=["Bulk Import"])
 
 EASYPARSER_KEY = os.getenv("EASYPARSER_API_KEY", "")
+print(f"EASYPARSER KEY: {EASYPARSER_KEY[:8]}...")
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
