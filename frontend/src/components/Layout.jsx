@@ -33,8 +33,11 @@ function Layout() {
             🏭 Tedarik & Arbitraj
           </NavLink>
           <NavLink to="/bulk" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
-  📦 Toplu Import
-</NavLink>
+            📦 Toplu Import
+          </NavLink>
+          <NavLink to="/blog-admin" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+            ✍️ Blog Yönetimi
+          </NavLink>
         </nav>
         <div style={{padding: '16px 24px', marginTop: 'auto', borderTop: '1px solid #334155'}}>
           <button

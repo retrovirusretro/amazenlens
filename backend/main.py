@@ -30,11 +30,13 @@ from routers.amazon import router as amazon_router
 from routers.auth import router as auth_router
 from routers.sourcing import router as sourcing_router
 from routers.bulk import router as bulk_router
+from routers.blog import router as blog_router
 
 app.include_router(amazon_router)
 app.include_router(auth_router)
 app.include_router(sourcing_router)
 app.include_router(bulk_router)
+app.include_router(blog_router)
 
 @app.get("/health")
 async def health():

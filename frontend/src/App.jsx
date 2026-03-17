@@ -8,6 +8,9 @@ import NichePage from './pages/NichePage'
 import Dashboard from './pages/Dashboard'
 import SourcingPage from './pages/SourcingPage'
 import BulkPage from './pages/BulkPage'
+import BlogPage from './pages/BlogPage'
+import BlogPostPage from './pages/BlogPostPage'
+import BlogAdminPage from './pages/BlogAdminPage'
 import './App.css'
 
 function PrivateRoute({ children }) {
@@ -33,6 +36,9 @@ function App() {
           <Route path="niche" element={<NichePage />} />
           <Route path="sourcing" element={<SourcingPage />} />
           <Route path="bulk" element={<BulkPage />} />
+          <Route path="blog-admin" element={<BlogAdminPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
