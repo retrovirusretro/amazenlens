@@ -11,6 +11,7 @@ import BulkPage from './pages/BulkPage'
 import BlogPage from './pages/BlogPage'
 import BlogPostPage from './pages/BlogPostPage'
 import BlogAdminPage from './pages/BlogAdminPage'
+import CalculatorPage from './pages/CalculatorPage'
 import './App.css'
 
 function PrivateRoute({ children }) {
@@ -39,6 +40,7 @@ function App() {
           <Route path="blog-admin" element={<BlogAdminPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/calculator" element={<CalculatorPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
