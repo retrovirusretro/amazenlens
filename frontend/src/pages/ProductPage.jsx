@@ -19,7 +19,6 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
-  const [selectedVariant, setSelectedVariant] = useState(null)
 
   useEffect(() => { fetchAll() }, [asin])
 
@@ -36,7 +35,7 @@ export default function ProductPage() {
       const price = prodRes.data?.price || 30
       const [suppRes, arbRes] = await Promise.all([
         axios.get(`${API}/api/sourcing/alibaba?keyword=${keyword}`),
-        axios.get(`${API}/api/sourcing/arbitrage?keyword=${keyword}&amazon_price=${price}`)
+        axios.get(`${API}/api/sourcing/arbitrage?keyword=${keyword}&amazon_price=${price}&include_euro=true`)
       ])
       setSuppliers(suppRes.data.suppliers || [])
       setArbitrage(arbRes.data)
@@ -109,7 +108,7 @@ export default function ProductPage() {
         Arama Sonuçlarına Dön
       </button>
 
-      {/* Header Kartı */}
+      {/* Header */}
       <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '12px' }}>
         <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
           {product.image ? (
@@ -117,7 +116,6 @@ export default function ProductPage() {
           ) : (
             <div style={{ width: '90px', height: '90px', borderRadius: '10px', background: 'linear-gradient(135deg,#0071e3,#34aadc)', flexShrink: 0 }}></div>
           )}
-
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '17px', fontWeight: '600', color: '#1d1d1f', lineHeight: '1.35', marginBottom: '6px', letterSpacing: '-0.3px' }}>
               {product.title || asin}
@@ -125,16 +123,10 @@ export default function ProductPage() {
             <div style={{ fontSize: '11px', color: '#8e8e93', fontFamily: 'monospace', marginBottom: '10px' }}>
               ASIN: {asin} · {product.category || 'Amazon'} {product.brand ? `· ${product.brand}` : ''}
             </div>
-
-            {/* Badges */}
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
               {score >= 70 && <span style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '4px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '500' }}>✅ Karlı</span>}
               {fbaStatus && (
-                <span style={{
-                  fontSize: '11px', padding: '3px 9px', borderRadius: '4px', fontWeight: '500',
-                  background: fbaStatus === 'FBA' ? '#e8f0fe' : '#fff4e0',
-                  color: fbaStatus === 'FBA' ? '#0071e3' : '#b45309'
-                }}>
+                <span style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '4px', fontWeight: '500', background: fbaStatus === 'FBA' ? '#e8f0fe' : '#fff4e0', color: fbaStatus === 'FBA' ? '#0071e3' : '#b45309' }}>
                   📦 {fbaStatus}
                 </span>
               )}
@@ -148,8 +140,6 @@ export default function ProductPage() {
                 </span>
               )}
             </div>
-
-            {/* Platform Linkleri */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[
                 { label: '🇺🇸 Amazon', url: `https://amazon.com/dp/${asin}` },
@@ -164,8 +154,6 @@ export default function ProductPage() {
               ))}
             </div>
           </div>
-
-          {/* Sağ: Fiyat + Skor */}
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontSize: '26px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.5px' }}>${amazonPrice}</div>
             <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>Amazon fiyatı</div>
@@ -187,25 +175,12 @@ export default function ProductPage() {
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {variants.map((v, i) => (
-                <div key={i}
-                  onClick={() => navigate(`/product/${v.asin}`)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '5px 10px', borderRadius: '8px', cursor: 'pointer',
-                    border: `0.5px solid ${v.is_current ? '#0071e3' : '#d2d2d7'}`,
-                    background: v.is_current ? '#e8f0fe' : 'white',
-                    transition: 'all 0.15s'
-                  }}>
-                  {v.image && (
-                    <img src={v.image} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'contain' }} />
-                  )}
+                <div key={i} onClick={() => navigate(`/product/${v.asin}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', border: `0.5px solid ${v.is_current ? '#0071e3' : '#d2d2d7'}`, background: v.is_current ? '#e8f0fe' : 'white', transition: 'all 0.15s' }}>
+                  {v.image && <img src={v.image} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'contain' }} />}
                   <div>
-                    <div style={{ fontSize: '11px', fontWeight: v.is_current ? '600' : '400', color: v.is_current ? '#0071e3' : '#1d1d1f' }}>
-                      {v.title || v.asin}
-                    </div>
-                    {v.price > 0 && (
-                      <div style={{ fontSize: '10px', color: '#8e8e93' }}>${v.price}</div>
-                    )}
+                    <div style={{ fontSize: '11px', fontWeight: v.is_current ? '600' : '400', color: v.is_current ? '#0071e3' : '#1d1d1f' }}>{v.title || v.asin}</div>
+                    {v.price > 0 && <div style={{ fontSize: '10px', color: '#8e8e93' }}>${v.price}</div>}
                   </div>
                   {v.is_current && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0071e3', flexShrink: 0 }}></div>}
                 </div>
@@ -241,15 +216,10 @@ export default function ProductPage() {
               ].map(item => (
                 <div key={item.l} style={{ background: '#f5f5f7', borderRadius: '8px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '10px', color: '#8e8e93', marginBottom: '4px' }}>{item.l}</div>
-                  <div style={{
-                    fontSize: '14px', fontWeight: '600',
-                    color: item.l === 'Fulfillment' ? (fbaStatus === 'FBA' ? '#0071e3' : '#b45309') : '#1d1d1f'
-                  }}>{item.v}</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: item.l === 'Fulfillment' ? (fbaStatus === 'FBA' ? '#0071e3' : '#b45309') : '#1d1d1f' }}>{item.v}</div>
                 </div>
               ))}
             </div>
-
-            {/* Ürün Özellikleri */}
             {product.features?.length > 0 && (
               <div style={{ marginTop: '14px' }}>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>Özellikler</div>
@@ -262,7 +232,6 @@ export default function ProductPage() {
               </div>
             )}
           </div>
-
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '14px' }}>Kar Analizi</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
@@ -278,7 +247,7 @@ export default function ProductPage() {
                 </div>
               ))}
             </div>
-            <div style={{ background: netProfit > 0 ? '#e8f9ee' : '#fff1f0', borderRadius: '8px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: netProfit > 0 ? '#e8f9ee' : '#fff1f0', borderRadius: '8px', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div>
                 <div style={{ fontSize: '13px', fontWeight: '600', color: netProfit > 0 ? '#1a7f37' : '#c00' }}>
                   {netProfit > 0 ? '✅ Karlı Ürün' : '❌ Zararlı Ürün'}
@@ -287,13 +256,9 @@ export default function ProductPage() {
               </div>
               <div style={{ fontSize: '24px', fontWeight: '600', color: netProfit > 0 ? '#1a7f37' : '#c00' }}>%{margin}</div>
             </div>
-
-            {/* 3 Prong Testi */}
             {prongTest.verdict && (
-              <div style={{ marginTop: '12px', background: '#f5f5f7', borderRadius: '8px', padding: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>
-                  3 Prong Testi
-                </div>
+              <div style={{ background: '#f5f5f7', borderRadius: '8px', padding: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>3 Prong Testi</div>
                 <div style={{ fontSize: '12px', color: '#3c3c43', marginBottom: '6px' }}>{prongTest.verdict}</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {[
@@ -301,12 +266,7 @@ export default function ProductPage() {
                     { label: 'Geliştirilebilir', ok: prongTest.dev_potential },
                     { label: 'Az Review', ok: prongTest.low_review_ok },
                   ].map(p => (
-                    <div key={p.label} style={{
-                      flex: 1, textAlign: 'center', padding: '6px 4px', borderRadius: '6px',
-                      background: p.ok ? '#e8f9ee' : '#fff1f0',
-                      fontSize: '10px', fontWeight: '500',
-                      color: p.ok ? '#1a7f37' : '#c00'
-                    }}>
+                    <div key={p.label} style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRadius: '6px', background: p.ok ? '#e8f9ee' : '#fff1f0', fontSize: '10px', fontWeight: '500', color: p.ok ? '#1a7f37' : '#c00' }}>
                       {p.ok ? '✅' : '❌'}<br />{p.label}
                     </div>
                   ))}
@@ -342,13 +302,11 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
-
-            {/* 4 Boyut */}
             {[
               { key: 'volume', label: 'Hacim & Depolama', max: 25, color: '#0071e3', desc: 'Ürün boyutu, BSR bazlı depolama riski' },
               { key: 'logistics', label: 'Lojistik', max: 25, color: '#34c759', desc: 'Ağırlık, FBA uygunluğu, kırılganlık' },
               { key: 'competition', label: 'Rekabet', max: 25, color: '#ff9f0a', desc: 'Rakip sayısı, review sayısı, marka riski' },
-              { key: 'profitability', label: 'Karlılık', max: 25, color: '#af52de', desc: 'Fiyat aralığı, kar marjı, fiyat rekabeti' },
+              { key: 'profitability', label: 'Karlılık', max: 25, color: '#af52de', desc: 'Fiyat aralığı, kar marjı' },
             ].map(dim => {
               const val = dims[dim.key] || dims['profit'] || 0
               return (
@@ -368,14 +326,11 @@ export default function ProductPage() {
             })}
           </div>
 
-          {/* Unmet Demand */}
           {unmetDemand.detected && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>
-                🔥 Karşılanmamış Talep Tespit Edildi
-                <span style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fff4e0', color: '#b45309' }}>
-                  {unmetDemand.level} seviye
-                </span>
+                🔥 Karşılanmamış Talep
+                <span style={{ marginLeft: '8px', fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fff4e0', color: '#b45309' }}>{unmetDemand.level}</span>
               </div>
               {unmetDemand.signals?.map((s, i) => (
                 <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', padding: '10px 12px', background: '#fff4e0', borderRadius: '8px' }}>
@@ -386,17 +341,16 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Red Flags */}
           {Object.values(flags).some(v => v) && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🚩 Red Flags</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {[
-                  { key: 'big_brand', label: 'Büyük Marka Var' },
-                  { key: 'seasonal', label: 'Sezonluk Ürün' },
-                  { key: 'low_development', label: 'Düşük Geliştirme Potansiyeli' },
+                  { key: 'big_brand', label: 'Büyük Marka' },
+                  { key: 'seasonal', label: 'Sezonluk' },
+                  { key: 'low_development', label: 'Düşük Gelişim' },
                   { key: 'patent_risk', label: 'Patent Riski' },
-                  { key: 'fragile', label: 'Kırılgan Ürün' },
+                  { key: 'fragile', label: 'Kırılgan' },
                   { key: 'heavy', label: 'Çok Ağır' },
                 ].filter(f => flags[f.key]).map(f => (
                   <div key={f.key} style={{ fontSize: '12px', padding: '6px 12px', borderRadius: '8px', background: '#fff1f0', color: '#c00', border: '0.5px solid #ffd0ce', fontWeight: '500' }}>
@@ -430,9 +384,8 @@ export default function ProductPage() {
                 <div style={{ height: '6px', background: '#f0f0f5', borderRadius: '3px', marginBottom: '8px' }}>
                   <div style={{ height: '100%', borderRadius: '3px', background: '#34c759', width: `${reviews.sentiment_score}%` }}></div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#8e8e93' }}>{reviews.total_reviews_analyzed} yorum analiz edildi · {reviews.summary}</div>
+                <div style={{ fontSize: '12px', color: '#8e8e93' }}>{reviews.total_reviews_analyzed} yorum · {reviews.summary}</div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
                   <div style={{ padding: '14px 16px 10px', background: '#e8f9ee', borderBottom: '0.5px solid #b7f0c8' }}>
@@ -453,7 +406,6 @@ export default function ProductPage() {
                     ))}
                   </div>
                 </div>
-
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
                   <div style={{ padding: '14px 16px 10px', background: '#fff1f0', borderBottom: '0.5px solid #ffd0ce' }}>
                     <div style={{ fontSize: '14px', fontWeight: '600', color: '#c00' }}>❤️ Şikayet Konuları</div>
@@ -474,7 +426,6 @@ export default function ProductPage() {
                   </div>
                 </div>
               </div>
-
               <div style={{ background: 'linear-gradient(135deg,#0071e3,#34aadc)', borderRadius: '12px', padding: '16px 20px', marginTop: '12px', color: 'white' }}>
                 <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>💡 Ürün Geliştirme Fırsatı</div>
                 <div style={{ fontSize: '12px', opacity: 0.9, lineHeight: '1.6' }}>
@@ -483,9 +434,7 @@ export default function ProductPage() {
               </div>
             </div>
           ) : (
-            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center', color: '#8e8e93' }}>
-              Yorum analizi yüklenemedi.
-            </div>
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center', color: '#8e8e93' }}>Yorum analizi yüklenemedi.</div>
           )}
         </div>
       )}
@@ -516,31 +465,116 @@ export default function ProductPage() {
         </div>
       )}
 
-      {/* Arbitraj */}
+      {/* Arbitraj — Euro Flips */}
       {activeTab === 'arbitrage' && arbitrage && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {arbitrage.best_opportunity && (
+
+          {/* En İyi Fırsat */}
+          {arbitrage.best_opportunity && arbitrage.best_opportunity.arbitrage_profit > 0 && (
             <div style={{ background: '#e8f9ee', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#34c759', marginBottom: '4px' }}>🏆 En İyi Fırsat</div>
-                <div style={{ fontSize: '15px', fontWeight: '600', color: '#1d1d1f' }}>{arbitrage.best_opportunity.flag} {arbitrage.best_opportunity.platform}</div>
-                <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>${arbitrage.best_opportunity.price_usd} kaynak fiyatı</div>
-              </div>
-              <div style={{ fontSize: '28px', fontWeight: '600', color: '#1a7f37' }}>+${arbitrage.best_opportunity.arbitrage_profit}</div>
-            </div>
-          )}
-          <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px' }}>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '16px' }}>🌍 Tüm Platformlar</div>
-            {arbitrage.results?.map((r, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '0.5px solid #f5f5f7' }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#1d1d1f' }}>{r.flag} {r.platform}</div>
-                <div style={{ fontSize: '13px', color: '#8e8e93' }}>{r.currency === 'TRY' ? `₺${r.price_local}` : `$${r.price_local}`} = ${r.price_usd}</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#34c759' : '#ff3b30' }}>
-                  {r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#1d1d1f' }}>
+                  {arbitrage.best_opportunity.flag} {arbitrage.best_opportunity.platform}
+                </div>
+                <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
+                  ${arbitrage.best_opportunity.price_usd} kaynak · %{arbitrage.best_opportunity.margin} marj · ROI %{arbitrage.best_opportunity.roi}
                 </div>
               </div>
-            ))}
-          </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '28px', fontWeight: '600', color: '#1a7f37' }}>+${arbitrage.best_opportunity.arbitrage_profit}</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93' }}>net kar/ürün</div>
+              </div>
+            </div>
+          )}
+
+          {/* En İyi Euro Flip */}
+          {arbitrage.best_euro_flip && arbitrage.best_euro_flip.arbitrage_profit > 0 && (
+            <div style={{ background: '#e8f0fe', borderRadius: '12px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0071e3', marginBottom: '4px' }}>🇪🇺 En İyi Euro Flip</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f' }}>
+                  {arbitrage.best_euro_flip.flag} {arbitrage.best_euro_flip.platform}
+                </div>
+                <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>VAT {arbitrage.best_euro_flip.vat_rate} dahil hesaplandı</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '22px', fontWeight: '600', color: '#0071e3' }}>+${arbitrage.best_euro_flip.arbitrage_profit}</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93' }}>%{arbitrage.best_euro_flip.margin} marj</div>
+              </div>
+            </div>
+          )}
+
+          {/* Yerel Platformlar */}
+          {arbitrage.results?.filter(r => !['DE','FR','UK','IT','ES','CA','JP'].includes(r.marketplace)).length > 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px 10px', borderBottom: '0.5px solid #f5f5f7' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f' }}>🌍 Yerel Platformlar</div>
+              </div>
+              {arbitrage.results.filter(r => !['DE','FR','UK','IT','ES','CA','JP'].includes(r.marketplace)).map((r, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7' }}>
+                  <div style={{ fontSize: '18px', marginRight: '10px' }}>{r.flag}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{r.platform}</div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>
+                      {r.currency === 'TRY' ? `₺${r.price_local}` : `$${r.price_local}`} = ${r.price_usd}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#34c759' : '#ff3b30' }}>
+                      {r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>%{r.margin} marj</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Euro Flips */}
+          {arbitrage.euro_flips?.length > 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
+              <div style={{ padding: '12px 16px 10px', borderBottom: '0.5px solid #f5f5f7', background: '#f5f5f7' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0071e3' }}>🇪🇺 Euro Flips — Amazon Avrupa Pazarları</div>
+                <div style={{ fontSize: '10px', color: '#8e8e93', marginTop: '2px' }}>VAT dahil hesaplanmıştır. Avrupa'dan al, ABD'de sat.</div>
+              </div>
+              {arbitrage.euro_flips.map((r, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7', background: r.arbitrage_profit > 5 ? '#f0fff4' : 'white' }}>
+                  <div style={{ fontSize: '18px', marginRight: '10px' }}>{r.flag}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{r.platform}</div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>
+                      {r.price_local} {r.currency} = ${r.price_usd} · VAT {r.vat_rate}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#0071e3' : '#ff3b30' }}>
+                      {r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>%{r.margin} · ROI %{r.roi}</div>
+                  </div>
+                  {r.arbitrage_profit > 5 && (
+                    <div style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '600' }}>HOT</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Kur Bilgisi */}
+          {arbitrage.exchange_rates && (
+            <div style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '12px 16px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '8px' }}>GÜNCEL KUR BİLGİSİ</div>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                {Object.entries(arbitrage.exchange_rates).filter(([, v]) => v).map(([currency, rate]) => (
+                  <div key={currency} style={{ fontSize: '12px', color: '#3c3c43' }}>
+                    <span style={{ color: '#8e8e93' }}>1 USD = </span>
+                    <span style={{ fontWeight: '600' }}>{rate} {currency}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
