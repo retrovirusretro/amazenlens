@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from services.alibaba import search_suppliers, calculate_profit, calculate_pan_eu
+from services.alibaba import search_suppliers, calculate_profit, calculate_pan_eu, search_dhgate, search_turkish_suppliers
 from services.global_arbitrage import get_global_prices, AMAZON_MARKETS, VAT_RATES, calc_profit
 
 router = APIRouter(prefix="/api/sourcing", tags=["Sourcing"])
@@ -10,6 +10,39 @@ async def alibaba_search(
     page: int = Query(1, description="Sayfa")
 ):
     return await search_suppliers(keyword, page)
+
+@router.get("/dhgate")
+async def dhgate_search(
+    keyword: str = Query(..., description="Arama kelimesi")
+):
+    """DHgate tedarikçi arama — düşük MOQ, dropshipping dostu"""
+    return await search_dhgate(keyword)
+
+@router.get("/turkish")
+async def turkish_suppliers(
+    keyword: str = Query(..., description="Arama kelimesi")
+):
+    """Türk tedarikçi arama — Made in Turkey, gümrüksüz AB teslimatı"""
+    return await search_turkish_suppliers(keyword)
+
+@router.get("/all")
+async def all_suppliers(
+    keyword: str = Query(..., description="Arama kelimesi")
+):
+    """Tüm platformlarda paralel arama — Alibaba + DHgate + Türkiye"""
+    import asyncio
+    alibaba, dhgate, turkish = await asyncio.gather(
+        search_suppliers(keyword),
+        search_dhgate(keyword),
+        search_turkish_suppliers(keyword)
+    )
+    return {
+        "keyword": keyword,
+        "alibaba": alibaba,
+        "dhgate": dhgate,
+        "turkish": turkish,
+        "total": (alibaba.get("total", 0) + dhgate.get("total", 0) + turkish.get("total", 0))
+    }
 
 @router.get("/profit-calc")
 async def profit_calculator(
@@ -25,7 +58,6 @@ async def pan_eu_calculator(
     alibaba_price: float = Query(..., description="Alibaba alış fiyatı ($)"),
     shipping_cost: float = Query(0, description="Kargo maliyeti ($)")
 ):
-    """Pan-EU FBA kar hesabı — tüm pazarlar için VAT dahil karşılaştırma"""
     return calculate_pan_eu(amazon_price, alibaba_price, shipping_cost)
 
 @router.get("/arbitrage")
