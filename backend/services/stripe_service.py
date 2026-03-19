@@ -6,12 +6,15 @@ load_dotenv()
 import stripe
 from stripe import checkout, billing_portal, Webhook, Subscription
 
-stripe.api_key = "sk_test_51Ru65qBaoW9Pk2K1JoZQFeIUJnxvyhbJaWtm4UtNmZCBWFeNgbPk2oZm8GBrctYTxAlYWgtkxbhme8cE32wcBVbk00zaQACAwW"
+# .env'den oku — asla hardcode etme!
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+if not stripe.api_key:
+    raise RuntimeError("STRIPE_SECRET_KEY .env dosyasında tanımlı değil!")
 
 PRICE_IDS = {
-    "starter": "price_1TCGF7BaoW9Pk2K1C4qhaByP",
-    "pro":     "price_1TCGFkBaoW9Pk2K1musZYj5k",
-    "agency":  "price_1TCGGDBaoW9Pk2K1aGJ4E5GH",
+    "starter": os.getenv("STRIPE_STARTER_PRICE_ID", "price_1TCGF7BaoW9Pk2K1C4qhaByP"),
+    "pro":     os.getenv("STRIPE_PRO_PRICE_ID",     "price_1TCGFkBaoW9Pk2K1musZYj5k"),
+    "agency":  os.getenv("STRIPE_AGENCY_PRICE_ID",  "price_1TCGGDBaoW9Pk2K1aGJ4E5GH"),
 }
 
 PLAN_LIMITS = {

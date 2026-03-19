@@ -1,5 +1,58 @@
-backend/venv/
-backend/.env
-__pycache__/
-*.pyc
+# ===========================
+# GİZLİ DOSYALAR — ASLA GİTMEMELİ
+# ===========================
 .env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# ===========================
+# PYTHON
+# ===========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# ===========================
+# NODE / REACT
+# ===========================
+node_modules/
+dist/
+.next/
+.nuxt/
+*.local
+
+# ===========================
+# IDE
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===========================
+# STRIPE / API KEYS
+# ===========================
+secrets.json
+secrets.yaml
+config/secrets*
+
+# ===========================
+# LOG DOSYALARI
+# ===========================
+*.log
+logs/
+npm-debug.log*

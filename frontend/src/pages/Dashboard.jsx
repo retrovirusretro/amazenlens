@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [recentPosts, setRecentPosts] = useState([])
   const [quickPicks, setQuickPicks] = useState([])
   const [picksLoading, setPicksLoading] = useState(true)
-  const [activePickTab, setActivePickTab] = useState('all') // all | fba | high
+  const [activePickTab, setActivePickTab] = useState('all')
 
   useEffect(() => {
     axios.get(`${API}/api/blog/posts?limit=3`).then(r => setRecentPosts(r.data.posts || [])).catch(() => {})
@@ -45,7 +45,6 @@ export default function Dashboard() {
       const res = await axios.get(`${API}/api/amazon/quick-picks?limit=8`)
       setQuickPicks(res.data.picks || [])
     } catch (err) {
-      // Fallback mock
       setQuickPicks([
         { asin: 'B07QK955LS', title: 'Silikon Spatula Seti 6 Parça', price: 24.99, bestseller_rank: 2340, reviews_count: 1847, rating: 4.6, niche_score: 87, score_color: '#34c759', badge: '🔥 Trend', badge_bg: '#fff4e0', badge_color: '#b45309', est_revenue: '$22K/ay', fba: 'FBA' },
         { asin: 'B08N5WRWNW', title: 'LED Masa Lambası USB Şarjlı', price: 22.99, bestseller_rank: 3102, reviews_count: 156, rating: 4.2, niche_score: 91, score_color: '#0071e3', badge: '⭐ Yüksek Skor', badge_bg: '#e8f0fe', badge_color: '#0071e3', est_revenue: '$18K/ay', fba: 'FBA' },
@@ -83,7 +82,7 @@ export default function Dashboard() {
             <div style={{ height: '100%', width: '42%', background: '#0071e3', borderRadius: '2px' }}></div>
           </div>
         </div>
-        <button onClick={() => navigate('/pricing')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+        <button onClick={() => navigate('/app/pricing')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
           Agency'ye Yükselt
         </button>
       </div>
@@ -106,7 +105,7 @@ export default function Dashboard() {
           icon={<svg width="16" height="16" fill="none" stroke="#af52de" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>} />
       </div>
 
-      {/* ⚡ QUICK PICKS — Günün Fırsatları */}
+      {/* Quick Picks */}
       <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea', marginBottom: '12px' }}>
         <div style={{ padding: '13px 16px 10px', borderBottom: '0.5px solid #f5f5f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -114,7 +113,6 @@ export default function Dashboard() {
             <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>Her gün güncellenir · Niş skoru 70+ ürünler</div>
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {/* Filtre tab'ları */}
             {[{ key: 'all', label: 'Tümü' }, { key: 'fba', label: '📦 FBA' }, { key: 'high', label: '⭐ Skor 85+' }].map(tab => (
               <div key={tab.key} onClick={() => setActivePickTab(tab.key)}
                 style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', cursor: 'pointer', border: `0.5px solid ${activePickTab === tab.key ? '#1d1d1f' : '#d2d2d7'}`, background: activePickTab === tab.key ? '#1d1d1f' : 'white', color: activePickTab === tab.key ? 'white' : '#3c3c43' }}>
@@ -136,7 +134,7 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0' }}>
             {filteredPicks.slice(0, 8).map((pick, i) => (
               <div key={pick.asin}
-                onClick={() => navigate(`/product/${pick.asin}`)}
+                onClick={() => navigate(`/app/product/${pick.asin}`)}
                 style={{ padding: '14px 16px', borderRight: (i % 4 !== 3) ? '0.5px solid #f5f5f7' : 'none', borderBottom: i < 4 ? '0.5px solid #f5f5f7' : 'none', cursor: 'pointer', transition: 'background 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#f9f9f9'}
                 onMouseLeave={e => e.currentTarget.style.background = 'white'}
@@ -169,7 +167,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* İki Kolon — Aktivite */}
+      {/* İki Kolon */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px', marginBottom: '12px' }}>
         {/* Son Aktivite */}
         <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea' }}>
@@ -194,10 +192,10 @@ export default function Dashboard() {
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🛠️ Hızlı Araçlar</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
             {[
-              { label: 'Ürün Ara', desc: 'Keyword / ASIN', to: '/search', color: '#0071e3', bg: '#e8f0fe' },
-              { label: 'Niş Skoru', desc: 'ASIN analiz et', to: '/niche', color: '#34c759', bg: '#e8f9ee' },
-              { label: 'Kar Hesabı', desc: 'Pan-EU VAT', to: '/calculator', color: '#ff9f0a', bg: '#fff4e0' },
-              { label: 'Toplu Import', desc: 'CSV / Excel', to: '/bulk', color: '#af52de', bg: '#f3e8ff' },
+              { label: 'Ürün Ara', desc: 'Keyword / ASIN', to: '/app/search', color: '#0071e3', bg: '#e8f0fe' },
+              { label: 'Niş Skoru', desc: 'ASIN analiz et', to: '/app/niche', color: '#34c759', bg: '#e8f9ee' },
+              { label: 'Kar Hesabı', desc: 'Pan-EU VAT', to: '/app/calculator', color: '#ff9f0a', bg: '#fff4e0' },
+              { label: 'Toplu Import', desc: 'CSV / Excel', to: '/app/bulk', color: '#af52de', bg: '#f3e8ff' },
             ].map(tool => (
               <div key={tool.to} onClick={() => navigate(tool.to)} style={{ background: tool.bg, borderRadius: '9px', padding: '12px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '13px', fontWeight: '500', color: tool.color, marginBottom: '2px' }}>{tool.label}</div>
@@ -205,11 +203,10 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          {/* Hızlı Aramalar */}
           <div style={{ fontSize: '12px', fontWeight: '500', color: '#8e8e93', marginBottom: '8px' }}>⚡ Hızlı Aramalar</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {QUICK_SEARCHES.map(q => (
-              <div key={q} onClick={() => navigate(`/search?q=${q.replace(/ /g, '+')}`)}
+              <div key={q} onClick={() => navigate(`/app/search?q=${q.replace(/ /g, '+')}`)}
                 style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', border: '0.5px solid #d2d2d7', background: '#f5f5f7', color: '#3c3c43', cursor: 'pointer' }}>
                 {q}
               </div>
@@ -218,16 +215,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Son Blog Yazıları */}
+      {/* Son Blog */}
       {recentPosts.length > 0 && (
         <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea' }}>
           <div style={{ padding: '13px 16px 10px', borderBottom: '0.5px solid #f5f5f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>📚 Son Blog Yazıları</div>
-            <div onClick={() => navigate('/blog')} style={{ fontSize: '12px', color: '#0071e3', cursor: 'pointer' }}>Tümünü gör →</div>
+            <div onClick={() => navigate('/app/blog')} style={{ fontSize: '12px', color: '#0071e3', cursor: 'pointer' }}>Tümünü gör →</div>
           </div>
           <div style={{ padding: '8px 16px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
             {recentPosts.map(post => (
-              <div key={post.id} onClick={() => navigate(`/blog/${post.slug}`)} style={{ cursor: 'pointer', padding: '8px 0' }}>
+              <div key={post.id} onClick={() => navigate(`/app/blog/${post.slug}`)} style={{ cursor: 'pointer', padding: '8px 0' }}>
                 <div style={{ fontSize: '11px', color: '#0071e3', marginBottom: '4px', fontWeight: '500' }}>{post.category}</div>
                 <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', lineHeight: '1.4', marginBottom: '4px' }}>{post.title_tr}</div>
                 <div style={{ fontSize: '11px', color: '#8e8e93' }}>⏱ {post.read_time} dk · 👁 {post.view_count}</div>

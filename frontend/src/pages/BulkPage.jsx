@@ -69,7 +69,7 @@ function BulkPage() {
 
       {/* Adımlar */}
       <div style={{display: 'flex', gap: '8px', marginBottom: '24px'}}>
-        {['Dosya Yükle', 'ASIN\'leri Onayla', 'Sonuçlar'].map((s, i) => (
+        {['Dosya Yükle', "ASIN'leri Onayla", 'Sonuçlar'].map((s, i) => (
           <div key={i} style={{
             flex: 1, padding: '12px', textAlign: 'center', borderRadius: '8px',
             background: step === i+1 ? '#3b82f6' : step > i+1 ? '#dcfce7' : '#f1f5f9',

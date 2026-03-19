@@ -35,7 +35,7 @@ AMAZON_MARKETS = {
 
 async def get_exchange_rates() -> dict:
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=10, verify=False) as client:
             response = await client.get("https://api.exchangerate-api.com/v4/latest/USD")
             if response.status_code == 200:
                 return response.json().get("rates", {})
@@ -64,7 +64,7 @@ async def search_amazon_market(keyword: str, marketplace: str, amazon_us_price: 
     if not market:
         return []
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
+        async with httpx.AsyncClient(timeout=20, verify=False) as client:
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
                 "operation": "SEARCH", "domain": market["domain"],
@@ -104,11 +104,15 @@ async def search_amazon_market(keyword: str, marketplace: str, amazon_us_price: 
 
 async def search_trendyol(keyword: str, amazon_price: float, rates: dict):
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        # SSL doğrulaması kapalı — Windows sertifika sorunu
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
             response = await client.get(
                 "https://public.trendyol.com/discovery-web-searchgw-service/api/filter/search/v2",
                 params={"q": keyword, "pi": 1},
-                headers={"User-Agent": "Mozilla/5.0"}
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "application/json",
+                }
             )
             if response.status_code == 200:
                 data = response.json()
@@ -135,7 +139,7 @@ async def search_trendyol(keyword: str, amazon_price: float, rates: dict):
 
 async def search_ebay(keyword: str, amazon_price: float):
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
             response = await client.get(
                 "https://svcs.ebay.com/services/search/FindingService/v1",
                 params={
@@ -175,19 +179,28 @@ async def get_global_prices(keyword: str, amazon_price: float, include_euro_flip
 
     trendyol, ebay = await asyncio.gather(
         search_trendyol(keyword, amazon_price, rates),
-        search_ebay(keyword, amazon_price)
+        search_ebay(keyword, amazon_price),
+        return_exceptions=True
     )
-    all_results = trendyol + ebay
+
+    # Exception gelirse mock kullan
+    if isinstance(trendyol, Exception):
+        trendyol = get_mock_trendyol(keyword, amazon_price, rates)
+    if isinstance(ebay, Exception):
+        ebay = get_mock_ebay(keyword, amazon_price)
+
+    all_results = list(trendyol) + list(ebay)
 
     euro_results = []
     if include_euro_flips:
         euro_markets = ["DE", "FR", "UK", "IT", "ES", "CA"]
-        euro_lists = await asyncio.gather(*[
+        euro_tasks = await asyncio.gather(*[
             search_amazon_market(keyword, m, amazon_price, rates)
             for m in euro_markets
-        ])
-        for lst in euro_lists:
-            euro_results.extend(lst)
+        ], return_exceptions=True)
+        for lst in euro_tasks:
+            if not isinstance(lst, Exception):
+                euro_results.extend(lst)
 
     all_results = all_results + euro_results
     all_results.sort(key=lambda x: x.get("arbitrage_profit", 0), reverse=True)

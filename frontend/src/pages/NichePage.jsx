@@ -272,7 +272,7 @@ export default function NichePage() {
             {keywordResults.map((p, i) => {
               const s = p.niche?.niche_score?.total_score || p.niche?.total_score || 0
               return (
-                <div key={p.asin} onClick={() => navigate(`/product/${p.asin}`)}
+                <div key={p.asin} onClick={() => navigate(`/app/product/${p.asin}`)}
                   style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea', padding: '14px', cursor: 'pointer' }}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
@@ -317,7 +317,7 @@ export default function NichePage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button onClick={() => navigate(`/product/${result.asin}`)}
+              <button onClick={() => navigate(`/app/product/${result.asin}`)}
                 style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: '0.5px solid #d2d2d7', background: 'white', color: '#0071e3', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Ürün Detayı →
               </button>

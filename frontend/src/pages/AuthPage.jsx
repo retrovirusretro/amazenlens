@@ -37,7 +37,7 @@ export default function AuthPage() {
           full_name: data.user.user_metadata?.full_name || '',
           plan: 'free',
         }))
-        navigate('/dashboard')
+        navigate('/app/dashboard')
 
       } else if (mode === 'register') {
         const { error } = await supabase.auth.signUp({
@@ -64,7 +64,7 @@ export default function AuthPage() {
       plan: 'free',
       is_guest: true,
     }))
-    navigate('/dashboard')
+    navigate('/app/dashboard')
   }
 
   return (
@@ -93,8 +93,8 @@ export default function AuthPage() {
 
       <div style={{ width: '100%', maxWidth: '380px', animation: 'fadeIn 0.3s ease' }}>
 
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        {/* Logo — tıklanınca landing page */}
+        <div style={{ textAlign: 'center', marginBottom: '28px', cursor: 'pointer' }} onClick={() => navigate('/')}>
           <div style={{ width: '52px', height: '52px', background: '#1d1d1f', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -107,7 +107,6 @@ export default function AuthPage() {
         {/* Kart */}
         <div style={{ background: 'white', borderRadius: '16px', border: '0.5px solid #e5e5ea', padding: '28px 28px 24px', boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}>
 
-          {/* Mod Seçici */}
           {mode !== 'forgot' && (
             <div style={{ display: 'flex', gap: '4px', background: '#f5f5f7', borderRadius: '10px', padding: '3px', marginBottom: '20px' }}>
               {[{ key: 'login', label: 'Giris Yap' }, { key: 'register', label: 'Kayit Ol' }].map(t => (
@@ -119,7 +118,6 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Forgot başlık */}
           {mode === 'forgot' && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '4px' }}>Sifre Sifirla</div>
@@ -127,7 +125,6 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Form alanları */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
             {mode === 'register' && (
               <input className="a-input" type="text" placeholder="Ad Soyad"
@@ -150,7 +147,6 @@ export default function AuthPage() {
             )}
           </div>
 
-          {/* Sifremi unuttum linki */}
           {mode === 'login' && (
             <div style={{ textAlign: 'right', marginBottom: '14px' }}>
               <button onClick={() => { setMode('forgot'); setError(''); setSuccess('') }}
@@ -160,28 +156,24 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Hata mesajı */}
           {error && (
             <div style={{ padding: '9px 13px', background: '#fff1f0', border: '0.5px solid #ffd0ce', borderRadius: '8px', color: '#c00', fontSize: '12px', marginBottom: '12px' }}>
               {error}
             </div>
           )}
 
-          {/* Başarı mesajı */}
           {success && (
             <div style={{ padding: '9px 13px', background: '#e8f9ee', border: '0.5px solid #b7f0c8', borderRadius: '8px', color: '#1a7f37', fontSize: '12px', marginBottom: '12px' }}>
               {success}
             </div>
           )}
 
-          {/* Ana buton */}
           <button onClick={handleSubmit} disabled={loading}
             style={{ width: '100%', padding: '11px', background: loading ? '#aeaeb2' : '#0071e3', color: 'white', border: 'none', borderRadius: '9px', fontSize: '14px', fontWeight: '500', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', transition: 'background 0.15s' }}>
             {loading && <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>}
             {loading ? 'Lutfen bekleyin...' : mode === 'login' ? 'Giris Yap' : mode === 'register' ? 'Hesap Olustur' : 'Sifirlama Linki Gonder'}
           </button>
 
-          {/* Geri butonu (forgot modda) */}
           {mode === 'forgot' && (
             <button onClick={() => { setMode('login'); setError(''); setSuccess('') }}
               style={{ width: '100%', padding: '10px', background: 'none', border: '0.5px solid #d2d2d7', borderRadius: '9px', fontSize: '13px', color: '#3c3c43', cursor: 'pointer', fontFamily: 'inherit', marginTop: '8px' }}>
@@ -189,7 +181,6 @@ export default function AuthPage() {
             </button>
           )}
 
-          {/* Ayırıcı + Misafir */}
           {mode !== 'forgot' && (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '16px 0' }}>
@@ -207,7 +198,6 @@ export default function AuthPage() {
           )}
         </div>
 
-        {/* Trial notu */}
         {mode === 'register' && (
           <div style={{ marginTop: '12px', padding: '12px 16px', background: 'white', borderRadius: '10px', border: '0.5px solid #b7f0c8', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '18px' }}>🎁</div>
@@ -218,7 +208,6 @@ export default function AuthPage() {
           </div>
         )}
 
-        {/* Alt not */}
         {mode === 'register' && (
           <div style={{ marginTop: '12px', fontSize: '11px', color: '#aeaeb2', textAlign: 'center', lineHeight: '1.6' }}>
             Kayit olarak Kullanim Sartlari ve Gizlilik Politikasini kabul etmis olursunuz.

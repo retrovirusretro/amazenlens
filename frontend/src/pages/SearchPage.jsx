@@ -382,7 +382,7 @@ function SearchPage() {
 
               return (
                 <div key={product.asin}
-                  onClick={() => navigate(`/product/${product.asin}`)}
+                  onClick={() => navigate(`/app/product/${product.asin}`)}
                   style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '11px 16px', cursor: 'pointer', transition: 'border-color 0.15s', display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px', gap: '7px', alignItems: 'center' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = '#0071e3'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e5ea'}

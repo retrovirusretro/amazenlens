@@ -5,8 +5,16 @@ import os
 load_dotenv(Path(__file__).parent / ".env")
 print("FRONTEND_URL:", os.getenv("FRONTEND_URL"))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 app = FastAPI(
     title="AmazenLens API",
@@ -15,6 +23,14 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Rate limit middleware
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS — dev + production
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 origins = [
     "http://localhost:5173",
@@ -26,6 +42,13 @@ origins = [
     "http://127.0.0.1:5175",
     "http://127.0.0.1:5176",
 ]
+
+# Production URL'yi ekle
+if FRONTEND_URL and FRONTEND_URL not in origins:
+    origins.append(FRONTEND_URL)
+    # www ve https varyanları da ekle
+    if FRONTEND_URL.startswith("https://"):
+        origins.append(FRONTEND_URL.replace("https://", "https://www."))
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +65,7 @@ from routers.bulk import router as bulk_router
 from routers.blog import router as blog_router
 from routers.reviews import router as reviews_router
 from routers.payments import router as payments_router
+from routers.feedback import router as feedback_router
 
 app.include_router(amazon_router)
 app.include_router(auth_router)
@@ -50,6 +74,7 @@ app.include_router(bulk_router)
 app.include_router(blog_router)
 app.include_router(reviews_router)
 app.include_router(payments_router)
+app.include_router(feedback_router)
 
 @app.get("/health")
 async def health():

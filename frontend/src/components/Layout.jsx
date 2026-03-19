@@ -5,23 +5,23 @@ const NAV = [
     section: 'Ana',
     items: [
       {
-        to: '/dashboard', label: 'Dashboard',
+        to: '/app/dashboard', label: 'Dashboard',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       },
       {
-        to: '/search', label: 'Ürün Ara',
+        to: '/app/search', label: 'Ürün Ara',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       },
       {
-        to: '/unavailable', label: 'Unavailable',
+        to: '/app/unavailable', label: 'Unavailable',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
       },
       {
-        to: '/calculator', label: 'Kar Hesabı',
+        to: '/app/calculator', label: 'Kar Hesabı',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
       },
       {
-        to: '/pricing', label: 'Fiyatlandırma',
+        to: '/app/pricing', label: 'Fiyatlandırma',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       },
     ]
@@ -30,15 +30,15 @@ const NAV = [
     section: 'Analiz',
     items: [
       {
-        to: '/niche', label: 'Niş Skoru',
+        to: '/app/niche', label: 'Niş Skoru',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
       },
       {
-        to: '/sourcing', label: 'Tedarik & Arbitraj',
+        to: '/app/sourcing', label: 'Tedarik & Arbitraj',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       },
       {
-        to: '/bulk', label: 'Toplu Import',
+        to: '/app/bulk', label: 'Toplu Import',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
       },
     ]
@@ -47,12 +47,21 @@ const NAV = [
     section: 'İçerik',
     items: [
       {
-        to: '/blog', label: 'Blog',
+        to: '/app/blog', label: 'Blog',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
       },
       {
-        to: '/blog-admin', label: 'Blog Yönetimi',
+        to: '/app/blog-admin', label: 'Blog Yönetimi',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      },
+    ]
+  },
+  {
+    section: 'Topluluk',
+    items: [
+      {
+        to: '/app/feedback', label: 'Geri Bildirim',
+        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       },
     ]
   }
@@ -67,6 +76,7 @@ function Layout() {
 
   const planColors = {
     free:    { bg: '#f5f5f7', color: '#8e8e93' },
+    trial:   { bg: '#fff4e0', color: '#ff9f0a' },
     starter: { bg: '#e8f0fe', color: '#0071e3' },
     pro:     { bg: '#e8f9ee', color: '#34c759' },
     agency:  { bg: '#f3e8ff', color: '#af52de' },
@@ -77,7 +87,7 @@ function Layout() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    navigate('/auth')
+    navigate('/')
   }
 
   return (
@@ -88,7 +98,7 @@ function Layout() {
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
         .app-layout { display: flex; min-height: 100vh; background: #f5f5f7; }
         .sidebar { width: 200px; background: #1d1d1f; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 50; }
-        .sb-logo { padding: 18px 16px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.07); }
+        .sb-logo { padding: 18px 16px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.07); cursor: pointer; }
         .sb-logo-name { font-size: 14px; font-weight: 600; color: #f5f5f7; letter-spacing: -0.3px; }
         .sb-logo-tag { font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 1px; }
         .sb-nav { flex: 1; overflow-y: auto; padding: 10px 8px; }
@@ -112,7 +122,7 @@ function Layout() {
 
       <div className="app-layout">
         <aside className="sidebar">
-          <div className="sb-logo">
+          <div className="sb-logo" onClick={() => navigate('/')}>
             <div className="sb-logo-name">AmazenLens</div>
             <div className="sb-logo-tag">Amazon Araştırma Platformu</div>
           </div>
@@ -136,8 +146,18 @@ function Layout() {
           </nav>
 
           <div className="sb-bottom">
+            {/* Lens Puan */}
+            {user.lens_points > 0 && (
+              <div onClick={() => navigate('/app/feedback')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>🪙 Lens Puanı</div>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#ffd60a' }}>{user.lens_points?.toLocaleString()}</div>
+              </div>
+            )}
+
             {/* Plan Badge */}
-            <div onClick={() => navigate('/pricing')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
+            <div onClick={() => navigate('/app/pricing')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Mevcut Plan</div>
