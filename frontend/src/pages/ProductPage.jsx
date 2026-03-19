@@ -1,44 +1,135 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
-const API = 'http://127.0.0.1:8000'
+const API = ''
+const CACHE_TTL = 60 * 60 * 1000 // 1 saat
 
 const SCORE_COLOR = (s) => s >= 70 ? '#34c759' : s >= 50 ? '#ff9f0a' : '#ff3b30'
 const SCORE_BG = (s) => s >= 70 ? '#e8f9ee' : s >= 50 ? '#fff4e0' : '#fff1f0'
 const SCORE_TEXT = (s) => s >= 70 ? '#1a7f37' : s >= 50 ? '#b45309' : '#c00'
 
+// ─── Cache yardımcıları ───────────────────────────────────────
+function cacheGet(key) {
+  try {
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
+    const { data, ts } = JSON.parse(raw)
+    if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(key); return null }
+    return data
+  } catch { return null }
+}
+
+function cacheSet(key, data) {
+  try { sessionStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })) } catch {}
+}
+
 export default function ProductPage() {
   const { asin } = useParams()
   const navigate = useNavigate()
+  const prevAsin = useRef(null)
+
   const [product, setProduct] = useState(null)
   const [niche, setNiche] = useState(null)
   const [suppliers, setSuppliers] = useState([])
   const [arbitrage, setArbitrage] = useState(null)
   const [reviews, setReviews] = useState(null)
+
   const [loading, setLoading] = useState(true)
+  const [productLoading, setProductLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
-  useEffect(() => { fetchAll() }, [asin])
+  useEffect(() => {
+    const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
 
+    if (isVariantSwitch) {
+      // Varyant geçişi: sadece ürün verisini güncelle, diğerleri kalsın
+      fetchProductOnly()
+    } else {
+      // İlk yükleme: her şeyi paralel çek
+      fetchAll()
+    }
+    prevAsin.current = asin
+    setReviews(null) // reviews her ASIN için sıfırla
+  }, [asin])
+
+  // Sadece ürün verisini çek (varyant geçişi için)
+  const fetchProductOnly = async () => {
+    setProductLoading(true)
+    try {
+      const cacheKey = `product_${asin}`
+      const cached = cacheGet(cacheKey)
+      if (cached) { setProduct(cached); setProductLoading(false); return }
+
+      const res = await axios.get(`${API}/api/amazon/product/${asin}`)
+      setProduct(res.data)
+      cacheSet(cacheKey, res.data)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setProductLoading(false)
+    }
+  }
+
+  // İlk yüklemede tüm verileri paralel çek
   const fetchAll = async () => {
     setLoading(true)
+
+    // Cache kontrol
+    const cachedProduct = cacheGet(`product_${asin}`)
+    const cachedNiche = cacheGet(`niche_${asin}`)
+    const cachedSuppliers = cacheGet(`suppliers_${asin}`)
+    const cachedArbitrage = cacheGet(`arbitrage_${asin}`)
+
+    if (cachedProduct && cachedNiche && cachedSuppliers && cachedArbitrage) {
+      setProduct(cachedProduct)
+      setNiche(cachedNiche)
+      setSuppliers(cachedSuppliers)
+      setArbitrage(cachedArbitrage)
+      setLoading(false)
+      return
+    }
+
     try {
+      // Tüm çağrılar TEK Promise.all'da — paralel
+      const keyword_guess = asin // keyword'ü product geldikten sonra kullanacağız
       const [prodRes, nicheRes] = await Promise.all([
-        axios.get(`${API}/api/amazon/product/${asin}`),
-        axios.get(`${API}/api/amazon/niche-score/${asin}`)
+        cachedProduct
+          ? Promise.resolve({ data: cachedProduct })
+          : axios.get(`${API}/api/amazon/product/${asin}`),
+        cachedNiche
+          ? Promise.resolve({ data: cachedNiche })
+          : axios.get(`${API}/api/amazon/niche-score/${asin}`),
       ])
-      setProduct(prodRes.data)
-      setNiche(nicheRes.data)
-      const keyword = prodRes.data?.title?.split(' ').slice(0, 3).join(' ') || asin
-      const price = prodRes.data?.price || 30
+
+      const productData = prodRes.data
+      const nicheData = nicheRes.data
+      setProduct(productData)
+      setNiche(nicheData)
+      cacheSet(`product_${asin}`, productData)
+      cacheSet(`niche_${asin}`, nicheData)
+
+      // Keyword ve fiyat belirlendi, şimdi sourcing paralel
+      const keyword = productData?.title?.split(' ').slice(0, 3).join(' ') || asin
+      const price = productData?.price || 30
+
       const [suppRes, arbRes] = await Promise.all([
-        axios.get(`${API}/api/sourcing/alibaba?keyword=${keyword}`),
-        axios.get(`${API}/api/sourcing/arbitrage?keyword=${keyword}&amazon_price=${price}&include_euro=true`)
+        cachedSuppliers
+          ? Promise.resolve({ data: { suppliers: cachedSuppliers } })
+          : axios.get(`${API}/api/sourcing/alibaba?keyword=${encodeURIComponent(keyword)}`),
+        cachedArbitrage
+          ? Promise.resolve({ data: cachedArbitrage })
+          : axios.get(`${API}/api/sourcing/arbitrage?keyword=${encodeURIComponent(keyword)}&amazon_price=${price}&include_euro=true`),
       ])
-      setSuppliers(suppRes.data.suppliers || [])
-      setArbitrage(arbRes.data)
+
+      const suppData = suppRes.data.suppliers || []
+      const arbData = arbRes.data
+      setSuppliers(suppData)
+      setArbitrage(arbData)
+      cacheSet(`suppliers_${asin}`, suppData)
+      cacheSet(`arbitrage_${asin}`, arbData)
+
     } catch (err) {
       console.error(err)
     } finally {
@@ -48,9 +139,11 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (activeTab === 'lovehate' && !reviews && product) {
+      const cachedReviews = cacheGet(`reviews_${asin}`)
+      if (cachedReviews) { setReviews(cachedReviews); return }
       setReviewsLoading(true)
       axios.get(`${API}/api/reviews/analyze/${asin}?title=${encodeURIComponent(product?.title || '')}`)
-        .then(r => setReviews(r.data))
+        .then(r => { setReviews(r.data); cacheSet(`reviews_${asin}`, r.data) })
         .catch(console.error)
         .finally(() => setReviewsLoading(false))
     }
@@ -109,7 +202,7 @@ export default function ProductPage() {
       </button>
 
       {/* Header */}
-      <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '12px' }}>
+      <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '12px', opacity: productLoading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
         <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
           {product.image ? (
             <img src={product.image} alt="" style={{ width: '90px', height: '90px', borderRadius: '10px', objectFit: 'contain', background: '#f5f5f7', flexShrink: 0 }} />
@@ -119,6 +212,7 @@ export default function ProductPage() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '17px', fontWeight: '600', color: '#1d1d1f', lineHeight: '1.35', marginBottom: '6px', letterSpacing: '-0.3px' }}>
               {product.title || asin}
+              {productLoading && <span style={{ marginLeft: '8px', fontSize: '11px', color: '#8e8e93' }}>güncelleniyor...</span>}
             </div>
             <div style={{ fontSize: '11px', color: '#8e8e93', fontFamily: 'monospace', marginBottom: '10px' }}>
               ASIN: {asin} · {product.category || 'Amazon'} {product.brand ? `· ${product.brand}` : ''}
@@ -289,7 +383,7 @@ export default function ProductPage() {
                     strokeDasharray={`${(score / 100) * 263.9} 263.9`} strokeLinecap="round" />
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.5px' }}>{score}</div>
+                  <div style={{ fontSize: '24px', fontWeight: '600', color: '#1d1d1f' }}>{score}</div>
                   <div style={{ fontSize: '11px', color: '#8e8e93' }}>/100</div>
                 </div>
               </div>
@@ -298,17 +392,17 @@ export default function ProductPage() {
                   {score >= 90 ? '🟢 Mükemmel — Hemen gir' : score >= 70 ? '🟡 İyi — Araştır' : score >= 50 ? '🟠 Orta — Dikkatli ol' : '🔴 Zayıf — Kaçın'}
                 </div>
                 <div style={{ fontSize: '13px', color: '#8e8e93', lineHeight: '1.6' }}>
-                  {nicheData?.ai_comment || nicheData?.recommendation || 'Bu ürün analiz edildi.'}
+                  {nicheData?.recommendation || nicheData?.ai_comment || 'Bu ürün analiz edildi.'}
                 </div>
               </div>
             </div>
             {[
               { key: 'volume', label: 'Hacim & Depolama', max: 25, color: '#0071e3', desc: 'Ürün boyutu, BSR bazlı depolama riski' },
               { key: 'logistics', label: 'Lojistik', max: 25, color: '#34c759', desc: 'Ağırlık, FBA uygunluğu, kırılganlık' },
-              { key: 'competition', label: 'Rekabet', max: 25, color: '#ff9f0a', desc: 'Rakip sayısı, review sayısı, marka riski' },
-              { key: 'profitability', label: 'Karlılık', max: 25, color: '#af52de', desc: 'Fiyat aralığı, kar marjı' },
+              { key: 'competition', label: 'Rekabet', max: 25, color: '#ff9f0a', desc: 'RVI, büyük marka, patent riski' },
+              { key: 'profitability', label: 'Karlılık', max: 25, color: '#af52de', desc: 'Fiyat aralığı, marj, talep trendi' },
             ].map(dim => {
-              const val = dims[dim.key] || dims['profit'] || 0
+              const val = dims[dim.key] ?? 0
               return (
                 <div key={dim.key} style={{ marginBottom: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -465,21 +559,15 @@ export default function ProductPage() {
         </div>
       )}
 
-      {/* Arbitraj — Euro Flips */}
+      {/* Arbitraj */}
       {activeTab === 'arbitrage' && arbitrage && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-          {/* En İyi Fırsat */}
-          {arbitrage.best_opportunity && arbitrage.best_opportunity.arbitrage_profit > 0 && (
+          {arbitrage.best_opportunity?.arbitrage_profit > 0 && (
             <div style={{ background: '#e8f9ee', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#34c759', marginBottom: '4px' }}>🏆 En İyi Fırsat</div>
-                <div style={{ fontSize: '15px', fontWeight: '600', color: '#1d1d1f' }}>
-                  {arbitrage.best_opportunity.flag} {arbitrage.best_opportunity.platform}
-                </div>
-                <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>
-                  ${arbitrage.best_opportunity.price_usd} kaynak · %{arbitrage.best_opportunity.margin} marj · ROI %{arbitrage.best_opportunity.roi}
-                </div>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#1d1d1f' }}>{arbitrage.best_opportunity.flag} {arbitrage.best_opportunity.platform}</div>
+                <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '2px' }}>${arbitrage.best_opportunity.price_usd} kaynak · %{arbitrage.best_opportunity.margin} marj</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '28px', fontWeight: '600', color: '#1a7f37' }}>+${arbitrage.best_opportunity.arbitrage_profit}</div>
@@ -487,16 +575,12 @@ export default function ProductPage() {
               </div>
             </div>
           )}
-
-          {/* En İyi Euro Flip */}
-          {arbitrage.best_euro_flip && arbitrage.best_euro_flip.arbitrage_profit > 0 && (
+          {arbitrage.best_euro_flip?.arbitrage_profit > 0 && (
             <div style={{ background: '#e8f0fe', borderRadius: '12px', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#0071e3', marginBottom: '4px' }}>🇪🇺 En İyi Euro Flip</div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f' }}>
-                  {arbitrage.best_euro_flip.flag} {arbitrage.best_euro_flip.platform}
-                </div>
-                <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>VAT {arbitrage.best_euro_flip.vat_rate} dahil hesaplandı</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f' }}>{arbitrage.best_euro_flip.flag} {arbitrage.best_euro_flip.platform}</div>
+                <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>VAT {arbitrage.best_euro_flip.vat_rate} dahil</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '22px', fontWeight: '600', color: '#0071e3' }}>+${arbitrage.best_euro_flip.arbitrage_profit}</div>
@@ -504,67 +588,45 @@ export default function ProductPage() {
               </div>
             </div>
           )}
-
-          {/* Yerel Platformlar */}
-          {arbitrage.results?.filter(r => !['DE','FR','UK','IT','ES','CA','JP'].includes(r.marketplace)).length > 0 && (
-            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px 10px', borderBottom: '0.5px solid #f5f5f7' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f' }}>🌍 Yerel Platformlar</div>
-              </div>
-              {arbitrage.results.filter(r => !['DE','FR','UK','IT','ES','CA','JP'].includes(r.marketplace)).map((r, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7' }}>
-                  <div style={{ fontSize: '18px', marginRight: '10px' }}>{r.flag}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{r.platform}</div>
-                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>
-                      {r.currency === 'TRY' ? `₺${r.price_local}` : `$${r.price_local}`} = ${r.price_usd}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#34c759' : '#ff3b30' }}>
-                      {r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>%{r.margin} marj</div>
-                  </div>
+          <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
+            {arbitrage.results?.filter(r => !['DE','FR','UK','IT','ES','CA','JP'].includes(r.marketplace)).map((r, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7' }}>
+                <div style={{ fontSize: '18px', marginRight: '10px' }}>{r.flag}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{r.platform}</div>
+                  <div style={{ fontSize: '11px', color: '#8e8e93' }}>{r.currency === 'TRY' ? `₺${r.price_local}` : `$${r.price_local}`} = ${r.price_usd}</div>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Euro Flips */}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#34c759' : '#ff3b30' }}>{r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}</div>
+                  <div style={{ fontSize: '10px', color: '#8e8e93' }}>%{r.margin} marj</div>
+                </div>
+              </div>
+            ))}
+          </div>
           {arbitrage.euro_flips?.length > 0 && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
-              <div style={{ padding: '12px 16px 10px', borderBottom: '0.5px solid #f5f5f7', background: '#f5f5f7' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0071e3' }}>🇪🇺 Euro Flips — Amazon Avrupa Pazarları</div>
-                <div style={{ fontSize: '10px', color: '#8e8e93', marginTop: '2px' }}>VAT dahil hesaplanmıştır. Avrupa'dan al, ABD'de sat.</div>
+              <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7', background: '#f5f5f7' }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0071e3' }}>🇪🇺 Euro Flips — VAT dahil</div>
               </div>
               {arbitrage.euro_flips.map((r, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '0.5px solid #f5f5f7', background: r.arbitrage_profit > 5 ? '#f0fff4' : 'white' }}>
                   <div style={{ fontSize: '18px', marginRight: '10px' }}>{r.flag}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{r.platform}</div>
-                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>
-                      {r.price_local} {r.currency} = ${r.price_usd} · VAT {r.vat_rate}
-                    </div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>{r.price_local} {r.currency} · VAT {r.vat_rate}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#0071e3' : '#ff3b30' }}>
-                      {r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}
-                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: r.arbitrage_profit > 0 ? '#0071e3' : '#ff3b30' }}>{r.arbitrage_profit > 0 ? '+' : ''}${r.arbitrage_profit}</div>
                     <div style={{ fontSize: '10px', color: '#8e8e93' }}>%{r.margin} · ROI %{r.roi}</div>
                   </div>
-                  {r.arbitrage_profit > 5 && (
-                    <div style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '600' }}>HOT</div>
-                  )}
+                  {r.arbitrage_profit > 5 && <div style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '600' }}>HOT</div>}
                 </div>
               ))}
             </div>
           )}
-
-          {/* Kur Bilgisi */}
           {arbitrage.exchange_rates && (
             <div style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '12px 16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '8px' }}>GÜNCEL KUR BİLGİSİ</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '8px' }}>GÜNCEL KUR</div>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 {Object.entries(arbitrage.exchange_rates).filter(([, v]) => v).map(([currency, rate]) => (
                   <div key={currency} style={{ fontSize: '12px', color: '#3c3c43' }}>

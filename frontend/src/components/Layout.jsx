@@ -20,6 +20,10 @@ const NAV = [
         to: '/calculator', label: 'Kar Hesabı',
         icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
       },
+      {
+        to: '/pricing', label: 'Fiyatlandırma',
+        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      },
     ]
   },
   {
@@ -60,6 +64,15 @@ function Layout() {
   const initials = user.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : user.email ? user.email[0].toUpperCase() : 'U'
+
+  const planColors = {
+    free:    { bg: '#f5f5f7', color: '#8e8e93' },
+    starter: { bg: '#e8f0fe', color: '#0071e3' },
+    pro:     { bg: '#e8f9ee', color: '#34c759' },
+    agency:  { bg: '#f3e8ff', color: '#af52de' },
+  }
+  const plan = user.plan || 'free'
+  const planStyle = planColors[plan] || planColors.free
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -123,11 +136,21 @@ function Layout() {
           </nav>
 
           <div className="sb-bottom">
+            {/* Plan Badge */}
+            <div onClick={() => navigate('/pricing')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Mevcut Plan</div>
+              <div style={{ fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px', background: planStyle.bg, color: planStyle.color }}>
+                {plan.charAt(0).toUpperCase() + plan.slice(1)}
+              </div>
+            </div>
+
             <div className="user-row">
               <div className="user-avatar">{initials}</div>
               <div>
                 <div className="user-name">{user.full_name || user.email?.split('@')[0] || 'Kullanıcı'}</div>
-                <div className="user-plan">Pro Plan</div>
+                <div className="user-plan">{user.email}</div>
               </div>
             </div>
             <button className="logout-btn" onClick={handleLogout}>

@@ -1,12 +1,103 @@
+import math
+
+# ─────────────────────────────────────────────────────────────────
+# Kategori bazlı BSR → Satış tahmini (power-law modeli)
+# Sales = k × BSR^(-a)
+# ─────────────────────────────────────────────────────────────────
+CATEGORY_BSR_PARAMS = {
+    "Home & Kitchen":       {"k": 500000, "a": 0.85},
+    "Sports & Outdoors":    {"k": 400000, "a": 0.82},
+    "Health & Household":   {"k": 450000, "a": 0.83},
+    "Beauty & Personal":    {"k": 420000, "a": 0.84},
+    "Toys & Games":         {"k": 380000, "a": 0.80},
+    "Electronics":          {"k": 600000, "a": 0.90},
+    "Clothing":             {"k": 700000, "a": 0.88},
+    "Books":                {"k": 300000, "a": 0.75},
+    "Pet Supplies":         {"k": 350000, "a": 0.81},
+    "Office Products":      {"k": 320000, "a": 0.79},
+    "default":              {"k": 400000, "a": 0.82},
+}
+
+def bsr_to_monthly_sales(bsr: int, category: str = "default") -> int:
+    """BSR'dan aylık tahmini satış hesabı — power-law modeli"""
+    if bsr <= 0:
+        return 0
+    params = CATEGORY_BSR_PARAMS.get(category, CATEGORY_BSR_PARAMS["default"])
+    daily = params["k"] * (bsr ** -params["a"])
+    monthly = daily * 30
+    return max(1, int(monthly))
+
+def review_velocity_index(reviews: int, product_age_days: int = 180) -> float:
+    """
+    Review Velocity Index — aylık ortalama review kazanım hızı.
+    Düşük RVI = henüz kalabalıklaşmamış pazar = giriş fırsatı.
+    """
+    if product_age_days <= 0:
+        return reviews / 6  # varsayılan 6 ay
+    return (reviews / product_age_days) * 30  # aylık hız
+
+def demand_trend_score(bsr: int, bsr_30d_ago: int = None) -> dict:
+    """
+    BSR değişim trendi.
+    BSR düşüyorsa → talep artıyor (pozitif)
+    BSR yükseliyorsa → talep azalıyor (negatif)
+    """
+    if bsr_30d_ago is None:
+        # Keepa yoksa mock: BSR'a göre tahmin et
+        if bsr < 1000: trend = "yükselen"
+        elif bsr < 10000: trend = "stabil"
+        else: trend = "belirsiz"
+        return {"trend": trend, "change_pct": None, "score": 5 if bsr < 5000 else 3}
+
+    if bsr_30d_ago > 0:
+        change_pct = ((bsr_30d_ago - bsr) / bsr_30d_ago) * 100
+    else:
+        change_pct = 0
+
+    if change_pct > 20:
+        trend, score = "hızlı yükselen", 10
+    elif change_pct > 5:
+        trend, score = "yükselen", 7
+    elif change_pct > -5:
+        trend, score = "stabil", 5
+    elif change_pct > -20:
+        trend, score = "düşen", 2
+    else:
+        trend, score = "hızlı düşen", 0
+
+    return {"trend": trend, "change_pct": round(change_pct, 1), "score": score}
+
+
 def calculate_niche_score(product: dict) -> dict:
-    score = 0
     dimensions_data = product.get("dimensions", {})
     weight = dimensions_data.get("weight", 0)
     title = product.get("title", "").lower()
-    price = product.get("price", 0)
-    reviews = product.get("reviews", 9999)
-    bsr = product.get("bsr", 999999)
-    rating = product.get("rating", 0)
+    price = product.get("price", 0) or 0
+    reviews = product.get("reviews_count", product.get("reviews", 9999)) or 9999
+    bsr = product.get("bestseller_rank", product.get("bsr", 999999)) or 999999
+    rating = product.get("rating", 0) or 0
+    category = product.get("category", "default")
+
+    # ─────────────────────────────────────────
+    # BSR → Aylık Satış Tahmini (power-law)
+    # ─────────────────────────────────────────
+    monthly_sales = bsr_to_monthly_sales(bsr, category)
+    est_monthly_revenue = round(monthly_sales * price, 2)
+
+    # ─────────────────────────────────────────
+    # Review Velocity Index
+    # ─────────────────────────────────────────
+    rvi = review_velocity_index(reviews)
+    # RVI < 10 → az kalabalık, < 30 → orta, > 50 → hızlı doluyor
+    if rvi < 10: rvi_label, rvi_score = "Düşük (giriş fırsatı)", 10
+    elif rvi < 30: rvi_label, rvi_score = "Orta", 6
+    elif rvi < 60: rvi_label, rvi_score = "Yüksek", 3
+    else: rvi_label, rvi_score = "Çok Yüksek (pazar doldu)", 0
+
+    # ─────────────────────────────────────────
+    # Talep Trendi
+    # ─────────────────────────────────────────
+    trend_data = demand_trend_score(bsr)
 
     # ─────────────────────────────────────────
     # 1. HACİM & DEPOLAMA (0-25 puan)
@@ -17,14 +108,12 @@ def calculate_niche_score(product: dict) -> dict:
     elif weight <= 2: storage_score += 15
     elif weight <= 5: storage_score += 8
     elif weight <= 10: storage_score += 3
-    else: storage_score += 0
 
     if bsr < 1000: storage_score = min(25, storage_score + 5)
     elif bsr < 10000: storage_score = min(25, storage_score + 3)
     elif bsr < 100000: storage_score = min(25, storage_score + 1)
 
     storage_score = min(25, storage_score)
-    score += storage_score
 
     # ─────────────────────────────────────────
     # 2. LOJİSTİK (0-25 puan)
@@ -35,7 +124,6 @@ def calculate_niche_score(product: dict) -> dict:
     elif weight <= 2: logistics_score += 6
     elif weight <= 5: logistics_score += 4
     elif weight <= 10: logistics_score += 2
-    else: logistics_score += 0
 
     logistics_score += 5  # FBA uygun varsayılan
 
@@ -46,21 +134,23 @@ def calculate_niche_score(product: dict) -> dict:
 
     logistics_score += 5  # Alibaba'da var varsayılan
     logistics_score = min(25, logistics_score)
-    score += logistics_score
 
     # ─────────────────────────────────────────
-    # 3. REKABET (0-25 puan)
+    # 3. REKABET (0-25 puan) — RVI dahil
     # ─────────────────────────────────────────
     competition_score = 0
-    if reviews < 100: competition_score += 7
-    elif reviews < 500: competition_score += 5
-    elif reviews < 1000: competition_score += 3
-    elif reviews < 5000: competition_score += 1
-    else: competition_score += 0
 
-    competition_score += 8  # Rakip sayısı varsayılan orta
+    # Review sayısı yerine RVI kullan
+    competition_score += min(7, rvi_score // 1)
 
-    big_brands = ["nike", "apple", "amazon", "samsung", "sony", "adidas", "philips", "bosch", "ikea", "dyson"]
+    # Rakip yoğunluğu (BSR bazlı)
+    if bsr < 5000: competition_score += 8
+    elif bsr < 20000: competition_score += 6
+    elif bsr < 50000: competition_score += 4
+    else: competition_score += 2
+
+    big_brands = ["nike", "apple", "amazon", "samsung", "sony", "adidas",
+                  "philips", "bosch", "ikea", "dyson", "logitech", "microsoft"]
     has_big_brand = any(brand in title for brand in big_brands)
     if not has_big_brand:
         competition_score += 5
@@ -71,10 +161,9 @@ def calculate_niche_score(product: dict) -> dict:
         competition_score += 5
 
     competition_score = min(25, competition_score)
-    score += competition_score
 
     # ─────────────────────────────────────────
-    # 4. KARLILIK (0-25 puan)
+    # 4. KARLILIK (0-25 puan) — Trend dahil
     # ─────────────────────────────────────────
     profit_score = 0
     if 15 <= price <= 50: profit_score += 8
@@ -92,11 +181,12 @@ def calculate_niche_score(product: dict) -> dict:
     elif margin >= 35: profit_score += 7
     elif margin >= 20: profit_score += 4
     elif margin >= 10: profit_score += 2
-    else: profit_score += 0
 
-    profit_score += 7
+    # Trend skoru karlılığa ekle
+    profit_score += min(7, trend_data["score"])
     profit_score = min(25, profit_score)
-    score += profit_score
+
+    score = storage_score + logistics_score + competition_score + profit_score
 
     # ─────────────────────────────────────────
     # 🚩 RED FLAGS
@@ -118,40 +208,41 @@ def calculate_niche_score(product: dict) -> dict:
     }
 
     # ─────────────────────────────────────────
-    # 🔥 UNMET DEMAND TESPİTİ
+    # 🔥 UNMET DEMAND
     # ─────────────────────────────────────────
     unmet_demand = False
-    unmet_demand_signals = []
-    unmet_demand_score = 0
+    unmet_signals = []
+    unmet_score = 0
 
-    # Sinyal 1: Az review ama iyi BSR → talep var, rakip az
     if reviews < 200 and bsr < 10000:
         unmet_demand = True
-        unmet_demand_signals.append("Az rakip var ama yüksek talep — erken girme fırsatı!")
-        unmet_demand_score += 40
+        unmet_signals.append("Az rakip var ama yüksek talep — erken girme fırsatı!")
+        unmet_score += 40
 
-    # Sinyal 2: Düşük rating + yüksek satış → iyileştirme fırsatı
     if 0 < rating < 4.0 and bsr < 20000:
         unmet_demand = True
-        unmet_demand_signals.append(f"Düşük müşteri memnuniyeti ({rating}★) — daha iyi ürünle pazar al!")
-        unmet_demand_score += 35
+        unmet_signals.append(f"Düşük müşteri memnuniyeti ({rating}★) — daha iyi ürünle pazar al!")
+        unmet_score += 35
 
-    # Sinyal 3: Yüksek fiyat + az review → premium segment boş
     if price > 40 and reviews < 500:
         unmet_demand = True
-        unmet_demand_signals.append("Premium segment boş — yüksek fiyatlı az rakip var!")
-        unmet_demand_score += 25
+        unmet_signals.append("Premium segment boş — yüksek fiyatlı az rakip var!")
+        unmet_score += 25
 
-    # Sinyal 4: Çok iyi BSR ama çok az review → yeni trend
     if bsr < 5000 and reviews < 100:
         unmet_demand = True
-        unmet_demand_signals.append("Yükselen trend! Az review'a rağmen çok satıyor.")
-        unmet_demand_score += 50
+        unmet_signals.append("Yükselen trend! Az review'a rağmen çok satıyor.")
+        unmet_score += 50
 
-    unmet_demand_level = "yok"
-    if unmet_demand_score >= 50: unmet_demand_level = "yüksek"
-    elif unmet_demand_score >= 25: unmet_demand_level = "orta"
-    elif unmet_demand_score > 0: unmet_demand_level = "düşük"
+    if rvi < 10 and bsr < 30000:
+        unmet_demand = True
+        unmet_signals.append(f"Düşük review hızı (RVI: {round(rvi, 1)}) — pazar henüz kalabalıklaşmadı.")
+        unmet_score += 20
+
+    if unmet_score >= 50: unmet_level = "yüksek"
+    elif unmet_score >= 25: unmet_level = "orta"
+    elif unmet_score > 0: unmet_level = "düşük"
+    else: unmet_level = "yok"
 
     # ─────────────────────────────────────────
     # 3 PRONG TESTİ
@@ -171,10 +262,10 @@ def calculate_niche_score(product: dict) -> dict:
     # ─────────────────────────────────────────
     # FINAL
     # ─────────────────────────────────────────
-    if score >= 90: verdict, color, recommendation = "MÜKEMMEL NİŞ", "green", "Hemen gir!"
-    elif score >= 70: verdict, color, recommendation = "İYİ NİŞ", "yellow", "Araştır ve gir."
-    elif score >= 50: verdict, color, recommendation = "ORTA NİŞ", "orange", "Dikkatli ol."
-    else: verdict, color, recommendation = "ZAYIF NİŞ", "red", "Kaçın."
+    if score >= 90: verdict, color, recommendation = "MÜKEMMEL NİŞ", "green", "Hemen gir — bu bir fırsat penceresi!"
+    elif score >= 70: verdict, color, recommendation = "İYİ NİŞ", "yellow", "Araştır ve gir — potansiyel var."
+    elif score >= 50: verdict, color, recommendation = "ORTA NİŞ", "orange", "Dikkatli ol — riskler var."
+    else: verdict, color, recommendation = "ZAYIF NİŞ", "red", "Kaçın — bu niş karlı değil."
 
     return {
         "total_score": score,
@@ -189,12 +280,20 @@ def calculate_niche_score(product: dict) -> dict:
         },
         "estimated_margin": round(margin, 1),
         "net_profit": round(net_profit, 2),
+        "monthly_sales_estimate": monthly_sales,
+        "est_monthly_revenue": est_monthly_revenue,
+        "review_velocity": {
+            "rvi": round(rvi, 1),
+            "label": rvi_label,
+            "score": rvi_score,
+        },
+        "demand_trend": trend_data,
         "flags": flags,
         "unmet_demand": {
             "detected": unmet_demand,
-            "level": unmet_demand_level,
-            "score": unmet_demand_score,
-            "signals": unmet_demand_signals,
+            "level": unmet_level,
+            "score": unmet_score,
+            "signals": unmet_signals,
         },
         "prong_test": {
             "score": prong_score,
