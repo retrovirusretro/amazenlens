@@ -1,10 +1,12 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-import pandas as pd
 import httpx
 import asyncio
+import io
+import csv
 from typing import List
+from openpyxl import load_workbook
 
 async def process_asin(asin: str, easyparser_key: str) -> dict:
     try:
@@ -32,7 +34,6 @@ async def process_asin(asin: str, easyparser_key: str) -> dict:
     except Exception as e:
         print(f"ASIN {asin} exception: {e}")
 
-    # Mock data
     return {
         "asin": asin.strip(),
         "title": f"Ürün {asin}",
@@ -67,26 +68,46 @@ async def process_bulk_asins(asins: List[str], easyparser_key: str) -> dict:
     }
 
 def parse_excel_file(file_content: bytes, filename: str) -> List[str]:
-    import io
     try:
         if filename.endswith('.csv'):
-            df = pd.read_csv(io.BytesIO(file_content))
+            # CSV okuma
+            text = file_content.decode('utf-8', errors='ignore')
+            reader = csv.reader(io.StringIO(text))
+            rows = list(reader)
         else:
-            df = pd.read_excel(io.BytesIO(file_content))
+            # Excel okuma
+            wb = load_workbook(io.BytesIO(file_content), read_only=True, data_only=True)
+            ws = wb.active
+            rows = [list(row) for row in ws.iter_rows(values_only=True)]
+            wb.close()
 
-        asin_col = None
-        for col in df.columns:
-            if 'asin' in col.lower():
-                asin_col = col
+        if not rows:
+            return []
+
+        # Header satırında ASIN kolonu ara
+        headers = [str(h).lower() if h else '' for h in rows[0]]
+        asin_col_idx = None
+        for i, h in enumerate(headers):
+            if 'asin' in h:
+                asin_col_idx = i
                 break
 
-        if asin_col:
-            asins = df[asin_col].dropna().astype(str).tolist()
-        else:
-            asins = df.iloc[:, 0].dropna().astype(str).tolist()
+        # ASIN kolonu varsa onu al, yoksa ilk kolonu al
+        data_rows = rows[1:] if asin_col_idx is not None else rows
+        col_idx = asin_col_idx if asin_col_idx is not None else 0
 
-        valid_asins = [a.strip() for a in asins if len(a.strip()) == 10 and a.strip().startswith('B')]
+        asins = []
+        for row in data_rows:
+            if row and len(row) > col_idx and row[col_idx]:
+                asins.append(str(row[col_idx]))
+
+        # Geçerli ASIN filtrele
+        valid_asins = [
+            a.strip() for a in asins
+            if len(a.strip()) == 10 and a.strip().startswith('B')
+        ]
         return valid_asins[:100]
+
     except Exception as e:
         print(f"Excel parse error: {e}")
         return []
