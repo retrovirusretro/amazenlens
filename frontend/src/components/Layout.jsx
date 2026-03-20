@@ -1,68 +1,36 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const NAV = [
   {
     section: 'Ana',
     items: [
-      {
-        to: '/app/dashboard', label: 'Dashboard',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      },
-      {
-        to: '/app/search', label: 'Ürün Ara',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      },
-      {
-        to: '/app/unavailable', label: 'Unavailable',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-      },
-      {
-        to: '/app/calculator', label: 'Kar Hesabı',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
-      },
-      {
-        to: '/app/pricing', label: 'Fiyatlandırma',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-      },
+      { to: '/app/dashboard', label: 'Dashboard', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+      { to: '/app/search', label: 'Ürün Ara', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> },
+      { to: '/app/unavailable', label: 'Unavailable', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+      { to: '/app/calculator', label: 'Kar Hesabı', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg> },
+      { to: '/app/pricing', label: 'Fiyatlandırma', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> },
     ]
   },
   {
     section: 'Analiz',
     items: [
-      {
-        to: '/app/niche', label: 'Niş Skoru',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-      },
-      {
-        to: '/app/sourcing', label: 'Tedarik & Arbitraj',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-      },
-      {
-        to: '/app/bulk', label: 'Toplu Import',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
-      },
+      { to: '/app/niche', label: 'Niş Skoru', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
+      { to: '/app/sourcing', label: 'Tedarik & Arbitraj', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> },
+      { to: '/app/bulk', label: 'Toplu Import', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg> },
     ]
   },
   {
     section: 'İçerik',
     items: [
-      {
-        to: '/app/blog', label: 'Blog',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-      },
-      {
-        to: '/app/blog-admin', label: 'Blog Yönetimi',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      },
+      { to: '/app/blog', label: 'Blog', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> },
+      { to: '/app/blog-admin', label: 'Blog Yönetimi', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     ]
   },
   {
     section: 'Topluluk',
     items: [
-      {
-        to: '/app/feedback', label: 'Geri Bildirim',
-        icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      },
+      { to: '/app/feedback', label: 'Geri Bildirim', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> },
     ]
   }
 ]
@@ -117,7 +85,9 @@ function Layout() {
         .user-plan { font-size: 10px; color: rgba(255,255,255,0.24); }
         .logout-btn { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; color: rgba(255,255,255,0.3); font-size: 12px; cursor: pointer; border: none; background: none; width: 100%; font-family: inherit; margin-top: 2px; }
         .logout-btn:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5); }
-        .main-content { margin-left: 200px; flex: 1; padding: 24px; min-height: 100vh; }
+        .main-content { margin-left: 200px; flex: 1; min-height: 100vh; }
+        .top-bar { background: white; border-bottom: 0.5px solid #e5e5ea; padding: 10px 24px; display: flex; align-items: center; justify-content: flex-end; }
+        .page-content { padding: 24px; }
       `}</style>
 
       <div className="app-layout">
@@ -132,11 +102,7 @@ function Layout() {
               <div key={group.section} className="sb-section">
                 <div className="sb-section-label">{group.section}</div>
                 {group.items.map(item => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-                  >
+                  <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                     {item.icon}
                     {item.label}
                   </NavLink>
@@ -146,7 +112,6 @@ function Layout() {
           </nav>
 
           <div className="sb-bottom">
-            {/* Lens Puan */}
             {user.lens_points > 0 && (
               <div onClick={() => navigate('/app/feedback')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
@@ -156,7 +121,6 @@ function Layout() {
               </div>
             )}
 
-            {/* Plan Badge */}
             <div onClick={() => navigate('/app/pricing')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '7px', cursor: 'pointer', marginBottom: '4px' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -185,7 +149,13 @@ function Layout() {
         </aside>
 
         <main className="main-content">
-          <Outlet />
+          {/* Top bar — dil seçici */}
+          <div className="top-bar">
+            <LanguageSwitcher />
+          </div>
+          <div className="page-content">
+            <Outlet />
+          </div>
         </main>
       </div>
     </>

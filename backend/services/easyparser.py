@@ -26,13 +26,12 @@ def set_cache(key: str, data):
     print(f"[CACHE SET] {key} — toplam {len(_cache)} kayıt")
 
 async def search_products(keyword: str, page: int = 1):
-    return get_mock_search(keyword)
     cache_key = f"search:{keyword}:{page}"
     cached = get_cache(cache_key)
     if cached:
         return cached
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, verify=False) as client:
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
                 "operation": "SEARCH", "domain": ".com",
@@ -42,20 +41,19 @@ async def search_products(keyword: str, page: int = 1):
                 result = format_search_results(response.json())
                 set_cache(cache_key, result)
                 return result
-            print(f"Easyparser error: {response.status_code}")
+            print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
             return get_mock_search(keyword)
     except Exception as e:
         print(f"Easyparser exception: {e}")
         return get_mock_search(keyword)
 
 async def get_product(asin: str):
-    return get_mock_product(asin)
     cache_key = f"product:{asin}"
     cached = get_cache(cache_key)
     if cached:
         return cached
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30, verify=False) as client:
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
                 "operation": "DETAIL", "domain": ".com", "asin": asin
@@ -64,7 +62,7 @@ async def get_product(asin: str):
                 result = format_product(response.json(), asin)
                 set_cache(cache_key, result)
                 return result
-            print(f"Easyparser error: {response.status_code}")
+            print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
             return get_mock_product(asin)
     except Exception as e:
         print(f"Easyparser exception: {e}")
@@ -105,18 +103,15 @@ def format_search_results(data: dict):
     return {"results": results, "total": len(results), "mock": False}
 
 def format_product(data: dict, asin: str):
-    # Fiyat
     price_data = data.get("price", {})
     price_val = price_data.get("value", price_data.get("current", 0)) if isinstance(price_data, dict) else (price_data or 0)
 
-    # Satıcı sayısı
     sellers_count = (
         data.get("sellers_count") or data.get("number_of_sellers") or
         data.get("seller_count") or data.get("offers_count") or
         len(data.get("offers", [])) or None
     )
 
-    # FBA / FBM
     fulfillment = data.get("fulfillment") or data.get("fulfillment_type") or data.get("fulfilled_by") or ""
     if isinstance(fulfillment, dict):
         fulfillment = fulfillment.get("type", fulfillment.get("by", ""))
@@ -128,7 +123,6 @@ def format_product(data: dict, asin: str):
     else:
         fba_status = None
 
-    # Buybox
     buybox = data.get("buybox", data.get("buy_box", {}))
     buybox_seller = ""
     if isinstance(buybox, dict):
@@ -138,7 +132,6 @@ def format_product(data: dict, asin: str):
             if "FBA" in bf or "AMAZON" in bf: fba_status = "FBA"
             elif "FBM" in bf or "MERCHANT" in bf: fba_status = "FBM"
 
-    # Varyantlar
     raw_variants = data.get("variants") or data.get("variations") or data.get("asin_variants") or []
     variants = []
     if isinstance(raw_variants, list):
@@ -156,7 +149,6 @@ def format_product(data: dict, asin: str):
                         "is_current": v_asin == asin
                     })
 
-    # Görsel
     image = data.get("image", data.get("image_url", data.get("main_image", "")))
     if image and not image.startswith("http"):
         image = f"https://m.media-amazon.com/images/I/{image}.jpg"
@@ -168,7 +160,6 @@ def format_product(data: dict, asin: str):
             for img in additional_images[:5] if img
         ]
 
-    # BSR
     bsr = data.get("bsr", data.get("bestseller_rank", 0))
     if isinstance(bsr, list) and bsr:
         bsr = bsr[0].get("rank", 0) if isinstance(bsr[0], dict) else bsr[0]
@@ -200,15 +191,9 @@ def format_product(data: dict, asin: str):
 def get_mock_search(keyword: str):
     return {
         "results": [
-            {"asin": "B00MOCK001", "title": f"{keyword} - Premium Product", "price": 29.99,
-             "rating": 4.5, "reviews_count": 1250, "image": "https://placehold.co/200x200?text=Product",
-             "url": "https://amazon.com/dp/B00MOCK001", "bestseller_rank": 1250, "in_stock": True, "category": ""},
-            {"asin": "B00MOCK002", "title": f"{keyword} - Budget Option", "price": 14.99,
-             "rating": 4.2, "reviews_count": 856, "image": "https://placehold.co/200x200?text=Product",
-             "url": "https://amazon.com/dp/B00MOCK002", "bestseller_rank": 3400, "in_stock": True, "category": ""},
-            {"asin": "B00MOCK003", "title": f"{keyword} - Unavailable", "price": 0,
-             "rating": 4.0, "reviews_count": 423, "image": "https://placehold.co/200x200?text=Unavailable",
-             "url": "https://amazon.com/dp/B00MOCK003", "bestseller_rank": 0, "in_stock": False, "category": ""}
+            {"asin": "B00MOCK001", "title": f"{keyword} - Premium Product", "price": 29.99, "rating": 4.5, "reviews_count": 1250, "image": "https://placehold.co/200x200?text=Product", "url": "https://amazon.com/dp/B00MOCK001", "bestseller_rank": 1250, "in_stock": True, "category": ""},
+            {"asin": "B00MOCK002", "title": f"{keyword} - Budget Option", "price": 14.99, "rating": 4.2, "reviews_count": 856, "image": "https://placehold.co/200x200?text=Product", "url": "https://amazon.com/dp/B00MOCK002", "bestseller_rank": 3400, "in_stock": True, "category": ""},
+            {"asin": "B00MOCK003", "title": f"{keyword} - Unavailable", "price": 0, "rating": 4.0, "reviews_count": 423, "image": "https://placehold.co/200x200?text=Unavailable", "url": "https://amazon.com/dp/B00MOCK003", "bestseller_rank": 0, "in_stock": False, "category": ""}
         ],
         "total": 3, "mock": True
     }
