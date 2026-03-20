@@ -9,6 +9,14 @@ const QUICK_SEARCHES = [
   'resistance bands', 'bambu kesme tahtası', 'bluetooth kulaklık'
 ]
 
+const PLAN_COLORS = {
+  free:    { bg: '#f5f5f7', color: '#8e8e93', label: 'Free' },
+  trial:   { bg: '#fff4e0', color: '#ff9f0a', label: 'Trial' },
+  starter: { bg: '#e8f0fe', color: '#0071e3', label: 'Starter' },
+  pro:     { bg: '#e8f9ee', color: '#34c759', label: 'Pro' },
+  agency:  { bg: '#f3e8ff', color: '#af52de', label: 'Agency' },
+}
+
 function StatCard({ label, value, sub, subColor, icon, iconBg }) {
   return (
     <div style={{ background: 'white', borderRadius: '11px', padding: '14px 16px', border: '0.5px solid #e5e5ea' }}>
@@ -24,7 +32,7 @@ function StatCard({ label, value, sub, subColor, icon, iconBg }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'))
   const firstName = user.full_name?.split(' ')[0] || user.email?.split('@')[0] || 'Kullanıcı'
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar'
@@ -33,8 +41,27 @@ export default function Dashboard() {
   const [quickPicks, setQuickPicks] = useState([])
   const [picksLoading, setPicksLoading] = useState(true)
   const [activePickTab, setActivePickTab] = useState('all')
+  const [planInfo, setPlanInfo] = useState(null)
 
   useEffect(() => {
+    // Supabase'den güncel plan bilgisini çek
+    const fetchPlan = async () => {
+      try {
+        if (user.email && user.email !== 'misafir@amazenlens.com') {
+          const res = await axios.get(`${API}/api/payments/subscription/${encodeURIComponent(user.email)}`)
+          if (res.data) {
+            const updatedUser = { ...user, plan: res.data.plan, searches_per_day: res.data.searches_per_day }
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            setUser(updatedUser)
+            setPlanInfo(res.data)
+          }
+        }
+      } catch (err) {
+        console.debug('Plan fetch error:', err)
+      }
+    }
+
+    fetchPlan()
     axios.get(`${API}/api/blog/posts?limit=3`).then(r => setRecentPosts(r.data.posts || [])).catch(() => {})
     fetchQuickPicks()
   }, [])
@@ -70,6 +97,11 @@ export default function Dashboard() {
     { text: 'Trendyol arbitraj — yoga mat $8.91', time: 'Dün 22:14', color: '#0071e3' },
   ]
 
+  const currentPlan = user.plan || 'free'
+  const planStyle = PLAN_COLORS[currentPlan] || PLAN_COLORS.free
+  const searchesPerDay = user.searches_per_day || 5
+  const isAgency = currentPlan === 'agency'
+
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", maxWidth: '1100px' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -77,14 +109,26 @@ export default function Dashboard() {
       {/* Plan Barı */}
       <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea', padding: '12px 18px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>Pro Plan — 210/500 arama kullanıldı</div>
-          <div style={{ height: '4px', background: '#f0f0f5', borderRadius: '2px', marginTop: '8px' }}>
-            <div style={{ height: '100%', width: '42%', background: '#0071e3', borderRadius: '2px' }}></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>
+              {planStyle.label} Plan
+            </span>
+            <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px', background: planStyle.bg, color: planStyle.color }}>
+              {planStyle.label}
+            </span>
+            {isAgency && <span style={{ fontSize: '11px', color: '#af52de' }}>✨ Tüm özellikler aktif</span>}
           </div>
+          {!isAgency && (
+            <div style={{ height: '4px', background: '#f0f0f5', borderRadius: '2px' }}>
+              <div style={{ height: '100%', width: '42%', background: planStyle.color, borderRadius: '2px' }}></div>
+            </div>
+          )}
         </div>
-        <button onClick={() => navigate('/app/pricing')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-          Agency'ye Yükselt
-        </button>
+        {!isAgency && (
+          <button onClick={() => navigate('/app/pricing')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '8px', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+            Agency'ye Yükselt
+          </button>
+        )}
       </div>
 
       {/* Selamlama */}
@@ -169,7 +213,6 @@ export default function Dashboard() {
 
       {/* İki Kolon */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px', marginBottom: '12px' }}>
-        {/* Son Aktivite */}
         <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea' }}>
           <div style={{ padding: '13px 16px 10px', borderBottom: '0.5px solid #f5f5f7' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>📋 Son Aktivite</div>
@@ -187,7 +230,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Hızlı Araçlar */}
         <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea', padding: '14px 16px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🛠️ Hızlı Araçlar</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
@@ -215,7 +257,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Son Blog */}
       {recentPosts.length > 0 && (
         <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea' }}>
           <div style={{ padding: '13px 16px 10px', borderBottom: '0.5px solid #f5f5f7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

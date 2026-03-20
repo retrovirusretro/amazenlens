@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { track, Events } from '../lib/analytics'
 
 const API = ''
-const CACHE_TTL = 60 * 60 * 1000 // 1 saat
+const CACHE_TTL = 60 * 60 * 1000
 
 const SCORE_COLOR = (s) => s >= 70 ? '#34c759' : s >= 50 ? '#ff9f0a' : '#ff3b30'
 const SCORE_BG = (s) => s >= 70 ? '#e8f9ee' : s >= 50 ? '#fff4e0' : '#fff1f0'
 const SCORE_TEXT = (s) => s >= 70 ? '#1a7f37' : s >= 50 ? '#b45309' : '#c00'
 
-// ─── Cache yardımcıları ───────────────────────────────────────
 function cacheGet(key) {
   try {
     const raw = sessionStorage.getItem(key)
@@ -42,26 +42,21 @@ export default function ProductPage() {
 
   useEffect(() => {
     const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
-
     if (isVariantSwitch) {
-      // Varyant geçişi: sadece ürün verisini güncelle, diğerleri kalsın
       fetchProductOnly()
     } else {
-      // İlk yükleme: her şeyi paralel çek
       fetchAll()
     }
     prevAsin.current = asin
-    setReviews(null) // reviews her ASIN için sıfırla
+    setReviews(null)
   }, [asin])
 
-  // Sadece ürün verisini çek (varyant geçişi için)
   const fetchProductOnly = async () => {
     setProductLoading(true)
     try {
       const cacheKey = `product_${asin}`
       const cached = cacheGet(cacheKey)
       if (cached) { setProduct(cached); setProductLoading(false); return }
-
       const res = await axios.get(`${API}/api/amazon/product/${asin}`)
       setProduct(res.data)
       cacheSet(cacheKey, res.data)
@@ -72,11 +67,8 @@ export default function ProductPage() {
     }
   }
 
-  // İlk yüklemede tüm verileri paralel çek
   const fetchAll = async () => {
     setLoading(true)
-
-    // Cache kontrol
     const cachedProduct = cacheGet(`product_${asin}`)
     const cachedNiche = cacheGet(`niche_${asin}`)
     const cachedSuppliers = cacheGet(`suppliers_${asin}`)
@@ -88,19 +80,15 @@ export default function ProductPage() {
       setSuppliers(cachedSuppliers)
       setArbitrage(cachedArbitrage)
       setLoading(false)
+      // Cache'den gelse de tracking yap
+      track(Events.PRODUCT_VIEW, { asin, title: cachedProduct?.title, price: cachedProduct?.price, from_cache: true })
       return
     }
 
     try {
-      // Tüm çağrılar TEK Promise.all'da — paralel
-      const keyword_guess = asin // keyword'ü product geldikten sonra kullanacağız
       const [prodRes, nicheRes] = await Promise.all([
-        cachedProduct
-          ? Promise.resolve({ data: cachedProduct })
-          : axios.get(`${API}/api/amazon/product/${asin}`),
-        cachedNiche
-          ? Promise.resolve({ data: cachedNiche })
-          : axios.get(`${API}/api/amazon/niche-score/${asin}`),
+        cachedProduct ? Promise.resolve({ data: cachedProduct }) : axios.get(`${API}/api/amazon/product/${asin}`),
+        cachedNiche ? Promise.resolve({ data: cachedNiche }) : axios.get(`${API}/api/amazon/niche-score/${asin}`),
       ])
 
       const productData = prodRes.data
@@ -110,17 +98,21 @@ export default function ProductPage() {
       cacheSet(`product_${asin}`, productData)
       cacheSet(`niche_${asin}`, nicheData)
 
-      // Keyword ve fiyat belirlendi, şimdi sourcing paralel
+      // Event tracking — ürün görüntüleme
+      track(Events.PRODUCT_VIEW, {
+        asin,
+        title: productData?.title,
+        price: productData?.price,
+        niche_score: nicheData?.niche_score?.total_score || nicheData?.total_score,
+        category: productData?.category,
+      })
+
       const keyword = productData?.title?.split(' ').slice(0, 3).join(' ') || asin
       const price = productData?.price || 30
 
       const [suppRes, arbRes] = await Promise.all([
-        cachedSuppliers
-          ? Promise.resolve({ data: { suppliers: cachedSuppliers } })
-          : axios.get(`${API}/api/sourcing/alibaba?keyword=${encodeURIComponent(keyword)}`),
-        cachedArbitrage
-          ? Promise.resolve({ data: cachedArbitrage })
-          : axios.get(`${API}/api/sourcing/arbitrage?keyword=${encodeURIComponent(keyword)}&amazon_price=${price}&include_euro=true`),
+        cachedSuppliers ? Promise.resolve({ data: { suppliers: cachedSuppliers } }) : axios.get(`${API}/api/sourcing/alibaba?keyword=${encodeURIComponent(keyword)}`),
+        cachedArbitrage ? Promise.resolve({ data: cachedArbitrage }) : axios.get(`${API}/api/sourcing/arbitrage?keyword=${encodeURIComponent(keyword)}&amazon_price=${price}&include_euro=true`),
       ])
 
       const suppData = suppRes.data.suppliers || []
@@ -160,7 +152,7 @@ export default function ProductPage() {
   if (!product) return (
     <div style={{ textAlign: 'center', padding: '60px' }}>
       <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
-      <button onClick={() => navigate('/search')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
+      <button onClick={() => navigate('/app/search')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
         Aramaya Dön
       </button>
     </div>
@@ -261,7 +253,6 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Varyantlar */}
         {variants.length > 0 && (
           <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '0.5px solid #f5f5f7' }}>
             <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '8px', fontWeight: '500' }}>
@@ -269,7 +260,7 @@ export default function ProductPage() {
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
               {variants.map((v, i) => (
-                <div key={i} onClick={() => navigate(`/product/${v.asin}`)}
+                <div key={i} onClick={() => navigate(`/app/product/${v.asin}`)}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', border: `0.5px solid ${v.is_current ? '#0071e3' : '#d2d2d7'}`, background: v.is_current ? '#e8f0fe' : 'white', transition: 'all 0.15s' }}>
                   {v.image && <img src={v.image} alt="" style={{ width: '24px', height: '24px', borderRadius: '4px', objectFit: 'contain' }} />}
                   <div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { searchProducts } from '../lib/api'
+import { track, Events } from '../lib/analytics'
 
 const CATEGORIES = [
   { label: 'Tümü', value: '' },
@@ -41,7 +42,7 @@ const getMockData = (asin) => {
   const bsr = Math.floor(seededRandom(seed) * 20000) + 200
   const reviews = Math.floor(seededRandom(seed + 1) * 4000) + 50
   const sellers = Math.floor(seededRandom(seed + 2) * 15) + 1
-  const fba = seededRandom(seed + 3) > 0.35 // %65 FBA
+  const fba = seededRandom(seed + 3) > 0.35
   const points = Array.from({ length: 8 }, (_, i) =>
     Math.floor(seededRandom(seed + i + 10) * 60) + 20
   )
@@ -158,8 +159,16 @@ function SearchPage() {
     setError('')
     try {
       const res = await searchProducts(term)
-      setResults(res.data.results || [])
+      const resultList = res.data.results || []
+      setResults(resultList)
       setSearchParams({ q: term, cat: selectedCat, market: selectedMarket })
+
+      // Event tracking — arama kaydı
+      track(Events.KEYWORD_SEARCH, {
+        keyword: term,
+        market: selectedMarket,
+        results_count: resultList.length,
+      })
     } catch (err) {
       setError('Arama sırasında hata oluştu.')
     } finally {
@@ -288,7 +297,6 @@ function SearchPage() {
               </div>
             ))}
           </div>
-          {/* Ekstra filtreler */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingTop: '12px', borderTop: '0.5px solid #f5f5f7' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: '#1d1d1f' }}>
               <input type="checkbox" checked={filters.fbaOnly}
@@ -352,7 +360,6 @@ function SearchPage() {
 
       {!loading && filtered.length > 0 && (
         <>
-          {/* Tablo Header */}
           <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px', gap: '7px', padding: '0 16px 8px' }}>
             <div></div>
             <div style={{ fontSize: '10px', color: '#aeaeb2', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Ürün</div>
@@ -382,17 +389,17 @@ function SearchPage() {
 
               return (
                 <div key={product.asin}
-                  onClick={() => navigate(`/app/product/${product.asin}`)}
+                  onClick={() => {
+                    track(Events.PRODUCT_VIEW, { asin: product.asin, title: product.title, price: product.price })
+                    navigate(`/app/product/${product.asin}`)
+                  }}
                   style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '11px 16px', cursor: 'pointer', transition: 'border-color 0.15s', display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px', gap: '7px', alignItems: 'center' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = '#0071e3'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e5ea'}
                 >
-                  {/* Görsel */}
                   <div style={{ width: '46px', height: '46px', borderRadius: '8px', background: '#f5f5f7', overflow: 'hidden', flexShrink: 0 }}>
                     {product.image && <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
                   </div>
-
-                  {/* Ürün */}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: '12.5px', fontWeight: '500', color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
                       {product.title}
@@ -405,55 +412,27 @@ function SearchPage() {
                       <div style={{ height: '100%', borderRadius: '2px', background: color, width: `${score}%` }}></div>
                     </div>
                   </div>
-
-                  {/* Fiyat */}
                   <div style={{ textAlign: 'right', fontSize: '12.5px', fontWeight: '500', color: '#1d1d1f' }}>
                     {product.price ? `$${product.price}` : '-'}
                   </div>
-
-                  {/* Mini Grafik */}
                   <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <MiniChart points={mock.points} color="#0071e3" />
                   </div>
-
-                  {/* BSR */}
-                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>
-                    #{bsr.toLocaleString()}
-                  </div>
-
-                  {/* Yorum */}
-                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>
-                    {reviews.toLocaleString()}
-                  </div>
-
-                  {/* Est. Sales */}
-                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>
-                    ~{sales.toLocaleString()}
-                  </div>
-
-                  {/* Revenue */}
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>#{bsr.toLocaleString()}</div>
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>{reviews.toLocaleString()}</div>
+                  <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>~{sales.toLocaleString()}</div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: '600', color: revStyle.color, background: revStyle.bg, padding: '3px 7px', borderRadius: '6px' }}>
                       {revenue}/ay
                     </div>
                   </div>
-
-                  {/* Satıcı / FBA */}
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: fba === 'FBA' ? '#0071e3' : '#b45309', marginBottom: '2px' }}>
-                      {fba}
-                    </div>
-                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>
-                      👥 {sellers} satıcı
-                    </div>
+                    <div style={{ fontSize: '11px', fontWeight: '600', color: fba === 'FBA' ? '#0071e3' : '#b45309', marginBottom: '2px' }}>{fba}</div>
+                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>👥 {sellers} satıcı</div>
                   </div>
-
-                  {/* Puan */}
                   <div style={{ textAlign: 'right', fontSize: '12px', color: '#1d1d1f' }}>
                     {product.rating ? `${product.rating} ⭐` : '-'}
                   </div>
-
-                  {/* Niş */}
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '34px', height: '34px', borderRadius: '50%', background: SCORE_BG(score), fontSize: '11px', fontWeight: '600', color: SCORE_TEXT(score) }}>
                       {score || '-'}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { track, Events } from '../lib/analytics'
 
 const API = ''
 
@@ -17,59 +18,26 @@ const EXAMPLE_ASINS = [
 
 const EXAMPLE_KEYWORDS = ['yoga mat', 'resistance bands', 'led desk lamp', 'bamboo cutting board']
 
-// Nasıl hesaplıyoruz — metodoloji açıklaması
 const METHODOLOGY = [
   {
-    icon: '📦',
-    title: 'Hacim & Depolama (25 puan)',
-    color: '#0071e3',
-    bg: '#e8f0fe',
+    icon: '📦', title: 'Hacim & Depolama (25 puan)', color: '#0071e3', bg: '#e8f0fe',
     desc: 'Ürünün fiziksel boyutu ve Amazon deposundaki depolama maliyeti. Küçük ve hafif ürünler (≤1 lb) daha düşük FBA ücreti öder ve daha az depolama riski taşır. BSR bazlı satış hızı da bu skora katkı sağlar.',
-    criteria: [
-      '≤0.5 lb → 25 puan (maksimum)',
-      '≤1 lb → 20 puan',
-      '≤2 lb → 15 puan',
-      'BSR <1000 → +5 bonus puan',
-    ]
+    criteria: ['≤0.5 lb → 25 puan (maksimum)', '≤1 lb → 20 puan', '≤2 lb → 15 puan', 'BSR <1000 → +5 bonus puan']
   },
   {
-    icon: '🚚',
-    title: 'Lojistik (25 puan)',
-    color: '#34c759',
-    bg: '#e8f9ee',
-    desc: 'FBA uygunluğu, kırılganlık riski ve tedarik edilebilirlik. FBA (Fulfillment by Amazon) kullanan ürünler Prime rozetine sahip olur ve dönüşüm oranı artar. Cam, seramik gibi kırılgan ürünler lojistik zorluğu artırır.',
-    criteria: [
-      'FBA uygun → +5 puan',
-      'Kırılgan değil → +5 puan',
-      'Alibaba\'da tedarik edilebilir → +5 puan',
-      'Ağırlık <1 lb → +8 puan',
-    ]
+    icon: '🚚', title: 'Lojistik (25 puan)', color: '#34c759', bg: '#e8f9ee',
+    desc: 'FBA uygunluğu, kırılganlık riski ve tedarik edilebilirlik. FBA kullanan ürünler Prime rozetine sahip olur ve dönüşüm oranı artar.',
+    criteria: ['FBA uygun → +5 puan', 'Kırılgan değil → +5 puan', "Alibaba'da tedarik edilebilir → +5 puan", 'Ağırlık <1 lb → +8 puan']
   },
   {
-    icon: '⚔️',
-    title: 'Rekabet (25 puan)',
-    color: '#ff9f0a',
-    bg: '#fff4e0',
-    desc: 'Pazarın ne kadar kalabalık olduğunu ölçer. Büyük marka varlığı, patent riski ve Review Velocity Index (RVI) bu skoru belirler. RVI = aylık ortalama yeni review kazanım hızıdır. Düşük RVI, pazarın henüz kalabalıklaşmadığını gösterir.',
-    criteria: [
-      'RVI <10 → Pazar boş, giriş fırsatı',
-      'Büyük marka yok → +5 puan',
-      'Patent riski yok → +5 puan',
-      'BSR <5000 → +8 puan',
-    ]
+    icon: '⚔️', title: 'Rekabet (25 puan)', color: '#ff9f0a', bg: '#fff4e0',
+    desc: 'Pazarın ne kadar kalabalık olduğunu ölçer. Büyük marka varlığı, patent riski ve Review Velocity Index (RVI) bu skoru belirler.',
+    criteria: ['RVI <10 → Pazar boş, giriş fırsatı', 'Büyük marka yok → +5 puan', 'Patent riski yok → +5 puan', 'BSR <5000 → +8 puan']
   },
   {
-    icon: '💰',
-    title: 'Karlılık (25 puan)',
-    color: '#af52de',
-    bg: '#f3e8ff',
-    desc: 'Fiyat aralığı, tahmini kar marjı ve talep trendi. $15-50 arasındaki ürünler hem alışveriş kararını kolaylaştırır hem de FBA maliyetlerini karşılayacak marj bırakır. Yükselen BSR trendi karlılık skoruna bonus ekler.',
-    criteria: [
-      '$15-50 fiyat aralığı → 8 puan',
-      '%50+ marj → 10 puan',
-      'Yükselen talep trendi → +7 bonus',
-      'Alibaba maliyeti = fiyatın %15\'i varsayılan',
-    ]
+    icon: '💰', title: 'Karlılık (25 puan)', color: '#af52de', bg: '#f3e8ff',
+    desc: 'Fiyat aralığı, tahmini kar marjı ve talep trendi. $15-50 arasındaki ürünler FBA maliyetlerini karşılayacak marj bırakır.',
+    criteria: ['$15-50 fiyat aralığı → 8 puan', '%50+ marj → 10 puan', 'Yükselen talep trendi → +7 bonus', "Alibaba maliyeti = fiyatın %15'i varsayılan"]
   },
 ]
 
@@ -93,6 +61,14 @@ export default function NichePage() {
       try {
         const res = await axios.get(`${API}/api/amazon/niche-score/${asin.trim()}`)
         setResult(res.data)
+
+        // Event tracking — niş skoru analizi
+        const s = res.data?.niche_score?.total_score || res.data?.total_score || 0
+        track(Events.NICHE_SCORE_VIEW, {
+          asin: asin.trim(),
+          score: s,
+          mode: 'asin',
+        })
       } catch {
         setError('Ürün bulunamadi. ASIN kontrol et.')
       } finally {
@@ -117,6 +93,13 @@ export default function NichePage() {
           })
         )
         setKeywordResults(scored)
+
+        // Event tracking — keyword niş taraması
+        track(Events.NICHE_SCORE_VIEW, {
+          keyword: keyword.trim(),
+          results_count: scored.length,
+          mode: 'keyword',
+        })
       } catch {
         setError('Arama sirasinda hata olustu.')
       } finally {
@@ -138,7 +121,6 @@ export default function NichePage() {
     <div style={{ fontFamily: "'Inter', sans-serif", maxWidth: '900px' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
-      {/* Başlık */}
       <div style={{ marginBottom: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: '19px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.3px' }}>Niş Skoru Analizi</div>
@@ -150,16 +132,12 @@ export default function NichePage() {
         </button>
       </div>
 
-      {/* METODOLOJİ PANELİ */}
       {showMethodology && (
         <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '14px', animation: 'fadeIn 0.2s ease' }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>
-            📊 AmazenLens Niş Skoru — Nasıl Çalışır?
-          </div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>📊 AmazenLens Niş Skoru — Nasıl Çalışır?</div>
           <div style={{ fontSize: '12px', color: '#8e8e93', lineHeight: '1.7', marginBottom: '16px' }}>
-            Bir ürünü "niş" olarak nitelendirmek için dört temel boyutu değerlendiriyoruz. Her boyut maksimum 25 puan alır ve toplam 100 üzerinden hesaplanır. Algoritmamız akademik kaynaklara ve başarılı Amazon satıcı metodolojilerine dayanmaktadır.
+            Bir ürünü "niş" olarak nitelendirmek için dört temel boyutu değerlendiriyoruz. Her boyut maksimum 25 puan alır ve toplam 100 üzerinden hesaplanır.
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
             {METHODOLOGY.map(m => (
               <div key={m.title} style={{ background: m.bg, borderRadius: '10px', padding: '14px' }}>
@@ -175,15 +153,13 @@ export default function NichePage() {
               </div>
             ))}
           </div>
-
-          {/* Ek metrikler */}
           <div style={{ background: '#f5f5f7', borderRadius: '10px', padding: '14px' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>🔬 Ek Metrikler</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
-                { icon: '📈', title: 'Review Velocity Index (RVI)', desc: 'Aylık ortalama yeni review kazanım hızı. RVI <10 → pazar henüz kalabalıklaşmadı. RVI >50 → geç kalındı.' },
-                { icon: '🔥', title: 'Unmet Demand (Karşılanmamış Talep)', desc: 'Az review\'a rağmen iyi BSR, düşük rating+yüksek satış ve premium segment boşluğu gibi 4 sinyal ile tespit edilir.' },
-                { icon: '🔱', title: '3 Prong Testi', desc: 'Dan Rodgers metodolojisi: Yüksek fiyat ($25+), geliştirme potansiyeli ve az review eşiği. 3/3 = mükemmel aday.' },
+                { icon: '📈', title: 'Review Velocity Index (RVI)', desc: 'Aylık ortalama yeni review kazanım hızı. RVI <10 → pazar henüz kalabalıklaşmadı.' },
+                { icon: '🔥', title: 'Unmet Demand', desc: "Az review'a rağmen iyi BSR, düşük rating+yüksek satış ile tespit edilir." },
+                { icon: '🔱', title: '3 Prong Testi', desc: 'Dan Rodgers metodolojisi: Yüksek fiyat ($25+), geliştirme potansiyeli ve az review eşiği.' },
               ].map(item => (
                 <div key={item.title} style={{ background: 'white', borderRadius: '8px', padding: '10px 12px' }}>
                   <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f', marginBottom: '4px' }}>{item.icon} {item.title}</div>
@@ -192,8 +168,6 @@ export default function NichePage() {
               ))}
             </div>
           </div>
-
-          {/* Skor tablosu */}
           <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
             {[
               { range: '90-100', label: 'Mükemmel', color: '#34c759', bg: '#e8f9ee', desc: 'Hemen gir' },
@@ -211,7 +185,6 @@ export default function NichePage() {
         </div>
       )}
 
-      {/* Giriş Kartı */}
       <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px', marginBottom: '14px' }}>
         <div style={{ display: 'flex', gap: '4px', background: '#f5f5f7', borderRadius: '8px', padding: '3px', marginBottom: '14px', width: 'fit-content' }}>
           {[{ key: 'asin', label: 'ASIN ile Analiz' }, { key: 'keyword', label: 'Keyword ile Tara' }].map(m => (
@@ -262,14 +235,13 @@ export default function NichePage() {
         </div>
       </div>
 
-      {/* KEYWORD SONUÇLARI */}
       {keywordResults.length > 0 && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>
             "{keyword}" — {keywordResults.length} ürün analizi
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-            {keywordResults.map((p, i) => {
+            {keywordResults.map((p) => {
               const s = p.niche?.niche_score?.total_score || p.niche?.total_score || 0
               return (
                 <div key={p.asin} onClick={() => navigate(`/app/product/${p.asin}`)}
@@ -300,11 +272,8 @@ export default function NichePage() {
         </div>
       )}
 
-      {/* ASIN ANALİZ SONUCU */}
       {result && (
         <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-          {/* Ürün Başlığı + Aksiyonlar */}
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '52px', height: '52px', borderRadius: '10px', background: SCORE_BG(score), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: SCORE_TEXT(score), flexShrink: 0 }}>{score}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -321,16 +290,14 @@ export default function NichePage() {
                 style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: '0.5px solid #d2d2d7', background: 'white', color: '#0071e3', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Ürün Detayı →
               </button>
-              <button onClick={() => navigate('/sourcing')}
+              <button onClick={() => navigate('/app/sourcing')}
                 style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: 'none', background: '#0071e3', color: 'white', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Tedarikçi Bul →
               </button>
             </div>
           </div>
 
-          {/* Skor + Boyutlar */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '12px' }}>
-            {/* Dairesel Skor */}
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '14px' }}>
                 <svg viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)', width: '120px', height: '120px' }}>
@@ -347,27 +314,20 @@ export default function NichePage() {
               <div style={{ fontSize: '11px', color: '#8e8e93', textAlign: 'center', lineHeight: '1.6', marginBottom: '12px' }}>
                 {nicheData?.recommendation || 'Analiz tamamlandi.'}
               </div>
-
-              {/* RVI + Trend mini kartlar */}
               {rvi?.rvi !== undefined && (
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ background: '#f5f5f7', borderRadius: '8px', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontSize: '11px', color: '#8e8e93' }}>📈 Review Hızı (RVI)</div>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: rvi.score >= 7 ? '#34c759' : rvi.score >= 4 ? '#ff9f0a' : '#ff3b30' }}>
-                      {rvi.rvi}/ay
-                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: rvi.score >= 7 ? '#34c759' : rvi.score >= 4 ? '#ff9f0a' : '#ff3b30' }}>{rvi.rvi}/ay</div>
                   </div>
                   <div style={{ background: '#f5f5f7', borderRadius: '8px', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontSize: '11px', color: '#8e8e93' }}>📊 Talep Trendi</div>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: trend.score >= 7 ? '#34c759' : '#ff9f0a' }}>
-                      {trend.trend || '—'}
-                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: trend.score >= 7 ? '#34c759' : '#ff9f0a' }}>{trend.trend || '—'}</div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 4 Boyut */}
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '16px' }}>4 Boyutlu Analiz</div>
               {[
@@ -401,7 +361,6 @@ export default function NichePage() {
             </div>
           </div>
 
-          {/* 3 Prong */}
           {prong && Object.keys(prong).length > 0 && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>
@@ -426,7 +385,6 @@ export default function NichePage() {
             </div>
           )}
 
-          {/* Unmet Demand */}
           {unmet?.detected && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
@@ -442,7 +400,6 @@ export default function NichePage() {
             </div>
           )}
 
-          {/* Red Flags */}
           {flags && Object.values(flags).some(v => v) && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🚩 Red Flags</div>
@@ -467,14 +424,13 @@ export default function NichePage() {
             </div>
           )}
 
-          {/* Aksiyonlar */}
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🚀 Sonraki Adımlar</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               {[
-                { label: '🔍 Ürün Detayı', desc: 'Love/Hate analizi, varyantlar', to: `/product/${result.asin}`, color: '#0071e3', bg: '#e8f0fe' },
-                { label: '🏭 Tedarikçi Bul', desc: 'Alibaba + DHgate + Türkiye', to: '/sourcing', color: '#34c759', bg: '#e8f9ee' },
-                { label: '🧮 Pan-EU Kar Hesabı', desc: '9 pazarda VAT dahil kar', to: '/calculator', color: '#ff9f0a', bg: '#fff4e0' },
+                { label: '🔍 Ürün Detayı', desc: 'Love/Hate analizi, varyantlar', to: `/app/product/${result.asin}`, color: '#0071e3', bg: '#e8f0fe' },
+                { label: '🏭 Tedarikçi Bul', desc: 'Alibaba + DHgate + Türkiye', to: '/app/sourcing', color: '#34c759', bg: '#e8f9ee' },
+                { label: '🧮 Pan-EU Kar Hesabı', desc: '9 pazarda VAT dahil kar', to: '/app/calculator', color: '#ff9f0a', bg: '#fff4e0' },
               ].map(btn => (
                 <div key={btn.label} onClick={() => navigate(btn.to)}
                   style={{ background: btn.bg, borderRadius: '10px', padding: '12px 14px', cursor: 'pointer' }}>
@@ -487,7 +443,6 @@ export default function NichePage() {
         </div>
       )}
 
-      {/* Boş durum */}
       {!result && keywordResults.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8e8e93' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>

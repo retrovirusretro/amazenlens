@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "roadmap": "Roadmap",
+    "login": "Login",
+    "start_free": "Start Free →"
+  },
+  "hero": {
+    "badge": "Powered by Claude AI — Live analysis",
+    "title_line1": "Amazon's",
+    "title_highlight": "AI advantage",
+    "title_line3": "in your hands",
+    "desc": "Designed for Turkish sellers. 1/5 the price of Helium 10, with 5x smarter features.",
+    "cta_primary": "Start 7-Day Free Trial →",
+    "cta_secondary": "Watch Demo ▶"
+  },
+  "features": {
+    "section_label": "AI Features",
+    "title": "Features competitors",
+    "title_highlight": "don't have",
+    "niche_title": "Niche Score",
+    "niche_desc": "100-point AI analysis system. BSR history, RVI and trend score all evaluated together.",
+    "lovehate_title": "Love/Hate Analysis",
+    "lovehate_desc": "Claude AI analyzes your competitors' reviews. Catch product improvement opportunities.",
+    "euro_title": "Euro Flips",
+    "euro_desc": "VAT-inclusive arbitrage across 7 European markets. Buy on Amazon.de, sell in the US.",
+    "supplier_title": "Turkish Supplier DB",
+    "supplier_desc": "Alternative to Alibaba. Leverage Made in Turkey advantage in global markets.",
+    "scanner_title": "Unavailable Scanner",
+    "scanner_desc": "Bulk scan 500 ASINs. Automatically detect and capture competitor-free opportunities.",
+    "paneu_title": "Pan-EU FBA",
+    "paneu_desc": "Net profit calculation across 9 European markets including VAT and FBA fees."
+  },
+  "roadmap": {
+    "section_label": "Roadmap",
+    "title": "The big vision",
+    "subtitle": "Where we are and where we're going",
+    "phase1_label": "Phase 1 — Live",
+    "phase2_label": "Phase 2 — Coming Soon",
+    "phase3_label": "Phase 3 — Future",
+    "chip_active": "Live",
+    "chip_soon": "Soon",
+    "chip_future": "Future"
+  },
+  "pricing": {
+    "title": "Simple pricing",
+    "subtitle": "Try free for 7 days. No credit card required. Cancel anytime.",
+    "most_popular": "MOST POPULAR",
+    "per_month": "/mo",
+    "cta_free": "Get Started",
+    "cta_trial": "Try 7 Days Free",
+    "features": {
+      "searches_5": "5 searches/day",
+      "searches_50": "50 searches/day",
+      "searches_200": "200 searches/day",
+      "searches_unlimited": "Unlimited",
+      "niche_score": "Niche score",
+      "basic": "Basic features",
+      "lovehate": "Love/Hate AI",
+      "euro_flips": "Euro Flips",
+      "email_support": "Email support",
+      "paneu": "Pan-EU FBA",
+      "supplier": "Turkish supplier",
+      "priority_support": "Priority support",
+      "api": "API access",
+      "white_label": "White-label",
+      "dedicated": "Dedicated support"
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "q1": "Can I try without a credit card?",
+    "a1": "Yes! When you sign up, all Pro features are free for 7 days. No credit card required.",
+    "q2": "How is it different from Helium 10?",
+    "a2": "Turkish interface, Turkish supplier module, Euro Flips and Trendyol integration. At 1/5 the price of Helium 10.",
+    "q3": "Can I cancel anytime?",
+    "a3": "Yes, anytime. Your access continues until the end of the billing period.",
+    "q4": "Which Amazon marketplaces do you support?",
+    "a4": "15+ markets including US, Germany, France, Italy, Spain, UK, Canada, Japan."
+  },
+  "cta": {
+    "title": "Ready to get started?",
+    "subtitle": "All Pro features free for 7 days. No credit card required.",
+    "button": "Start Now — Free →"
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "terms": "Terms of Service",
+    "contact": "Contact"
+  },
+  "auth": {
+    "title": "AmazenLens",
+    "subtitle": "Amazon Research Platform",
+    "login_tab": "Login",
+    "register_tab": "Sign Up",
+    "email": "Email address",
+    "password": "Password",
+    "full_name": "Full Name",
+    "forgot_password": "Forgot password",
+    "login_btn": "Login",
+    "register_btn": "Create Account",
+    "reset_btn": "Send Reset Link",
+    "back_to_login": "Back to login",
+    "or": "or",
+    "guest_btn": "Continue without account",
+    "guest_limit": "5 searches/day",
+    "trial_title": "7-day free Pro trial",
+    "trial_desc": "Starts automatically on signup, no credit card needed",
+    "terms_text": "By signing up you agree to our Terms of Service and Privacy Policy.",
+    "reset_title": "Reset Password",
+    "reset_desc": "A reset link will be sent to your email address",
+    "reset_success": "Password reset link sent to your email!",
+    "register_success": "Registration successful! Your 7-day free Pro trial has started.",
+    "loading": "Please wait...",
+    "error_email": "Email required",
+    "error_password": "Password required"
+  },
+  "compare": {
+    "label": "Compare with competitors:"
+  }
+}

@@ -13,13 +13,12 @@ from services.stripe_service import (
 from database.supabase import supabase
 import os
 
-load_dotenv(Path(__file__).parent.parent / ".env")  # ← ekle
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 router = APIRouter(prefix="/api/payments", tags=["Payments"])
 
 def get_frontend_url():
-    url = os.getenv("FRONTEND_URL", "http://localhost:5176")
-    print("get_frontend_url called:", url)  # ← kontrol için
+    url = os.getenv("FRONTEND_URL", "http://localhost:5173")
     return url
 
 class CheckoutRequest(BaseModel):
@@ -40,8 +39,8 @@ async def create_checkout(req: CheckoutRequest):
         result = create_checkout_session(
             plan=req.plan,
             user_email=req.user_email,
-            success_url=f"{get_frontend_url()}/dashboard?upgrade=success",
-            cancel_url=f"{get_frontend_url()}/pricing",
+            success_url=f"{get_frontend_url()}/app/dashboard?upgrade=success",
+            cancel_url=f"{get_frontend_url()}/app/pricing",
         )
         return result
     except Exception as e:
@@ -54,7 +53,7 @@ async def create_portal(req: PortalRequest):
     try:
         result = create_portal_session(
             customer_id=req.customer_id,
-            return_url=f"{get_frontend_url()}/dashboard",
+            return_url=f"{get_frontend_url()}/app/dashboard",
         )
         return result
     except Exception as e:
@@ -82,26 +81,49 @@ async def stripe_webhook(
             subscription_id = event.get("subscription_id")
 
             if user_email and plan:
-                supabase.table("profiles").upsert({
-                    "email": user_email,
-                    "plan": plan,
-                    "stripe_customer_id": customer_id,
-                    "stripe_subscription_id": subscription_id,
-                    "searches_per_day": PLAN_LIMITS.get(plan, {}).get("searches_per_day", 5)
-                }, on_conflict="email").execute()
+                # Önce mevcut profili bul
+                existing = supabase.table("profiles").select("id").eq("email", user_email).execute()
+
+                if existing.data:
+                    # Kayıt var → sadece güncelle
+                    supabase.table("profiles").update({
+                        "plan": plan,
+                        "stripe_customer_id": customer_id,
+                        "stripe_subscription_id": subscription_id,
+                        "subscription_status": "active",
+                        "searches_per_day": PLAN_LIMITS.get(plan, {}).get("searches_per_day", 5)
+                    }).eq("email", user_email).execute()
+                    print(f"✅ Plan güncellendi: {user_email} → {plan}")
+                else:
+                    print(f"⚠️ Profil bulunamadı: {user_email}")
+
+        elif event["event"] == "subscription_updated":
+            subscription_id = event.get("subscription_id")
+            status = event.get("status")
+            plan = event.get("plan")
+            if subscription_id:
+                update_data = {"subscription_status": status}
+                if plan:
+                    update_data["plan"] = plan
+                    update_data["searches_per_day"] = PLAN_LIMITS.get(plan, {}).get("searches_per_day", 5)
+                supabase.table("profiles").update(update_data).eq("stripe_subscription_id", subscription_id).execute()
 
         elif event["event"] == "subscription_cancelled":
             subscription_id = event.get("subscription_id")
             if subscription_id:
                 supabase.table("profiles").update({
                     "plan": "free",
-                    "searches_per_day": 5
+                    "searches_per_day": 5,
+                    "subscription_status": "cancelled",
                 }).eq("stripe_subscription_id", subscription_id).execute()
+                print(f"✅ Abonelik iptal edildi: {subscription_id}")
 
         elif event["event"] == "payment_failed":
             customer_id = event.get("customer_id")
             if customer_id:
-                pass
+                supabase.table("profiles").update({
+                    "subscription_status": "past_due",
+                }).eq("stripe_customer_id", customer_id).execute()
 
     except Exception as e:
         print(f"Supabase güncelleme hatası: {e}")
@@ -115,71 +137,28 @@ async def get_plans():
     return {
         "plans": [
             {
-                "id": "free",
-                "name": "Free",
-                "price": 0,
-                "currency": "USD",
-                "period": "ay",
-                "searches_per_day": 5,
-                "features": [
-                    "5 arama/gün",
-                    "Temel özellikler",
-                    "Niş skoru",
-                    "Reklamları gör",
-                ],
-                "cta": "Ücretsiz Başla",
-                "highlighted": False,
+                "id": "free", "name": "Free", "price": 0,
+                "currency": "USD", "period": "ay", "searches_per_day": 5,
+                "features": ["5 arama/gün", "Temel özellikler", "Niş skoru"],
+                "cta": "Ücretsiz Başla", "highlighted": False,
             },
             {
-                "id": "starter",
-                "name": "Starter",
-                "price": 19,
-                "currency": "USD",
-                "period": "ay",
-                "searches_per_day": 50,
-                "features": [
-                    "50 arama/gün",
-                    "Tüm Faz 1 özellikleri",
-                    "Love/Hate analizi",
-                    "Euro Flips arbitraj",
-                    "Email destek",
-                ],
-                "cta": "Starter Başla",
-                "highlighted": False,
+                "id": "starter", "name": "Starter", "price": 19,
+                "currency": "USD", "period": "ay", "searches_per_day": 50,
+                "features": ["50 arama/gün", "Tüm Faz 1 özellikleri", "Love/Hate analizi", "Euro Flips arbitraj", "Email destek"],
+                "cta": "Starter Başla", "highlighted": False,
             },
             {
-                "id": "pro",
-                "name": "Pro",
-                "price": 49,
-                "currency": "USD",
-                "period": "ay",
-                "searches_per_day": 200,
-                "features": [
-                    "200 arama/gün",
-                    "Tüm özellikler",
-                    "Pan-EU kar hesabı",
-                    "DHgate + Türk tedarikçi",
-                    "Öncelikli destek",
-                ],
-                "cta": "Pro Başla",
-                "highlighted": True,
+                "id": "pro", "name": "Pro", "price": 49,
+                "currency": "USD", "period": "ay", "searches_per_day": 200,
+                "features": ["200 arama/gün", "Tüm özellikler", "Pan-EU kar hesabı", "DHgate + Türk tedarikçi", "Öncelikli destek"],
+                "cta": "Pro Başla", "highlighted": True,
             },
             {
-                "id": "agency",
-                "name": "Agency",
-                "price": 99,
-                "currency": "USD",
-                "period": "ay",
-                "searches_per_day": -1,
-                "features": [
-                    "Sınırsız arama",
-                    "Tüm özellikler",
-                    "API erişimi",
-                    "Dedicated destek",
-                    "White-label hazırlık",
-                ],
-                "cta": "Agency Başla",
-                "highlighted": False,
+                "id": "agency", "name": "Agency", "price": 99,
+                "currency": "USD", "period": "ay", "searches_per_day": -1,
+                "features": ["Sınırsız arama", "Tüm özellikler", "API erişimi", "Dedicated destek", "White-label hazırlık"],
+                "cta": "Agency Başla", "highlighted": False,
             },
         ]
     }
@@ -188,7 +167,7 @@ async def get_plans():
 async def get_user_subscription(user_email: str):
     try:
         res = supabase.table("profiles").select(
-            "plan, stripe_customer_id, stripe_subscription_id, searches_per_day"
+            "plan, stripe_customer_id, stripe_subscription_id, searches_per_day, subscription_status"
         ).eq("email", user_email).single().execute()
 
         if res.data:

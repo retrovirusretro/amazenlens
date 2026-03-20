@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [scrollY, setScrollY] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
 
@@ -13,12 +16,12 @@ export default function LandingPage() {
   }, [])
 
   const FEATURES = [
-    { icon: '🎯', title: 'Niş Skoru', desc: '100 puanlık AI analiz sistemi. BSR geçmişi, RVI ve trend skoru bir arada değerlendiriliyor.', ai: 'Claude AI' },
-    { icon: '💚', title: 'Love/Hate Analizi', desc: 'Rakiplerinize gelen yorumları Claude analiz eder. Ürün geliştirme fırsatlarını yakala.', ai: 'Claude AI' },
-    { icon: '🇪🇺', title: 'Euro Flips', desc: '7 Avrupa pazarında VAT dahil arbitraj hesabı. Amazon.de\'den al, ABD\'de sat.', ai: null },
-    { icon: '🇹🇷', title: 'Türk Tedarikçi DB', desc: 'Alibaba\'ya alternatif. Made in Turkey avantajıyla global pazarda fark yarat.', ai: null },
-    { icon: '🔍', title: 'Unavailable Scanner', desc: '500 ASIN toplu tarama. Rakipsiz fırsatları otomatik tespit et ve yakala.', ai: 'AI Destekli' },
-    { icon: '📊', title: 'Pan-EU FBA', desc: '9 Avrupa pazarında VAT ve FBA dahil net kar hesabı. Tek sayfada tüm Avrupa.', ai: null },
+    { icon: '🎯', title: t('features.niche_title'), desc: t('features.niche_desc'), ai: 'Claude AI' },
+    { icon: '💚', title: t('features.lovehate_title'), desc: t('features.lovehate_desc'), ai: 'Claude AI' },
+    { icon: '🇪🇺', title: t('features.euro_title'), desc: t('features.euro_desc'), ai: null },
+    { icon: '🇹🇷', title: t('features.supplier_title'), desc: t('features.supplier_desc'), ai: null },
+    { icon: '🔍', title: t('features.scanner_title'), desc: t('features.scanner_desc'), ai: 'AI' },
+    { icon: '📊', title: t('features.paneu_title'), desc: t('features.paneu_desc'), ai: null },
   ]
 
   const PRODUCTS = [
@@ -28,17 +31,17 @@ export default function LandingPage() {
   ]
 
   const PLANS = [
-    { name: 'Free', price: 0, features: ['5 arama/gün', 'Niş skoru', 'Temel özellikler'], featured: false },
-    { name: 'Starter', price: 19, features: ['50 arama/gün', 'Love/Hate AI', 'Euro Flips', 'Email destek'], featured: false },
-    { name: 'Pro', price: 49, features: ['200 arama/gün', 'Pan-EU FBA', 'Türk tedarikçi', 'Öncelikli destek'], featured: true },
-    { name: 'Agency', price: 99, features: ['Sınırsız', 'API erişimi', 'White-label', 'Dedicated destek'], featured: false },
+    { name: 'Free', price: 0, features: [t('pricing.features.searches_5'), t('pricing.features.niche_score'), t('pricing.features.basic')], featured: false },
+    { name: 'Starter', price: 19, features: [t('pricing.features.searches_50'), t('pricing.features.lovehate'), t('pricing.features.euro_flips'), t('pricing.features.email_support')], featured: false },
+    { name: 'Pro', price: 49, features: [t('pricing.features.searches_200'), t('pricing.features.paneu'), t('pricing.features.supplier'), t('pricing.features.priority_support')], featured: true },
+    { name: 'Agency', price: 99, features: [t('pricing.features.searches_unlimited'), t('pricing.features.api'), t('pricing.features.white_label'), t('pricing.features.dedicated')], featured: false },
   ]
 
   const FAQS = [
-    { q: 'Kredi kartı bilgisi vermeden deneyebilir miyim?', a: 'Evet! Kayıt olunca 7 gün boyunca tüm Pro özellikleri ücretsiz. Kart bilgisi gerekmez.' },
-    { q: 'Helium 10\'dan ne farkı var?', a: 'Türkçe arayüz, Türk tedarikçi modülü, Euro Flips ve Trendyol entegrasyonu. Helium 10\'un 1/5 fiyatına.' },
-    { q: 'İstediğim zaman iptal edebilir miyim?', a: 'Evet, istediğin zaman. Dönem sonuna kadar erişimin devam eder.' },
-    { q: 'Hangi Amazon pazarlarını destekliyorsunuz?', a: 'ABD, Almanya, Fransa, İtalya, İspanya, İngiltere, Kanada, Japonya dahil 15+ pazar.' },
+    { q: t('faq.q1'), a: t('faq.a1') },
+    { q: t('faq.q2'), a: t('faq.a2') },
+    { q: t('faq.q3'), a: t('faq.a3') },
+    { q: t('faq.q4'), a: t('faq.a4') },
   ]
 
   return (
@@ -62,44 +65,44 @@ export default function LandingPage() {
           <span style={{ fontSize: '16px', fontWeight: '700', color: '#09090b' }}>AmazenLens</span>
         </div>
         <div style={{ display: 'flex', gap: '28px' }}>
-          {['Özellikler', 'Fiyatlar', 'Blog', 'Roadmap'].map(item => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="nav-link">{item}</a>
-          ))}
+          <a href="#özellikler" className="nav-link">{t('nav.features')}</a>
+          <a href="#fiyatlar" className="nav-link">{t('nav.pricing')}</a>
+          <a href="#blog" className="nav-link">{t('nav.blog')}</a>
+          <a href="#roadmap" className="nav-link">{t('nav.roadmap')}</a>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={() => navigate('/auth')} style={{ background: 'none', border: '1px solid #e4e4e7', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '500' }}>Giriş Yap</button>
-          <button onClick={() => navigate('/auth')} style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '500' }}>Ücretsiz Başla →</button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <LanguageSwitcher />
+          <button onClick={() => navigate('/auth')} style={{ background: 'none', border: '1px solid #e4e4e7', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '500' }}>{t('nav.login')}</button>
+          <button onClick={() => navigate('/auth')} style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '500' }}>{t('nav.start_free')}</button>
         </div>
       </nav>
 
       {/* HERO */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #701a75 100%)', minHeight: '90vh', display: 'flex', alignItems: 'center', padding: '80px 60px', position: 'relative', overflow: 'hidden' }}>
-        {/* Grid pattern */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
-        {/* Sol */}
         <div style={{ maxWidth: '560px', position: 'relative', zIndex: 1, animation: 'fadeUp 0.6s ease' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: '12px', fontWeight: '500', marginBottom: '28px', backdropFilter: 'blur(10px)' }}>
             <div style={{ width: '6px', height: '6px', background: '#34d399', borderRadius: '50%', animation: 'glow 2s ease-in-out infinite' }}></div>
-            Claude AI ile güçlendirildi — Canlı analiz
+            {t('hero.badge')}
           </div>
 
           <h1 style={{ fontSize: '68px', fontWeight: '700', lineHeight: '1', letterSpacing: '-2px', color: 'white', marginBottom: '20px' }}>
-            Amazon'da<br />
-            <span style={{ background: 'linear-gradient(135deg, #a78bfa, #f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI avantajı</span><br />
-            senin elinde
+            {t('hero.title_line1')}<br />
+            <span style={{ background: 'linear-gradient(135deg, #a78bfa, #f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('hero.title_highlight')}</span><br />
+            {t('hero.title_line3')}
           </h1>
 
           <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.65)', lineHeight: '1.7', marginBottom: '36px', maxWidth: '480px' }}>
-            Türk satıcılar için tasarlandı. Helium 10'un 1/5 fiyatına, 5 kat daha akıllı özelliklerle.
+            {t('hero.desc')}
           </p>
 
           <div style={{ display: 'flex', gap: '12px', marginBottom: '40px' }}>
             <button className="hero-btn" onClick={() => navigate('/auth')} style={{ background: 'white', color: '#09090b', border: 'none', padding: '14px 28px', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', transition: 'transform 0.2s' }}>
-              7 Gün Ücretsiz Başla →
+              {t('hero.cta_primary')}
             </button>
-            <button className="hero-btn" onClick={() => navigate('/auth')} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '14px 28px', borderRadius: '10px', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(10px)', transition: 'transform 0.2s' }}>
-              Demo İzle ▶
+            <button className="hero-btn" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '14px 28px', borderRadius: '10px', fontSize: '15px', cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(10px)', transition: 'transform 0.2s' }}>
+              {t('hero.cta_secondary')}
             </button>
           </div>
 
@@ -140,13 +143,13 @@ export default function LandingPage() {
 
       {/* LOGOS BAR */}
       <div style={{ background: 'white', padding: '24px 60px', borderBottom: '1px solid #e4e4e7', display: 'flex', alignItems: 'center', gap: '24px' }}>
-        <span style={{ fontSize: '12px', color: '#71717a', whiteSpace: 'nowrap', fontWeight: '500' }}>Rakiplerimizle karşılaştırın:</span>
+        <span style={{ fontSize: '12px', color: '#71717a', whiteSpace: 'nowrap', fontWeight: '500' }}>{t('compare.label')}</span>
         <div style={{ display: 'flex', gap: '32px', alignItems: 'center', flexWrap: 'wrap' }}>
           {[
-            { name: 'Helium 10 $97/ay', crossed: true },
-            { name: 'Jungle Scout $49/ay', crossed: true },
-            { name: 'AMZScout $45/ay', crossed: true },
-            { name: '✓ AmazenLens $19/ay', crossed: false },
+            { name: 'Helium 10 $97/mo', crossed: true },
+            { name: 'Jungle Scout $49/mo', crossed: true },
+            { name: 'AMZScout $45/mo', crossed: true },
+            { name: '✓ AmazenLens $19/mo', crossed: false },
           ].map(c => (
             <span key={c.name} style={{ fontSize: '13px', color: c.crossed ? '#a1a1aa' : '#6366f1', fontWeight: '600', textDecoration: c.crossed ? 'line-through' : 'none' }}>{c.name}</span>
           ))}
@@ -155,10 +158,10 @@ export default function LandingPage() {
 
       {/* FEATURES */}
       <div id="özellikler" style={{ padding: '80px 60px', maxWidth: '1100px', margin: '0 auto' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#6366f1', background: '#eef2ff', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>✦ AI Özellikleri</div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#6366f1', background: '#eef2ff', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>✦ {t('features.section_label')}</div>
         <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', marginBottom: '48px' }}>
-          Rakiplerde olmayan<br />
-          <span style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Türk satıcı zekası</span>
+          {t('features.title')}<br />
+          <span style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('features.title_highlight')}</span>
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
           {FEATURES.map((f, i) => (
@@ -175,27 +178,27 @@ export default function LandingPage() {
       </div>
 
       {/* ROADMAP */}
-      <div style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', padding: '80px 60px' }}>
+      <div id="roadmap" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', padding: '80px 60px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#a78bfa', background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>Roadmap</div>
-          <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', color: 'white', marginBottom: '8px' }}>Büyük vizyon</h2>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', marginBottom: '48px' }}>Şu an neredeyiz, nereye gidiyoruz</p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#a78bfa', background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>{t('roadmap.section_label')}</div>
+          <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', color: 'white', marginBottom: '8px' }}>{t('roadmap.title')}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px', marginBottom: '48px' }}>{t('roadmap.subtitle')}</p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
             {[
               {
-                label: '✅ Faz 1 — Aktif', color: '#34d399', chipBg: 'rgba(52,211,153,0.15)', chipColor: '#34d399', chipText: 'Aktif',
+                label: `✅ ${t('roadmap.phase1_label')}`, color: '#34d399', chipBg: 'rgba(52,211,153,0.15)', chipColor: '#34d399', chipText: t('roadmap.chip_active'),
                 items: ['Niş Skoru (100pt)', 'Love/Hate AI', 'Euro Flips Arbitraj', 'Pan-EU FBA Hesabı', 'Unavailable Scanner', 'Türk Tedarikçi DB'],
                 done: true
               },
               {
-                label: '🚀 Faz 2 — Yakında', color: '#818cf8', chipBg: 'rgba(129,140,248,0.15)', chipColor: '#818cf8', chipText: 'Q2-Q3 2025',
-                items: ['Chrome Eklentisi', 'Trend Radar', 'WhatsApp Alertleri', 'Business Valuation', 'Product Opp. Gap', 'AI Listing Optimizer'],
+                label: `🚀 ${t('roadmap.phase2_label')}`, color: '#818cf8', chipBg: 'rgba(129,140,248,0.15)', chipColor: '#818cf8', chipText: t('roadmap.chip_soon'),
+                items: ['Chrome Extension', 'Trend Radar', 'WhatsApp Alerts', 'Business Valuation', 'Product Opp. Gap', 'AI Listing Optimizer'],
                 done: false
               },
               {
-                label: '🔮 Faz 3 — Gelecek', color: '#f472b6', chipBg: 'rgba(244,114,182,0.15)', chipColor: '#f472b6', chipText: 'Q4 2025+',
-                items: ['Mobil Uygulama', 'Barkod Okuyucu', 'API Erişimi', 'Satıcı Segmentasyonu', 'SnapSearch (Görsel)', 'Telegram Alertleri'],
+                label: `🔮 ${t('roadmap.phase3_label')}`, color: '#f472b6', chipBg: 'rgba(244,114,182,0.15)', chipColor: '#f472b6', chipText: t('roadmap.chip_future'),
+                items: ['Mobile App', 'Barcode Scanner', 'API Access', 'Seller Segmentation', 'SnapSearch (Visual)', 'Telegram Alerts'],
                 done: false
               }
             ].map((phase, i) => (
@@ -218,18 +221,18 @@ export default function LandingPage() {
 
       {/* PRICING */}
       <div id="fiyatlar" style={{ padding: '80px 60px', maxWidth: '1000px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', textAlign: 'center', marginBottom: '8px' }}>Basit fiyatlandırma</h2>
-        <p style={{ textAlign: 'center', color: '#71717a', marginBottom: '48px', fontSize: '16px' }}>7 gün ücretsiz dene. Kart bilgisi gerekmez. İstediğin zaman iptal et.</p>
+        <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', textAlign: 'center', marginBottom: '8px' }}>{t('pricing.title')}</h2>
+        <p style={{ textAlign: 'center', color: '#71717a', marginBottom: '48px', fontSize: '16px' }}>{t('pricing.subtitle')}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
           {PLANS.map(plan => (
             <div key={plan.name} className="plan-card" style={{ background: plan.featured ? 'linear-gradient(135deg, #1e1b4b, #312e81)' : 'white', border: plan.featured ? 'none' : '1px solid #e4e4e7', borderRadius: '16px', padding: '24px', position: 'relative', transition: 'transform 0.2s', cursor: 'default' }}>
               {plan.featured && (
-                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', fontSize: '10px', fontWeight: '700', padding: '3px 12px', borderRadius: '100px', whiteSpace: 'nowrap' }}>EN POPÜLER</div>
+                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', fontSize: '10px', fontWeight: '700', padding: '3px 12px', borderRadius: '100px', whiteSpace: 'nowrap' }}>{t('pricing.most_popular')}</div>
               )}
               <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: plan.featured ? 'white' : '#09090b' }}>{plan.name}</div>
               <div style={{ marginBottom: '16px' }}>
                 <span style={{ fontSize: '40px', fontWeight: '700', letterSpacing: '-1px', color: plan.featured ? '#a78bfa' : '#6366f1' }}>${plan.price}</span>
-                <span style={{ fontSize: '13px', color: plan.featured ? 'rgba(255,255,255,0.5)' : '#71717a' }}>/ay</span>
+                <span style={{ fontSize: '13px', color: plan.featured ? 'rgba(255,255,255,0.5)' : '#71717a' }}>{t('pricing.per_month')}</span>
               </div>
               <div style={{ marginBottom: '20px' }}>
                 {plan.features.map((f, i) => (
@@ -239,7 +242,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <button onClick={() => navigate('/auth')} style={{ width: '100%', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', border: plan.featured ? 'none' : '1px solid #e4e4e7', background: plan.featured ? 'linear-gradient(135deg, #6366f1, #ec4899)' : 'white', color: plan.featured ? 'white' : '#09090b' }}>
-                {plan.price === 0 ? 'Başla' : '7 Gün Dene'}
+                {plan.price === 0 ? t('pricing.cta_free') : t('pricing.cta_trial')}
               </button>
             </div>
           ))}
@@ -248,7 +251,7 @@ export default function LandingPage() {
 
       {/* SSS */}
       <div style={{ padding: '0 60px 80px', maxWidth: '700px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '36px', fontWeight: '700', letterSpacing: '-1px', textAlign: 'center', marginBottom: '36px' }}>Sık sorulan sorular</h2>
+        <h2 style={{ fontSize: '36px', fontWeight: '700', letterSpacing: '-1px', textAlign: 'center', marginBottom: '36px' }}>{t('faq.title')}</h2>
         {FAQS.map((faq, i) => (
           <div key={i} style={{ borderBottom: '1px solid #e4e4e7', overflow: 'hidden' }}>
             <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: '100%', padding: '18px 0', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'inherit', textAlign: 'left' }}>
@@ -262,10 +265,10 @@ export default function LandingPage() {
 
       {/* CTA */}
       <div style={{ background: 'linear-gradient(135deg, #6366f1, #ec4899)', padding: '80px 60px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '52px', fontWeight: '700', color: 'white', letterSpacing: '-2px', marginBottom: '16px' }}>Başlamaya hazır mısın?</h2>
-        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '18px', marginBottom: '36px' }}>7 gün boyunca tüm Pro özellikleri ücretsiz. Kart bilgisi gerekmez.</p>
+        <h2 style={{ fontSize: '52px', fontWeight: '700', color: 'white', letterSpacing: '-2px', marginBottom: '16px' }}>{t('cta.title')}</h2>
+        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '18px', marginBottom: '36px' }}>{t('cta.subtitle')}</p>
         <button onClick={() => navigate('/auth')} style={{ background: 'white', color: '#09090b', border: 'none', padding: '16px 36px', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Hemen Başla — Ücretsiz →
+          {t('cta.button')}
         </button>
       </div>
 
@@ -277,9 +280,9 @@ export default function LandingPage() {
           <span style={{ fontSize: '12px', color: '#52525b', marginLeft: '4px' }}>© 2025</span>
         </div>
         <div style={{ display: 'flex', gap: '24px' }}>
-          {['Gizlilik', 'Kullanım Şartları', 'İletişim'].map(item => (
-            <a key={item} href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{item}</a>
-          ))}
+          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.privacy')}</a>
+          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.terms')}</a>
+          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.contact')}</a>
         </div>
       </footer>
     </div>

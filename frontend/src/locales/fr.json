@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "roadmap": "Feuille de route",
+    "login": "Connexion",
+    "start_free": "Commencer gratuitement →"
+  },
+  "hero": {
+    "badge": "Propulsé par Claude AI — Analyse en direct",
+    "title_line1": "L'avantage",
+    "title_highlight": "IA d'Amazon",
+    "title_line3": "entre vos mains",
+    "desc": "Conçu pour les vendeurs turcs. 1/5 du prix de Helium 10, avec des fonctionnalités 5x plus intelligentes.",
+    "cta_primary": "Essai gratuit 7 jours →",
+    "cta_secondary": "Voir la démo ▶"
+  },
+  "features": {
+    "section_label": "Fonctionnalités IA",
+    "title": "Des fonctionnalités que",
+    "title_highlight": "les concurrents n'ont pas",
+    "niche_title": "Score de niche",
+    "niche_desc": "Système d'analyse IA à 100 points. Historique BSR, RVI et score de tendance évalués ensemble.",
+    "lovehate_title": "Analyse Love/Hate",
+    "lovehate_desc": "Claude AI analyse les avis de vos concurrents. Saisissez les opportunités d'amélioration produit.",
+    "euro_title": "Euro Flips",
+    "euro_desc": "Arbitrage TVA incluse sur 7 marchés européens. Achetez sur Amazon.de, vendez aux États-Unis.",
+    "supplier_title": "BD Fournisseurs Turcs",
+    "supplier_desc": "Alternative à Alibaba. Tirez parti de l'avantage Made in Turkey sur les marchés mondiaux.",
+    "scanner_title": "Scanner Indisponible",
+    "scanner_desc": "Analyse en masse de 500 ASINs. Détectez automatiquement les opportunités sans concurrence.",
+    "paneu_title": "FBA Pan-EU",
+    "paneu_desc": "Calcul du bénéfice net sur 9 marchés européens TVA et frais FBA inclus."
+  },
+  "roadmap": {
+    "section_label": "Feuille de route",
+    "title": "La grande vision",
+    "subtitle": "Où nous en sommes et où nous allons",
+    "phase1_label": "Phase 1 — En direct",
+    "phase2_label": "Phase 2 — Bientôt",
+    "phase3_label": "Phase 3 — Futur",
+    "chip_active": "En direct",
+    "chip_soon": "Bientôt",
+    "chip_future": "Futur"
+  },
+  "pricing": {
+    "title": "Tarification simple",
+    "subtitle": "Essai gratuit 7 jours. Aucune carte bancaire requise. Annulez à tout moment.",
+    "most_popular": "LE PLUS POPULAIRE",
+    "per_month": "/mois",
+    "cta_free": "Commencer",
+    "cta_trial": "Essai 7 jours gratuit",
+    "features": {
+      "searches_5": "5 recherches/jour",
+      "searches_50": "50 recherches/jour",
+      "searches_200": "200 recherches/jour",
+      "searches_unlimited": "Illimité",
+      "niche_score": "Score de niche",
+      "basic": "Fonctionnalités de base",
+      "lovehate": "IA Love/Hate",
+      "euro_flips": "Euro Flips",
+      "email_support": "Support par email",
+      "paneu": "FBA Pan-EU",
+      "supplier": "Fournisseur turc",
+      "priority_support": "Support prioritaire",
+      "api": "Accès API",
+      "white_label": "Marque blanche",
+      "dedicated": "Support dédié"
+    }
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "q1": "Puis-je essayer sans carte bancaire?",
+    "a1": "Oui! À l'inscription, toutes les fonctionnalités Pro sont gratuites pendant 7 jours. Aucune carte requise.",
+    "q2": "En quoi est-ce différent de Helium 10?",
+    "a2": "Interface turque, module fournisseurs turcs, Euro Flips et intégration Trendyol. À 1/5 du prix de Helium 10.",
+    "q3": "Puis-je annuler à tout moment?",
+    "a3": "Oui, à tout moment. Votre accès continue jusqu'à la fin de la période de facturation.",
+    "q4": "Quels marchés Amazon soutenez-vous?",
+    "a4": "15+ marchés dont USA, Allemagne, France, Italie, Espagne, UK, Canada, Japon."
+  },
+  "cta": {
+    "title": "Prêt à commencer?",
+    "subtitle": "Toutes les fonctionnalités Pro gratuites pendant 7 jours. Sans carte bancaire.",
+    "button": "Commencer maintenant — Gratuit →"
+  },
+  "footer": {
+    "privacy": "Confidentialité",
+    "terms": "Conditions d'utilisation",
+    "contact": "Contact"
+  },
+  "auth": {
+    "title": "AmazenLens",
+    "subtitle": "Plateforme de recherche Amazon",
+    "login_tab": "Connexion",
+    "register_tab": "S'inscrire",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "full_name": "Nom complet",
+    "forgot_password": "Mot de passe oublié",
+    "login_btn": "Se connecter",
+    "register_btn": "Créer un compte",
+    "reset_btn": "Envoyer le lien",
+    "back_to_login": "Retour à la connexion",
+    "or": "ou",
+    "guest_btn": "Continuer sans compte",
+    "guest_limit": "5 recherches/jour",
+    "trial_title": "Essai Pro gratuit 7 jours",
+    "trial_desc": "Démarre automatiquement à l'inscription, sans carte bancaire",
+    "terms_text": "En vous inscrivant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité.",
+    "reset_title": "Réinitialiser le mot de passe",
+    "reset_desc": "Un lien de réinitialisation sera envoyé à votre adresse e-mail",
+    "reset_success": "Lien de réinitialisation envoyé à votre e-mail!",
+    "register_success": "Inscription réussie! Votre essai Pro gratuit de 7 jours a commencé.",
+    "loading": "Veuillez patienter...",
+    "error_email": "E-mail requis",
+    "error_password": "Mot de passe requis"
+  },
+  "compare": {
+    "label": "Comparer avec les concurrents:"
+  }
+}

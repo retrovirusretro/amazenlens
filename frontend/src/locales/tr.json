@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "features": "Özellikler",
+    "pricing": "Fiyatlar",
+    "blog": "Blog",
+    "roadmap": "Roadmap",
+    "login": "Giriş Yap",
+    "start_free": "Ücretsiz Başla →"
+  },
+  "hero": {
+    "badge": "Claude AI ile güçlendirildi — Canlı analiz",
+    "title_line1": "Amazon'da",
+    "title_highlight": "AI avantajı",
+    "title_line3": "senin elinde",
+    "desc": "Türk satıcılar için tasarlandı. Helium 10'un 1/5 fiyatına, 5 kat daha akıllı özelliklerle.",
+    "cta_primary": "7 Gün Ücretsiz Başla →",
+    "cta_secondary": "Demo İzle ▶"
+  },
+  "features": {
+    "section_label": "AI Özellikleri",
+    "title": "Rakiplerde olmayan",
+    "title_highlight": "Türk satıcı zekası",
+    "niche_title": "Niş Skoru",
+    "niche_desc": "100 puanlık AI analiz sistemi. BSR geçmişi, RVI ve trend skoru bir arada değerlendiriliyor.",
+    "lovehate_title": "Love/Hate Analizi",
+    "lovehate_desc": "Rakiplerinize gelen yorumları Claude analiz eder. Ürün geliştirme fırsatlarını yakala.",
+    "euro_title": "Euro Flips",
+    "euro_desc": "7 Avrupa pazarında VAT dahil arbitraj hesabı. Amazon.de'den al, ABD'de sat.",
+    "supplier_title": "Türk Tedarikçi DB",
+    "supplier_desc": "Alibaba'ya alternatif. Made in Turkey avantajıyla global pazarda fark yarat.",
+    "scanner_title": "Unavailable Scanner",
+    "scanner_desc": "500 ASIN toplu tarama. Rakipsiz fırsatları otomatik tespit et ve yakala.",
+    "paneu_title": "Pan-EU FBA",
+    "paneu_desc": "9 Avrupa pazarında VAT ve FBA dahil net kar hesabı. Tek sayfada tüm Avrupa."
+  },
+  "roadmap": {
+    "section_label": "Roadmap",
+    "title": "Büyük vizyon",
+    "subtitle": "Şu an neredeyiz, nereye gidiyoruz",
+    "phase1_label": "Faz 1 — Aktif",
+    "phase2_label": "Faz 2 — Yakında",
+    "phase3_label": "Faz 3 — Gelecek",
+    "chip_active": "Aktif",
+    "chip_soon": "Yakında",
+    "chip_future": "Gelecek"
+  },
+  "pricing": {
+    "title": "Basit fiyatlandırma",
+    "subtitle": "7 gün ücretsiz dene. Kart bilgisi gerekmez. İstediğin zaman iptal et.",
+    "most_popular": "EN POPÜLER",
+    "per_month": "/ay",
+    "cta_free": "Başla",
+    "cta_trial": "7 Gün Dene",
+    "features": {
+      "searches_5": "5 arama/gün",
+      "searches_50": "50 arama/gün",
+      "searches_200": "200 arama/gün",
+      "searches_unlimited": "Sınırsız",
+      "niche_score": "Niş skoru",
+      "basic": "Temel özellikler",
+      "lovehate": "Love/Hate AI",
+      "euro_flips": "Euro Flips",
+      "email_support": "Email destek",
+      "paneu": "Pan-EU FBA",
+      "supplier": "Türk tedarikçi",
+      "priority_support": "Öncelikli destek",
+      "api": "API erişimi",
+      "white_label": "White-label",
+      "dedicated": "Dedicated destek"
+    }
+  },
+  "faq": {
+    "title": "Sık sorulan sorular",
+    "q1": "Kredi kartı bilgisi vermeden deneyebilir miyim?",
+    "a1": "Evet! Kayıt olunca 7 gün boyunca tüm Pro özellikleri ücretsiz. Kart bilgisi gerekmez.",
+    "q2": "Helium 10'dan ne farkı var?",
+    "a2": "Türkçe arayüz, Türk tedarikçi modülü, Euro Flips ve Trendyol entegrasyonu. Helium 10'un 1/5 fiyatına.",
+    "q3": "İstediğim zaman iptal edebilir miyim?",
+    "a3": "Evet, istediğin zaman. Dönem sonuna kadar erişimin devam eder.",
+    "q4": "Hangi Amazon pazarlarını destekliyorsunuz?",
+    "a4": "ABD, Almanya, Fransa, İtalya, İspanya, İngiltere, Kanada, Japonya dahil 15+ pazar."
+  },
+  "cta": {
+    "title": "Başlamaya hazır mısın?",
+    "subtitle": "7 gün boyunca tüm Pro özellikleri ücretsiz. Kart bilgisi gerekmez.",
+    "button": "Hemen Başla — Ücretsiz →"
+  },
+  "footer": {
+    "privacy": "Gizlilik",
+    "terms": "Kullanım Şartları",
+    "contact": "İletişim"
+  },
+  "auth": {
+    "title": "AmazenLens",
+    "subtitle": "Amazon Araştırma Platformu",
+    "login_tab": "Giriş Yap",
+    "register_tab": "Kayıt Ol",
+    "email": "Email adresi",
+    "password": "Şifre",
+    "full_name": "Ad Soyad",
+    "forgot_password": "Şifremi unuttum",
+    "login_btn": "Giriş Yap",
+    "register_btn": "Hesap Oluştur",
+    "reset_btn": "Sıfırlama Linki Gönder",
+    "back_to_login": "Giriş sayfasına dön",
+    "or": "veya",
+    "guest_btn": "Üye olmadan devam et",
+    "guest_limit": "5 arama/gün",
+    "trial_title": "7 gün ücretsiz Pro deneme",
+    "trial_desc": "Kayıt olunca otomatik başlar, kart bilgisi gerekmez",
+    "terms_text": "Kayıt olarak Kullanım Şartları ve Gizlilik Politikasını kabul etmiş olursunuz.",
+    "reset_title": "Şifre Sıfırla",
+    "reset_desc": "Email adresinize sıfırlama linki gönderilecek",
+    "reset_success": "Şifre sıfırlama linki emailinize gönderildi!",
+    "register_success": "Kayıt başarılı! 7 gün ücretsiz Pro denemeniz başladı.",
+    "loading": "Lütfen bekleyin...",
+    "error_email": "Email gerekli",
+    "error_password": "Şifre gerekli"
+  },
+  "compare": {
+    "label": "Rakiplerimizle karşılaştırın:"
+  }
+}

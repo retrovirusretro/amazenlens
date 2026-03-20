@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "features": "Características",
+    "pricing": "Precios",
+    "blog": "Blog",
+    "roadmap": "Hoja de ruta",
+    "login": "Iniciar sesión",
+    "start_free": "Empezar gratis →"
+  },
+  "hero": {
+    "badge": "Impulsado por Claude AI — Análisis en vivo",
+    "title_line1": "La ventaja",
+    "title_highlight": "de IA en Amazon",
+    "title_line3": "en tus manos",
+    "desc": "Diseñado para vendedores turcos. 1/5 del precio de Helium 10, con funciones 5x más inteligentes.",
+    "cta_primary": "Prueba gratuita 7 días →",
+    "cta_secondary": "Ver demo ▶"
+  },
+  "features": {
+    "section_label": "Funciones de IA",
+    "title": "Funciones que los",
+    "title_highlight": "competidores no tienen",
+    "niche_title": "Puntuación de nicho",
+    "niche_desc": "Sistema de análisis IA de 100 puntos. Historial BSR, RVI y puntuación de tendencia evaluados juntos.",
+    "lovehate_title": "Análisis Love/Hate",
+    "lovehate_desc": "Claude AI analiza las reseñas de tus competidores. Aprovecha las oportunidades de mejora del producto.",
+    "euro_title": "Euro Flips",
+    "euro_desc": "Arbitraje con IVA incluido en 7 mercados europeos. Compra en Amazon.de, vende en EE.UU.",
+    "supplier_title": "BD Proveedores Turcos",
+    "supplier_desc": "Alternativa a Alibaba. Aprovecha la ventaja Made in Turkey en mercados globales.",
+    "scanner_title": "Scanner No disponible",
+    "scanner_desc": "Escaneo masivo de 500 ASINs. Detecta y captura automáticamente oportunidades sin competencia.",
+    "paneu_title": "FBA Pan-EU",
+    "paneu_desc": "Cálculo de beneficio neto en 9 mercados europeos incluyendo IVA y tarifas FBA."
+  },
+  "roadmap": {
+    "section_label": "Hoja de ruta",
+    "title": "La gran visión",
+    "subtitle": "Dónde estamos y hacia dónde vamos",
+    "phase1_label": "Fase 1 — En vivo",
+    "phase2_label": "Fase 2 — Próximamente",
+    "phase3_label": "Fase 3 — Futuro",
+    "chip_active": "En vivo",
+    "chip_soon": "Pronto",
+    "chip_future": "Futuro"
+  },
+  "pricing": {
+    "title": "Precios simples",
+    "subtitle": "Prueba gratis 7 días. Sin tarjeta de crédito. Cancela cuando quieras.",
+    "most_popular": "MÁS POPULAR",
+    "per_month": "/mes",
+    "cta_free": "Empezar",
+    "cta_trial": "Prueba 7 días gratis",
+    "features": {
+      "searches_5": "5 búsquedas/día",
+      "searches_50": "50 búsquedas/día",
+      "searches_200": "200 búsquedas/día",
+      "searches_unlimited": "Ilimitado",
+      "niche_score": "Puntuación de nicho",
+      "basic": "Funciones básicas",
+      "lovehate": "IA Love/Hate",
+      "euro_flips": "Euro Flips",
+      "email_support": "Soporte por email",
+      "paneu": "FBA Pan-EU",
+      "supplier": "Proveedor turco",
+      "priority_support": "Soporte prioritario",
+      "api": "Acceso API",
+      "white_label": "Marca blanca",
+      "dedicated": "Soporte dedicado"
+    }
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "q1": "¿Puedo probar sin tarjeta de crédito?",
+    "a1": "¡Sí! Al registrarte, todas las funciones Pro son gratuitas durante 7 días. Sin tarjeta requerida.",
+    "q2": "¿En qué se diferencia de Helium 10?",
+    "a2": "Interfaz turca, módulo de proveedores turcos, Euro Flips e integración Trendyol. A 1/5 del precio de Helium 10.",
+    "q3": "¿Puedo cancelar en cualquier momento?",
+    "a3": "Sí, en cualquier momento. Tu acceso continúa hasta el final del período de facturación.",
+    "q4": "¿Qué mercados de Amazon soportan?",
+    "a4": "15+ mercados incluyendo EE.UU., Alemania, Francia, Italia, España, UK, Canadá, Japón."
+  },
+  "cta": {
+    "title": "¿Listo para empezar?",
+    "subtitle": "Todas las funciones Pro gratis durante 7 días. Sin tarjeta de crédito.",
+    "button": "Empezar ahora — Gratis →"
+  },
+  "footer": {
+    "privacy": "Privacidad",
+    "terms": "Términos de servicio",
+    "contact": "Contacto"
+  },
+  "auth": {
+    "title": "AmazenLens",
+    "subtitle": "Plataforma de investigación Amazon",
+    "login_tab": "Iniciar sesión",
+    "register_tab": "Registrarse",
+    "email": "Dirección de email",
+    "password": "Contraseña",
+    "full_name": "Nombre completo",
+    "forgot_password": "Olvidé mi contraseña",
+    "login_btn": "Iniciar sesión",
+    "register_btn": "Crear cuenta",
+    "reset_btn": "Enviar enlace",
+    "back_to_login": "Volver al inicio de sesión",
+    "or": "o",
+    "guest_btn": "Continuar sin cuenta",
+    "guest_limit": "5 búsquedas/día",
+    "trial_title": "Prueba Pro gratuita 7 días",
+    "trial_desc": "Comienza automáticamente al registrarse, sin tarjeta de crédito",
+    "terms_text": "Al registrarte aceptas nuestros Términos de servicio y Política de privacidad.",
+    "reset_title": "Restablecer contraseña",
+    "reset_desc": "Se enviará un enlace de restablecimiento a tu dirección de email",
+    "reset_success": "¡Enlace de restablecimiento enviado a tu email!",
+    "register_success": "¡Registro exitoso! Tu prueba Pro gratuita de 7 días ha comenzado.",
+    "loading": "Por favor espera...",
+    "error_email": "Email requerido",
+    "error_password": "Contraseña requerida"
+  },
+  "compare": {
+    "label": "Comparar con competidores:"
+  }
+}
