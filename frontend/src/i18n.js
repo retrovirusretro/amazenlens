@@ -22,8 +22,8 @@ i18n
     fallbackLng: 'tr',
     supportedLngs: ['tr', 'en', 'de', 'fr', 'es'],
     detection: {
-      order: ['navigator'],
-      caches: [''],
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
     },
     interpolation: {
       escapeValue: false,
