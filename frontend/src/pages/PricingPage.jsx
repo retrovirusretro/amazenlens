@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 
-const API = ''
+const API = 'https://amazenlens-production.up.railway.app'
 
 const STATIC_PLANS = [
   {
