@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { supabase } from './lib/api'
 import Layout from './components/Layout'
 import AuthPage from './pages/AuthPage'
 import LandingPage from './pages/LandingPage'
@@ -22,9 +24,99 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/auth" replace />
 }
 
+// Supabase auth token'larını yakalar (OAuth + Reset)
+function AuthHandler() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [resetMode, setResetMode] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash) return
+
+    const params = new URLSearchParams(hash.replace('#', '?'))
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const type = params.get('type')
+
+    if (!accessToken) return
+
+    if (type === 'recovery') {
+      // Şifre sıfırlama — reset ekranı göster
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+      setResetMode(true)
+    } else {
+      // OAuth login — session kur, dashboard'a git
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
+        .then(({ data }) => {
+          if (data?.user) {
+            localStorage.setItem('token', accessToken)
+            localStorage.setItem('user', JSON.stringify({
+              id: data.user.id,
+              email: data.user.email,
+              full_name: data.user.user_metadata?.full_name || '',
+              plan: 'free',
+            }))
+            navigate('/app/dashboard', { replace: true })
+          }
+        })
+    }
+  }, [])
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      setMsg('Şifre en az 6 karakter olmalı.')
+      return
+    }
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setMsg('✅ Şifren güncellendi! Giriş yapabilirsin.')
+      setTimeout(() => navigate('/auth', { replace: true }), 2000)
+    } catch (err) {
+      setMsg(err.message || 'Bir hata oluştu.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!resetMode) return null
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f7', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ background: 'white', borderRadius: '16px', border: '0.5px solid #e5e5ea', padding: '32px', width: '100%', maxWidth: '380px', boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}>
+        <div style={{ fontSize: '20px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>Yeni Şifre Belirle</div>
+        <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '20px' }}>En az 6 karakter olmalı.</div>
+        <input
+          type="password"
+          placeholder="Yeni şifre"
+          value={newPassword}
+          onChange={e => setNewPassword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleResetPassword()}
+          style={{ width: '100%', padding: '11px 14px', borderRadius: '9px', border: '0.5px solid #d2d2d7', fontSize: '14px', fontFamily: 'inherit', color: '#1d1d1f', outline: 'none', background: '#f5f5f7', boxSizing: 'border-box', marginBottom: '12px' }}
+        />
+        {msg && (
+          <div style={{ padding: '9px 13px', borderRadius: '8px', fontSize: '12px', marginBottom: '12px', background: msg.includes('✅') ? '#e8f9ee' : '#fff1f0', color: msg.includes('✅') ? '#1a7f37' : '#c00' }}>
+            {msg}
+          </div>
+        )}
+        <button onClick={handleResetPassword} disabled={loading}
+          style={{ width: '100%', padding: '11px', background: '#0071e3', color: 'white', border: 'none', borderRadius: '9px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit' }}>
+          {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <AuthHandler />
       <Routes>
         {/* Public sayfalar */}
         <Route path="/" element={<LandingPage />} />
