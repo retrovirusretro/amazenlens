@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API = ''
 
 const QUICK_SEARCHES = [
   'yoga mat', 'silikon mutfak seti', 'led masa lambası',
@@ -50,7 +50,7 @@ export default function Dashboard() {
         if (user.email && user.email !== 'misafir@amazenlens.com') {
           const res = await axios.get(`${API}/api/payments/subscription/${encodeURIComponent(user.email)}`)
           if (res.data) {
-            const updatedUser = { ...user, plan: res.data.plan, searches_per_day: res.data.searches_per_day }
+            const updatedUser = { ...user, plan: res.data.plan, searches_per_day: res.data.searches_per_day, is_admin: res.data.is_admin }
             localStorage.setItem('user', JSON.stringify(updatedUser))
             setUser(updatedUser)
           }

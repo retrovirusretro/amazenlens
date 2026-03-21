@@ -232,21 +232,54 @@ export default function KeywordPage() {
           </div>
 
           {/* Listing İpuçları */}
-          {result.listing_tips && (result.listing_tips.title || result.listing_tips.bullets) && (
+          {result.listing_tips && (result.listing_tips.title_example || result.listing_tips.bullets) && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>💡 Listing Optimizasyon İpuçları</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                {[
-                  { label: '📌 Title', value: result.listing_tips.title, color: '#0071e3', bg: '#e8f0fe' },
-                  { label: '• Bullets', value: result.listing_tips.bullets, color: '#34c759', bg: '#e8f9ee' },
-                  { label: '🔍 Backend', value: result.listing_tips.backend, color: '#ff9f0a', bg: '#fff4e0' },
-                ].map(tip => tip.value ? (
-                  <div key={tip.label} style={{ background: tip.bg, borderRadius: '8px', padding: '12px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: tip.color, marginBottom: '6px' }}>{tip.label}</div>
-                    <div style={{ fontSize: '11px', color: '#3c3c43', lineHeight: '1.6' }}>{tip.value}</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '14px' }}>💡 Kullanıma Hazır Listing Önerileri</div>
+
+              {result.listing_tips.title_example && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#0071e3', marginBottom: '6px' }}>📌 Hazır Amazon Başlığı — Kopyala/Yapıştır</div>
+                  <div style={{ background: '#e8f0fe', borderRadius: '8px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', lineHeight: '1.6', flex: 1 }}>
+                      {result.listing_tips.title_example}
+                    </div>
+                    <button onClick={() => navigator.clipboard.writeText(result.listing_tips.title_example)}
+                      style={{ fontSize: '11px', padding: '4px 10px', border: '0.5px solid #0071e3', borderRadius: '6px', background: 'white', color: '#0071e3', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                      📋 Kopyala
+                    </button>
                   </div>
-                ) : null)}
-              </div>
+                </div>
+              )}
+
+              {result.listing_tips.bullets && Array.isArray(result.listing_tips.bullets) && result.listing_tips.bullets.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#34c759', marginBottom: '6px' }}>• Hazır Bullet Points</div>
+                  <div style={{ background: '#e8f9ee', borderRadius: '8px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {result.listing_tips.bullets.map((bullet, i) => (
+                      <div key={i} style={{ fontSize: '12px', color: '#1d1d1f', lineHeight: '1.5', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                        <span style={{ flex: 1 }}>{bullet}</span>
+                        <button onClick={() => navigator.clipboard.writeText(bullet)}
+                          style={{ fontSize: '10px', padding: '2px 8px', border: '0.5px solid #34c759', borderRadius: '5px', background: 'white', color: '#34c759', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                          📋
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {result.listing_tips.backend && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#ff9f0a', marginBottom: '6px' }}>🔍 Backend Search Terms</div>
+                  <div style={{ background: '#fff4e0', borderRadius: '8px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ fontSize: '12px', color: '#3c3c43', lineHeight: '1.6', flex: 1 }}>{result.listing_tips.backend}</div>
+                    <button onClick={() => navigator.clipboard.writeText(result.listing_tips.backend)}
+                      style={{ fontSize: '11px', padding: '4px 10px', border: '0.5px solid #ff9f0a', borderRadius: '6px', background: 'white', color: '#ff9f0a', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                      📋 Kopyala
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
