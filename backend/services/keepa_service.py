@@ -1,8 +1,18 @@
 import os
 import asyncio
+import json
 from datetime import datetime, timedelta
 from typing import Optional
 import numpy as np
+
+# Supabase cache
+try:
+    from database.supabase import get_supabase
+    SUPABASE_AVAILABLE = True
+except Exception:
+    SUPABASE_AVAILABLE = False
+
+CACHE_TTL_HOURS = 24  # 24 saat cache
 
 # ─── Keepa Python wrapper ────────────────────────────────────────────────────
 # pip install keepa
@@ -199,11 +209,57 @@ def extract_price_history(product: dict) -> list:
 
 
 # ─── Ana Keepa Sorgu Fonksiyonu ──────────────────────────────────────────────
+# ─── Supabase Cache ────────────────────────────────────────────────────────
+async def _get_cache(asin: str) -> dict | None:
+    """Supabase'den cache'li veriyi getir (24 saat geçerliyse)"""
+    if not SUPABASE_AVAILABLE:
+        return None
+    try:
+        supabase = get_supabase()
+        result = supabase.table("keepa_cache").select("*").eq("asin", asin).execute()
+        if not result.data:
+            return None
+        row = result.data[0]
+        updated_at = datetime.fromisoformat(row["updated_at"].replace("Z", "+00:00"))
+        age_hours = abs((datetime.now().astimezone() - updated_at).total_seconds() / 3600)
+        if age_hours > CACHE_TTL_HOURS:
+            return None  # Cache süresi dolmuş
+        data = row["data"]
+        data["cached"] = True
+        data["cache_age_hours"] = round(age_hours, 1)
+        return data
+    except Exception as e:
+        print(f"Cache get error: {e}")
+        return None
+
+async def _set_cache(asin: str, category: str, data: dict) -> None:
+    """Keepa verisini Supabase'e cache'le"""
+    if not SUPABASE_AVAILABLE:
+        return
+    try:
+        supabase = get_supabase()
+        cache_data = {k: v for k, v in data.items() if k not in ["cached", "cache_age_hours"]}
+        supabase.table("keepa_cache").upsert({
+            "asin": asin,
+            "category": category,
+            "data": cache_data,
+            "updated_at": datetime.now().isoformat()
+        }).execute()
+    except Exception as e:
+        print(f"Cache set error: {e}")
+
+
 async def get_keepa_data(asin: str, category: str = "default") -> dict:
     """
     ASIN için Keepa'dan tam veri çek.
-    1 token harcar.
+    Cache varsa 0 token, yoksa 1 token harcar.
     """
+    # Önce cache kontrol et
+    cached = await _get_cache(asin)
+    if cached:
+        print(f"✅ Cache hit: {asin} ({cached.get('cache_age_hours', 0)}h old)")
+        return cached
+
     if not KEEPA_AVAILABLE or not KEEPA_API_KEY:
         return _mock_keepa_data(asin, category)
 
@@ -269,7 +325,7 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
             "max_90d": max(prices) if prices else 0,
         }
 
-        return {
+        result = {
             "asin": asin,
             "current_bsr": current_bsr,
             "current_reviews": current_reviews,
@@ -288,7 +344,11 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
             "rvi": rvi_data,
             "token_cost": 1,
             "mock": False,
+            "cached": False,
         }
+        # Supabase'e cache'le
+        await _set_cache(asin, category, result)
+        return result
 
     except Exception as e:
         print(f"Keepa error for {asin}: {e}")
