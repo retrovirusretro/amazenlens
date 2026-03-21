@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { track, Events } from '../lib/analytics'
 
-const API = ''
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const CACHE_TTL = 60 * 60 * 1000
 
 const SCORE_COLOR = (s) => s >= 70 ? '#34c759' : s >= 50 ? '#ff9f0a' : '#ff3b30'
