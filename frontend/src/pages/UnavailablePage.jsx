@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { scanUnavailable, searchProducts } from '../lib/api'
 import axios from 'axios'
 
-const API = ''
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const CATEGORIES = [
   'Home & Kitchen', 'Sports & Outdoors', 'Electronics', 'Baby',

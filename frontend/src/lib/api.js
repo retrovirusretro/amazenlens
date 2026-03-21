@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 
-const API_URL = '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 // Supabase client — auth için direkt
 export const supabase = createClient(
