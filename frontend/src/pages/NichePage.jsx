@@ -28,6 +28,20 @@ export default function NichePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showMethodology, setShowMethodology] = useState(false)
+  const [keepaLoading, setKeepaLoading] = useState(false)
+
+  const handleKeepaEnhance = async () => {
+    if (!result?.asin) return
+    setKeepaLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/amazon/niche-score/${result.asin}?use_keepa=true`)
+      setResult(res.data)
+    } catch {
+      // sessizce geç
+    } finally {
+      setKeepaLoading(false)
+    }
+  }
 
   const VERDICT = (s) => s >= 90 ? t('niche.verdict_excellent') : s >= 70 ? t('niche.verdict_good') : s >= 50 ? t('niche.verdict_medium') : t('niche.verdict_weak')
 
@@ -274,6 +288,17 @@ export default function NichePage() {
                 style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: 'none', background: '#0071e3', color: 'white', cursor: 'pointer', fontFamily: 'inherit' }}>
                 {t('niche.find_supplier')} →
               </button>
+              {!nicheData?.keepa?.enhanced && (
+                <button onClick={handleKeepaEnhance} disabled={keepaLoading}
+                  style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: '0.5px solid #ff9f0a', background: keepaLoading ? '#fff4e0' : 'white', color: '#b45309', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {keepaLoading ? '⏳' : '🔑'} {keepaLoading ? 'Yükleniyor...' : 'Keepa ile Güçlendir'}
+                </button>
+              )}
+              {nicheData?.keepa?.enhanced && (
+                <span style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '8px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '500' }}>
+                  ✅ Keepa aktif
+                </span>
+              )}
             </div>
           </div>
 
