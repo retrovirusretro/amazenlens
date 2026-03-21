@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/api'
 import Layout from './components/Layout'
@@ -26,6 +26,12 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/auth" replace />
 }
 
+// Blog slug redirect — /blog/:slug → /app/blog/:slug
+function BlogSlugRedirect() {
+  const { slug } = useParams()
+  return <Navigate to={`/app/blog/${slug}`} replace />
+}
+
 // Supabase auth token'larını yakalar (OAuth + Reset)
 function AuthHandler() {
   const navigate = useNavigate()
@@ -47,11 +53,9 @@ function AuthHandler() {
     if (!accessToken) return
 
     if (type === 'recovery') {
-      // Şifre sıfırlama — reset ekranı göster
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
       setResetMode(true)
     } else {
-      // OAuth login — session kur, dashboard'a git
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken || '' })
         .then(({ data }) => {
           if (data?.user) {
@@ -148,7 +152,7 @@ function App() {
           <Route path="keywords" element={<KeywordPage />} />
         </Route>
 
-        {/* Eski URL'leri yeni yapıya yönlendir */}
+        {/* Eski + dış URL'leri yeni yapıya yönlendir */}
         <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
         <Route path="/search" element={<Navigate to="/app/search" replace />} />
         <Route path="/niche" element={<Navigate to="/app/niche" replace />} />
@@ -159,6 +163,7 @@ function App() {
         <Route path="/bulk" element={<Navigate to="/app/bulk" replace />} />
         <Route path="/unavailable" element={<Navigate to="/app/unavailable" replace />} />
         <Route path="/blog" element={<Navigate to="/app/blog" replace />} />
+        <Route path="/blog/:slug" element={<BlogSlugRedirect />} />
         <Route path="/blog-admin" element={<Navigate to="/app/blog-admin" replace />} />
       </Routes>
     </BrowserRouter>

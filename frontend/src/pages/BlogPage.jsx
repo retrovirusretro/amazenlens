@@ -88,7 +88,7 @@ function BlogPage() {
         <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px'}}>
           {posts.map(post => (
             <div key={post.id}
-              onClick={() => navigate(`/blog/${post.slug}`)}
+              onClick={() => navigate(`/app/blog/${post.slug}`)}
               style={{
                 background: 'white', borderRadius: '16px', overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)', cursor: 'pointer',
