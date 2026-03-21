@@ -18,6 +18,7 @@ import CalculatorPage from './pages/CalculatorPage'
 import PricingPage from './pages/PricingPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AboutPage from './pages/AboutPage'
+import KeywordPage from './pages/KeywordPage'
 import './App.css'
 
 function PrivateRoute({ children }) {
@@ -144,6 +145,7 @@ function App() {
           <Route path="pricing" element={<PricingPage />} />
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="about" element={<AboutPage />} />
+          <Route path="keywords" element={<KeywordPage />} />
         </Route>
 
         {/* Eski URL'leri yeni yapıya yönlendir */}

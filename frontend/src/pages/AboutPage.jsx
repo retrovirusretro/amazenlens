@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 
 const TEAM = [
   {
-    name: 'Gökhan Ustaosmanoğlu',
+    name: 'Lens TEAM',
     role: 'Founder & CEO',
     bio: 'Amazon FBA satıcısı & e-ticaret girişimcisi. AmazenLens\'i kendi satıcı deneyiminden doğan ihtiyaçlardan geliştirdi.',
     avatar: '👨‍💻',

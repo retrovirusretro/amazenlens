@@ -13,7 +13,6 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-# Rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 app = FastAPI(
@@ -24,12 +23,10 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Rate limit middleware
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# CORS — dev + production
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 origins = [
@@ -43,10 +40,8 @@ origins = [
     "http://127.0.0.1:5176",
 ]
 
-# Production URL'yi ekle
 if FRONTEND_URL and FRONTEND_URL not in origins:
     origins.append(FRONTEND_URL)
-    # www ve https varyanları da ekle
     if FRONTEND_URL.startswith("https://"):
         origins.append(FRONTEND_URL.replace("https://", "https://www."))
 
@@ -66,6 +61,7 @@ from routers.blog import router as blog_router
 from routers.reviews import router as reviews_router
 from routers.payments import router as payments_router
 from routers.feedback import router as feedback_router
+from routers.keywords import router as keywords_router
 
 app.include_router(amazon_router)
 app.include_router(auth_router)
@@ -75,6 +71,7 @@ app.include_router(blog_router)
 app.include_router(reviews_router)
 app.include_router(payments_router)
 app.include_router(feedback_router)
+app.include_router(keywords_router)
 
 @app.get("/health")
 async def health():
