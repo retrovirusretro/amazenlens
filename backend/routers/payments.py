@@ -28,13 +28,10 @@ class CheckoutRequest(BaseModel):
 class PortalRequest(BaseModel):
     customer_id: str
 
-# ─── Checkout ────────────────────────────────────────────────────
-
 @router.post("/create-checkout")
 async def create_checkout(req: CheckoutRequest):
     if req.plan not in ["starter", "pro", "agency"]:
         raise HTTPException(status_code=400, detail="Geçersiz plan")
-
     try:
         result = create_checkout_session(
             plan=req.plan,
@@ -45,8 +42,6 @@ async def create_checkout(req: CheckoutRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# ─── Müşteri Portalı ─────────────────────────────────────────────
 
 @router.post("/create-portal")
 async def create_portal(req: PortalRequest):
@@ -59,15 +54,12 @@ async def create_portal(req: PortalRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ─── Webhook ─────────────────────────────────────────────────────
-
 @router.post("/webhook")
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(None, alias="stripe-signature")
 ):
     payload = await request.body()
-
     try:
         event = handle_webhook(payload, stripe_signature or "")
     except ValueError as e:
@@ -79,13 +71,9 @@ async def stripe_webhook(
             plan = event.get("plan")
             customer_id = event.get("customer_id")
             subscription_id = event.get("subscription_id")
-
             if user_email and plan:
-                # Önce mevcut profili bul
                 existing = supabase.table("profiles").select("id").eq("email", user_email).execute()
-
                 if existing.data:
-                    # Kayıt var → sadece güncelle
                     supabase.table("profiles").update({
                         "plan": plan,
                         "stripe_customer_id": customer_id,
@@ -116,7 +104,6 @@ async def stripe_webhook(
                     "searches_per_day": 5,
                     "subscription_status": "cancelled",
                 }).eq("stripe_subscription_id", subscription_id).execute()
-                print(f"✅ Abonelik iptal edildi: {subscription_id}")
 
         elif event["event"] == "payment_failed":
             customer_id = event.get("customer_id")
@@ -130,36 +117,14 @@ async def stripe_webhook(
 
     return JSONResponse({"received": True, "event": event["event"]})
 
-# ─── Plan Bilgisi ─────────────────────────────────────────────────
-
 @router.get("/plans")
 async def get_plans():
     return {
         "plans": [
-            {
-                "id": "free", "name": "Free", "price": 0,
-                "currency": "USD", "period": "ay", "searches_per_day": 5,
-                "features": ["5 arama/gün", "Temel özellikler", "Niş skoru"],
-                "cta": "Ücretsiz Başla", "highlighted": False,
-            },
-            {
-                "id": "starter", "name": "Starter", "price": 19,
-                "currency": "USD", "period": "ay", "searches_per_day": 50,
-                "features": ["50 arama/gün", "Tüm Faz 1 özellikleri", "Love/Hate analizi", "Euro Flips arbitraj", "Email destek"],
-                "cta": "Starter Başla", "highlighted": False,
-            },
-            {
-                "id": "pro", "name": "Pro", "price": 49,
-                "currency": "USD", "period": "ay", "searches_per_day": 200,
-                "features": ["200 arama/gün", "Tüm özellikler", "Pan-EU kar hesabı", "DHgate + Türk tedarikçi", "Öncelikli destek"],
-                "cta": "Pro Başla", "highlighted": True,
-            },
-            {
-                "id": "agency", "name": "Agency", "price": 99,
-                "currency": "USD", "period": "ay", "searches_per_day": -1,
-                "features": ["Sınırsız arama", "Tüm özellikler", "API erişimi", "Dedicated destek", "White-label hazırlık"],
-                "cta": "Agency Başla", "highlighted": False,
-            },
+            {"id": "free", "name": "Free", "price": 0, "currency": "USD", "period": "ay", "searches_per_day": 5, "features": ["5 arama/gün", "Temel özellikler", "Niş skoru"], "cta": "Ücretsiz Başla", "highlighted": False},
+            {"id": "starter", "name": "Starter", "price": 19, "currency": "USD", "period": "ay", "searches_per_day": 50, "features": ["50 arama/gün", "Tüm Faz 1 özellikleri", "Love/Hate analizi", "Euro Flips arbitraj", "Email destek"], "cta": "Starter Başla", "highlighted": False},
+            {"id": "pro", "name": "Pro", "price": 49, "currency": "USD", "period": "ay", "searches_per_day": 200, "features": ["200 arama/gün", "Tüm özellikler", "Pan-EU kar hesabı", "DHgate + Türk tedarikçi", "Öncelikli destek"], "cta": "Pro Başla", "highlighted": True},
+            {"id": "agency", "name": "Agency", "price": 99, "currency": "USD", "period": "ay", "searches_per_day": -1, "features": ["Sınırsız arama", "Tüm özellikler", "API erişimi", "Dedicated destek", "White-label hazırlık"], "cta": "Agency Başla", "highlighted": False},
         ]
     }
 
@@ -167,11 +132,10 @@ async def get_plans():
 async def get_user_subscription(user_email: str):
     try:
         res = supabase.table("profiles").select(
-            "plan, stripe_customer_id, stripe_subscription_id, searches_per_day, subscription_status"
+            "plan, stripe_customer_id, stripe_subscription_id, searches_per_day, subscription_status, is_admin"
         ).eq("email", user_email).single().execute()
-
         if res.data:
             return res.data
-        return {"plan": "free", "searches_per_day": 5}
+        return {"plan": "free", "searches_per_day": 5, "is_admin": False}
     except Exception:
-        return {"plan": "free", "searches_per_day": 5}
+        return {"plan": "free", "searches_per_day": 5, "is_admin": False}

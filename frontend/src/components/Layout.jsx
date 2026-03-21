@@ -25,7 +25,7 @@ const NAV = [
     section: 'İçerik',
     items: [
       { to: '/app/blog', label: 'Blog', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg> },
-      { to: '/app/blog-admin', label: 'Blog Yönetimi', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
+      { to: '/app/blog-admin', label: 'Blog Yönetimi', adminOnly: true, icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     ]
   },
   {
@@ -103,12 +103,14 @@ function Layout() {
             {NAV.map(group => (
               <div key={group.section} className="sb-section">
                 <div className="sb-section-label">{group.section}</div>
-                {group.items.map(item => (
-                  <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-                    {item.icon}
-                    {item.label}
-                  </NavLink>
-                ))}
+                {group.items
+                  .filter(item => !item.adminOnly || user.is_admin)
+                  .map(item => (
+                    <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                      {item.icon}
+                      {item.label}
+                    </NavLink>
+                  ))}
               </div>
             ))}
           </nav>
