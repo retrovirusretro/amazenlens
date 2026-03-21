@@ -166,3 +166,105 @@ def get_mock_analysis(asin: str, title: str = "", lang: str = "tr") -> dict:
         "mock": True,
         "lang": lang
     }
+
+
+# ─── REVIEW HELPFULNESSi SKORU ───────────────────────────────────────────────
+# Kaynak: arXiv:2412.02884 — %96.91 doğruluk
+# 3 kritik özellik: görsel sayısı, yorumcu güvenilirliği, yorum yaşı
+
+def score_review_helpfulness(review: dict) -> float:
+    """
+    0-1 arası yardımlılık skoru.
+    review dict anahtarları:
+      text, rating, image_count, reviewer_helpful, age_days, helpful_votes
+    """
+    text = review.get("text", review.get("body", ""))
+    image_count = review.get("image_count", 0)
+    reviewer_helpful = review.get("reviewer_helpful", 0)
+    age_days = review.get("age_days", 90)
+    helpful_votes = review.get("helpful_votes", 0)
+    rating = review.get("rating", 3)
+
+    # Özellik 1: Görsel (en güçlü sinyal — makale)
+    image_score = min(image_count * 0.25, 1.0)
+
+    # Özellik 2: Yorumcu güvenilirliği
+    import math
+    credibility = min(math.log1p(reviewer_helpful + helpful_votes) / 10, 1.0)
+
+    # Özellik 3: Taze ama çok yeni değil (7-180 gün arası ideal)
+    if 7 <= age_days <= 180:
+        age_score = 1.0
+    elif age_days < 7:
+        age_score = 0.7
+    elif age_days <= 365:
+        age_score = 0.5
+    else:
+        age_score = 0.3
+
+    # Metin uzunluğu (ek sinyal)
+    text_score = min(len(text) / 500, 1.0)
+
+    # Rating extremity — 1★ ve 5★ yorumlar daha bilgilendirici
+    rating_score = 1.0 if rating in [1, 2, 5] else 0.7
+
+    # Ağırlıklı toplam (arXiv:2412.02884 ağırlıklarına yakın)
+    score = (
+        0.30 * image_score +
+        0.25 * credibility +
+        0.20 * age_score +
+        0.15 * text_score +
+        0.10 * rating_score
+    )
+    return round(score, 3)
+
+
+def get_top_reviews(reviews: list, n: int = 20) -> list:
+    """En yardımlı n yorumu döndür"""
+    scored = [(r, score_review_helpfulness(r)) for r in reviews]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    result = []
+    for review, score in scored[:n]:
+        review_copy = dict(review)
+        review_copy["helpfulness_score"] = score
+        result.append(review_copy)
+    return result
+
+
+def analyze_pain_points(reviews: list) -> dict:
+    """
+    Negatif yorumlardan pain point tespiti.
+    Düşük rating + yüksek helpfulness = kritik sorun.
+    """
+    negative = [r for r in reviews if r.get("rating", 3) <= 2]
+    if not negative:
+        return {"pain_points": [], "critical_count": 0}
+
+    top_negative = get_top_reviews(negative, n=10)
+
+    # Pain point kategorileri
+    categories = {
+        "quality": ["broke", "broken", "cheap", "poor quality", "defective", "kırık", "kalitesiz", "bozuk"],
+        "size": ["small", "large", "size", "fit", "küçük", "büyük", "boyut", "ölçü"],
+        "shipping": ["damage", "late", "missing", "kargo", "hasarlı", "geç", "eksik"],
+        "description": ["different", "not as", "misleading", "farklı", "yanıltıcı", "açıklama"],
+        "smell": ["smell", "odor", "koku"],
+    }
+
+    found_categories = {}
+    for review in top_negative:
+        text = (review.get("text", "") + review.get("body", "")).lower()
+        for cat, keywords in categories.items():
+            if any(kw in text for kw in keywords):
+                found_categories[cat] = found_categories.get(cat, 0) + 1
+
+    pain_points = [
+        {"category": cat, "count": count, "opportunity": f"{cat} improvement opportunity"}
+        for cat, count in sorted(found_categories.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+    return {
+        "pain_points": pain_points,
+        "critical_count": len(top_negative),
+        "top_critical_reviews": top_negative[:5],
+    }
