@@ -63,6 +63,7 @@ from routers.payments import router as payments_router
 from routers.feedback import router as feedback_router
 from routers.keywords import router as keywords_router
 from routers.keepa import router as keepa_router
+from routers.trends import router as trends_router
 
 app.include_router(amazon_router)
 app.include_router(auth_router)
@@ -74,6 +75,7 @@ app.include_router(payments_router)
 app.include_router(feedback_router)
 app.include_router(keywords_router)
 app.include_router(keepa_router)
+app.include_router(trends_router)
 
 @app.get("/health")
 async def health():
