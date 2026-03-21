@@ -283,6 +283,50 @@ export default function KeywordPage() {
             </div>
           )}
 
+          {/* Google Trends */}
+          {result.trend && result.trend.monthly && result.trend.monthly.length > 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>📈 Google Trends — Son 12 Ay</div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px' }}>{result.trend.direction_tr}</span>
+                  {result.trend.is_seasonal && (
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', background: '#fff4e0', color: '#b45309', fontWeight: '500' }}>🌊 Mevsimlik</span>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '60px', marginBottom: '8px' }}>
+                {result.trend.monthly.map((val, i) => {
+                  const max = Math.max(...result.trend.monthly)
+                  const height = max > 0 ? (val / max) * 60 : 0
+                  const isRecent = i >= result.trend.monthly.length - 3
+                  return (
+                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <div style={{ width: '100%', background: isRecent ? '#0071e3' : '#d2d2d7', borderRadius: '2px 2px 0 0', height: `${height}px`, minHeight: val > 0 ? '2px' : '0', transition: 'height 0.3s ease' }} />
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#aeaeb2' }}>
+                <span>12 ay önce</span>
+                <span style={{ color: '#0071e3', fontWeight: '500' }}>Son 3 ay ↑</span>
+                <span>Bugün</span>
+              </div>
+              {result.trend.rising_queries && result.trend.rising_queries.length > 0 && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '0.5px solid #f5f5f7' }}>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px' }}>🔥 Yükselen Aramalar</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {result.trend.rising_queries.slice(0, 5).map((q, i) => (
+                      <span key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: '#fff4e0', color: '#b45309', fontWeight: '500' }}>
+                        ↑ {q.query}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Cross-Market */}
           {result.cross_market?.de_equivalent && (
             <div style={{ background: 'linear-gradient(135deg, #1a1040, #0f1e35)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>

@@ -128,6 +128,8 @@ Generate 15-20 long_tail keywords."""
         }
 
 async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = True) -> dict:
+    from services.trend_service import get_trend_data, get_related_queries
+
     tasks = [get_autocomplete(keyword, "US")]
     if include_de:
         tasks.append(get_autocomplete(keyword, "DE"))
@@ -199,6 +201,22 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
 
     all_keywords.sort(key=lambda x: x.get("buyer_score", 0), reverse=True)
 
+    # Google Trends verisi
+    trend_data = {}
+    related_data = {}
+    try:
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        trend_data = await loop.run_in_executor(None, get_trend_data, keyword, "today 12-m", "")
+        related_data = await loop.run_in_executor(None, get_related_queries, keyword)
+    except Exception as e:
+        print(f"Trend fetch error: {e}")
+
+    # Trend skoru keyword listesine ekle
+    trend_direction = trend_data.get("direction", "unknown")
+    trend_score_val = trend_data.get("trend_score", 0)
+    is_seasonal = trend_data.get("is_seasonal", False)
+
     return {
         "seed_keyword": keyword,
         "markets": {
@@ -208,6 +226,17 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
         "title_density": density,
         "buyer_intent": buyer_intent,
         "buyer_score": buyer_score,
+        "trend": {
+            "direction": trend_direction,
+            "direction_tr": trend_data.get("direction_tr", "—"),
+            "score": trend_score_val,
+            "avg_score": trend_data.get("avg_score", 0),
+            "monthly": trend_data.get("monthly", []),
+            "is_seasonal": is_seasonal,
+            "seasonality_ratio": trend_data.get("seasonality_ratio", 0),
+            "peak_month": trend_data.get("peak_month", 0),
+            "rising_queries": related_data.get("rising", []),
+        },
         "keywords": all_keywords,
         "negative_keywords": claude_data.get("negative_keywords", []),
         "listing_tips": claude_data.get("listing_tips", {}),
