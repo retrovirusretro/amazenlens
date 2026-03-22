@@ -29,3 +29,9 @@ async def keepa_batch(data: dict):
 async def token_status():
     """Keepa token durumu"""
     return get_token_status()
+
+
+@router.get("/stats")
+async def token_stats():
+    """Token tasarruf istatistikleri"""
+    return get_token_stats()

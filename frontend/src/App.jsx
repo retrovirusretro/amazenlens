@@ -19,6 +19,7 @@ import PricingPage from './pages/PricingPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AboutPage from './pages/AboutPage'
 import KeywordPage from './pages/KeywordPage'
+import TrendRadarPage from './pages/TrendRadarPage'
 import './App.css'
 
 function PrivateRoute({ children }) {
@@ -150,6 +151,7 @@ function App() {
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="keywords" element={<KeywordPage />} />
+          <Route path="/app/trend-radar" element={<TrendRadarPage />} />
         </Route>
 
         {/* Eski + dış URL'leri yeni yapıya yönlendir */}

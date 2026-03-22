@@ -12,7 +12,25 @@ try:
 except Exception:
     SUPABASE_AVAILABLE = False
 
-CACHE_TTL_HOURS = 24  # 24 saat cache
+CACHE_TTL_HOURS = 48   # 48 saat cache — token tasarrufu icin uzatildi
+
+# Token tasarruf istatistikleri
+_token_stats = {
+    "cache_hits": 0,      # Kac sorgu cache'den karsilandi (0 token)
+    "api_calls": 0,       # Kac gercek Keepa API cagrisi yapildi
+    "tokens_saved": 0,    # Tahmini kacirilen token
+}
+
+def get_token_stats() -> dict:
+    """Token tasarruf istatistiklerini don"""
+    total = _token_stats["cache_hits"] + _token_stats["api_calls"]
+    savings_pct = int((_token_stats["cache_hits"] / total * 100) if total > 0 else 0)
+    return {
+        **_token_stats,
+        "total_requests": total,
+        "cache_hit_rate_pct": savings_pct,
+        "estimated_tokens_saved": _token_stats["cache_hits"],
+    }
 
 # ─── Keepa Python wrapper ────────────────────────────────────────────────────
 # pip install keepa
@@ -258,6 +276,8 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
     cached = await _get_cache(asin)
     if cached:
         print(f"✅ Cache hit: {asin} ({cached.get('cache_age_hours', 0)}h old)")
+        _token_stats["cache_hits"] += 1
+        _token_stats["tokens_saved"] += 1
         return cached
 
     if not KEEPA_AVAILABLE or not KEEPA_API_KEY:
@@ -267,11 +287,14 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
         api = keepa.Keepa(KEEPA_API_KEY)
         products = api.query(
             asin,
-            stats=90,       # Son 90 gün istatistikleri
-            history=True,   # Fiyat/BSR/review geçmişi
-            offers=20       # Satıcı teklifleri
+            stats=90,        # Son 90 gun istatistikleri — ucretsiz, token maliyeti yok
+            history=True,    # Fiyat/BSR/review gecmisi
+            days=90,         # OPTIMIZASYON: Sadece son 90 gun — response %60 kuculuyor
+            update=24,       # OPTIMIZASYON: 24h'den yeni veri varsa Keepa token harcama
+            # offers=20 KALDIRILDI — her offer sorusu extra token, kapali
         )
 
+        _token_stats["api_calls"] += 1
         if not products:
             return _mock_keepa_data(asin, category)
 
