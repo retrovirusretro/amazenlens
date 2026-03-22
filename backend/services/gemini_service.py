@@ -7,18 +7,33 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+GEMINI_AVAILABLE = False
+client = None
+
+# google-genai (yeni) veya google-generativeai (eski) — ikisini de dene
 try:
     from google import genai
     from google.genai import types
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    GEMINI_AVAILABLE = bool(GEMINI_API_KEY)
-    if GEMINI_AVAILABLE:
-        print(f"✅ Gemini configured: {GEMINI_API_KEY[:8]}...")
+    if GEMINI_API_KEY:
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        GEMINI_AVAILABLE = True
+        print(f"✅ Gemini (google-genai) configured: {GEMINI_API_KEY[:8]}...")
     else:
         print("⚠️ GEMINI_API_KEY not found — using mock")
+except ImportError:
+    try:
+        import google.generativeai as genai_legacy
+        if GEMINI_API_KEY:
+            genai_legacy.configure(api_key=GEMINI_API_KEY)
+            GEMINI_AVAILABLE = True
+            client = genai_legacy
+            print(f"✅ Gemini (generativeai legacy) configured: {GEMINI_API_KEY[:8]}...")
+        else:
+            print("⚠️ GEMINI_API_KEY not found — using mock")
+    except ImportError:
+        print("⚠️ No Gemini library found — using mock")
 except Exception as e:
-    GEMINI_AVAILABLE = False
-    print(f"⚠️ Gemini init error: {e}")
+    print(f"⚠️ Gemini init error: {e} — using mock")
 
 FLASH_MODEL = "gemini-2.5-flash"
 FLASH_LITE_MODEL = "gemini-2.5-flash-lite-preview-06-17"

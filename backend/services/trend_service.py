@@ -5,7 +5,13 @@ def _get_pytrends():
     """Her istekte yeni bağlantı kur — startup'ta bağlanmaz"""
     try:
         from pytrends.request import TrendReq
-        return TrendReq(hl='en-US', tz=360, retries=2, backoff_factor=0.5)
+        import urllib3
+        # urllib3 2.0+ 'method_whitelist' -> 'allowed_methods' olarak degisti
+        try:
+            return TrendReq(hl='en-US', tz=360, retries=2, backoff_factor=0.5)
+        except TypeError:
+            # Eski urllib3 fallback
+            return TrendReq(hl='en-US', tz=360)
     except Exception as e:
         print(f"Pytrends init error: {e}")
         return None
