@@ -110,6 +110,7 @@ export default function NichePage() {
   const flags = nicheData?.flags || {}
   const unmet = nicheData?.unmet_demand || {}
   const priceWar = nicheData?.price_war || {}
+  const calendar = nicheData?.cultural_calendar || {}
   const prong = nicheData?.prong_test || {}
   const rvi = nicheData?.review_velocity || {}
   const trend = nicheData?.demand_trend || {}
@@ -415,6 +416,43 @@ export default function NichePage() {
                   <span>Mevcut: <strong>${priceWar.price_current}</strong></span>
                   <span>90g Zirve: <strong>${priceWar.price_max_90d}</strong></span>
                   <span>Risk Skoru: <strong style={{ color: priceWar.risk_score >= 60 ? '#dc2626' : '#b45309' }}>{priceWar.risk_score}/100</strong></span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Kültürel Takvim */}
+          {calendar?.best_listing_time && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📅 En İyi Listeleme Zamanı</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ background: '#f0fdf4', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Önerilen Listeleme</div>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a' }}>{calendar.best_listing_time.month_name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{calendar.best_listing_time.for_event} için</div>
+                </div>
+                <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Aciliyet</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f' }}>{calendar.best_listing_time.urgency}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Boost: {calendar.best_listing_time.boost_score}/100</div>
+                </div>
+              </div>
+              {calendar.upcoming_events?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px' }}>Yaklaşan Fırsatlar</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {calendar.upcoming_events.map((ev, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>
+                        <span style={{ fontWeight: '500', color: '#1d1d1f' }}>{ev.event}</span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ color: '#64748b' }}>{ev.months_until_event} ay sonra</span>
+                          <span style={{ padding: '2px 8px', borderRadius: '10px', background: '#fff4e0', color: '#b45309', fontWeight: '500' }}>
+                            +{ev.boost_score}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

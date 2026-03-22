@@ -26,6 +26,11 @@ export default function KeywordPage() {
   const [sortKey, setSortKey] = useState('buyer_score')
   const [sortDir, setSortDir] = useState('desc')
   const [autocomplete, setAutocomplete] = useState([])
+  const [reserveAsins, setReserveAsins] = useState(null)
+  const [reverseResult, setReverseResult] = useState(null)
+  const [reverseAsin, setReverseAsin] = useState('')
+  const [reverseLoading, setReverseLoading] = useState(false)
+  const [reserveLoading, setReserveLoading] = useState(false)
 
   const handleAutocomplete = async (val) => {
     setSeed(val)
@@ -34,6 +39,26 @@ export default function KeywordPage() {
       const res = await axios.get(`${API}/api/keywords/autocomplete?keyword=${encodeURIComponent(val)}&market=${market}`)
       setAutocomplete(res.data.suggestions || [])
     } catch { setAutocomplete([]) }
+  }
+
+  const handleReserveCheck = async () => {
+    if (!seed.trim()) return
+    setReserveLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/keywords/asin-reserve?keyword=${encodeURIComponent(seed.trim())}&market=${market}`)
+      setReserveAsins(res.data)
+    } catch { setReserveAsins(null) }
+    finally { setReserveLoading(false) }
+  }
+
+  const handleReverseAsin = async () => {
+    if (!reverseAsin.trim()) return
+    setReverseLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/keywords/reverse-asin?asin=${reverseAsin.trim()}&market=${market}`)
+      setReverseResult(res.data)
+    } catch { setReverseResult(null) }
+    finally { setReverseLoading(false) }
   }
 
   const handleAnalyze = async () => {
@@ -173,7 +198,7 @@ export default function KeywordPage() {
           {/* Özet Metrikler */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
             {[
-              { label: 'US Arama Hacmi', value: result.markets?.US?.volume || 0, sub: '/100 tahmini', color: '#0071e3', bg: '#e8f0fe' },
+              { label: 'US Arama Hacmi', value: result.markets?.US?.volume || 0, sub: '/100 — Binary Search', color: '#0071e3', bg: '#e8f0fe' },
               { label: 'US IQ Score', value: result.markets?.US?.iq_score || 0, sub: 'Hacim/Rekabet', color: IQ_COLOR(result.markets?.US?.iq_score || 0), bg: IQ_BG(result.markets?.US?.iq_score || 0) },
               { label: 'DE IQ Score', value: result.markets?.DE?.iq_score || 0, sub: 'Cross-market', color: IQ_COLOR(result.markets?.DE?.iq_score || 0), bg: IQ_BG(result.markets?.DE?.iq_score || 0) },
               { label: 'Toplam Keyword', value: result.total_keywords || 0, sub: 'US + DE + AI', color: '#af52de', bg: '#f3e8ff' },
@@ -419,6 +444,109 @@ export default function KeywordPage() {
                 )
               })}
             </div>
+          </div>
+
+          {/* Keyword Difficulty */}
+          {result.difficulty && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>⚡ Keyword Difficulty</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '22px', fontWeight: '700', color: result.difficulty.score >= 70 ? '#ff3b30' : result.difficulty.score >= 40 ? '#ff9f0a' : '#34c759' }}>
+                    {result.difficulty.score}
+                  </span>
+                  <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '10px',
+                    background: result.difficulty.score >= 70 ? '#fee2e2' : result.difficulty.score >= 40 ? '#fff4e0' : '#e8f9ee',
+                    color: result.difficulty.score >= 70 ? '#dc2626' : result.difficulty.score >= 40 ? '#b45309' : '#16a34a',
+                    fontWeight: '600'
+                  }}>{result.difficulty.level_tr}</span>
+                </div>
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', marginBottom: '10px' }}>
+                💡 {result.difficulty.advice}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {[
+                  { label: 'Title Density', val: result.difficulty.breakdown?.density },
+                  { label: 'Pozisyon', val: result.difficulty.breakdown?.position },
+                  { label: 'Uzunluk', val: result.difficulty.breakdown?.length },
+                  { label: 'Rekabet', val: result.difficulty.breakdown?.competition },
+                ].map((item, i) => (
+                  <div key={i} style={{ textAlign: 'center', padding: '8px', background: '#f8fafc', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#1d1d1f' }}>{item.val}</div>
+                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ASIN Reserve Checker */}
+          {result.seed_keyword && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>🎯 ASIN Rezerv Checker</div>
+                <button onClick={handleReserveCheck} disabled={reserveLoading}
+                  style={{ padding: '6px 14px', background: '#0071e3', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {reserveLoading ? '⏳ Taranıyor...' : '🔍 Rakip ASINleri Bul'}
+                </button>
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                "{result.seed_keyword}" keyword'ünde rank alan rakip ürünleri bul → niş analizi yap
+              </div>
+              {reserveAsins?.ranking_asins?.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {reserveAsins.ranking_asins.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#8e8e93', width: '20px' }}>#{item.rank}</span>
+                      <span style={{ fontSize: '12px', fontFamily: 'monospace', color: '#1d1d1f', flex: 1 }}>{item.asin}</span>
+                      <button onClick={() => navigate(`/app/niche?asin=${item.asin}`)}
+                        style={{ padding: '4px 10px', background: '#e8f0fe', color: '#0071e3', border: 'none', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>
+                        Niş Analizi →
+                      </button>
+                      <a href={item.amazon_url} target="_blank" rel="noreferrer"
+                        style={{ padding: '4px 10px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '6px', fontSize: '11px', textDecoration: 'none' }}>
+                        Amazon ↗
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {reserveAsins?.total_found === 0 && (
+                <div style={{ fontSize: '12px', color: '#94a3b8', padding: '8px' }}>Amazon scraping engellendi — proxy ile tekrar dene.</div>
+              )}
+            </div>
+          )}
+
+          {/* Reverse ASIN */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🔄 Reverse ASIN — ASIN → Keyword</div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <input value={reverseAsin} onChange={e => setReverseAsin(e.target.value)}
+                placeholder="ASIN gir — örn: B07QK955LS"
+                onKeyDown={e => e.key === 'Enter' && handleReverseAsin()}
+                style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '0.5px solid #d2d2d7', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }} />
+              <button onClick={handleReverseAsin} disabled={reverseLoading}
+                style={{ padding: '9px 16px', background: '#1d1d1f', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {reverseLoading ? '⏳' : '🔍 Analiz Et'}
+              </button>
+            </div>
+            {reverseResult && (
+              <div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px', fontWeight: '500' }}>
+                  "{reverseResult.product_title}" — {reverseResult.total_keywords} keyword bulundu
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {reverseResult.keywords?.map((kw, i) => (
+                    <div key={i} onClick={() => { setSeed(kw.keyword); setReverseResult(null) }}
+                      style={{ padding: '5px 12px', borderRadius: '20px', background: '#f1f5f9', border: '0.5px solid #d2d2d7', fontSize: '12px', color: '#1d1d1f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{kw.keyword}</span>
+                      <span style={{ fontSize: '10px', color: IQ_COLOR(kw.volume), fontWeight: '600' }}>{kw.volume}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Negatif Keywordler */}

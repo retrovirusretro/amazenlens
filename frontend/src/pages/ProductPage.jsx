@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { track, Events } from '../lib/analytics'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API = ''
 const CACHE_TTL = 60 * 60 * 1000
 
 const SCORE_COLOR = (s) => s >= 70 ? '#34c759' : s >= 50 ? '#ff9f0a' : '#ff3b30'
@@ -39,6 +39,10 @@ export default function ProductPage() {
   const [productLoading, setProductLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [keepaData, setKeepaData] = useState(null)
+  const [keepaLoading, setKeepaLoading] = useState(false)
+  const [winReport, setWinReport] = useState(null)
+  const [winLoading, setWinLoading] = useState(false)
 
   useEffect(() => {
     const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
@@ -50,6 +54,28 @@ export default function ProductPage() {
     prevAsin.current = asin
     setReviews(null)
   }, [asin])
+
+  const fetchKeepa = async () => {
+    setKeepaLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/keepa/product/${asin}`)
+      setKeepaData(res.data)
+    } catch (e) { console.error(e) }
+    finally { setKeepaLoading(false) }
+  }
+
+  const fetchWinReport = async () => {
+    if (!product) return
+    setWinLoading(true)
+    try {
+      const res = await axios.post(`${API}/api/ai/buyer-intent`, {
+        keyword: product.title?.split(' ').slice(0, 4).join(' ') || asin,
+        locale: 'en'
+      })
+      setWinReport(res.data)
+    } catch (e) { console.error(e) }
+    finally { setWinLoading(false) }
+  }
 
   const fetchProductOnly = async () => {
     setProductLoading(true)
@@ -180,6 +206,7 @@ export default function ProductPage() {
     { key: 'overview', label: 'Genel Bakış' },
     { key: 'niche', label: 'Niş Skoru' },
     { key: 'lovehate', label: '💚❤️ Yorumlar' },
+    { key: 'keepa', label: '📈 Keepa' },
     { key: 'sourcing', label: 'Tedarik' },
     { key: 'arbitrage', label: 'Arbitraj' },
   ]
@@ -426,6 +453,90 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* Fiyat Savaşı Uyarısı */}
+          {keepaData?.price_war?.detected && (
+            <div style={{ background: 'white', borderRadius: '12px', border: `0.5px solid ${keepaData.price_war.level === 'critical' ? '#ffd0ce' : '#fde68a'}`, padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>⚔️ Fiyat Savaşı</div>
+                <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '10px', fontWeight: '600',
+                  background: keepaData.price_war.level === 'critical' ? '#fee2e2' : '#fff4e0',
+                  color: keepaData.price_war.level === 'critical' ? '#dc2626' : '#b45309'
+                }}>{keepaData.price_war.level_tr}</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>💡 {keepaData.price_war.recommendation}</div>
+              {keepaData.price_war.signals?.map((s, i) => (
+                <div key={i} style={{ fontSize: '12px', padding: '6px 10px', borderRadius: '6px', marginBottom: '4px', background: '#fff7ed', color: '#374151' }}>{s.message}</div>
+              ))}
+            </div>
+          )}
+
+          {/* Kültürel Takvim */}
+          {keepaData?.cultural_calendar?.best_listing_time && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>📅 En İyi Listeleme Zamanı</div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ flex: 1, background: '#f0fdf4', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Önerilen Ay</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#16a34a' }}>{keepaData.cultural_calendar.best_listing_time.month_name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{keepaData.cultural_calendar.best_listing_time.for_event}</div>
+                </div>
+                <div style={{ flex: 1, background: '#f8fafc', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Aciliyet</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginTop: '4px' }}>{keepaData.cultural_calendar.best_listing_time.urgency}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>Boost: {keepaData.cultural_calendar.best_listing_time.boost_score}/100</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bu Nişi Kazanmak İçin Ne Lazım */}
+          <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>🏆 Bu Nişi Kazanmak İçin Ne Lazım?</div>
+              {!winReport && (
+                <button onClick={fetchWinReport} disabled={winLoading}
+                  style={{ padding: '6px 14px', background: '#1d1d1f', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  {winLoading ? '⏳ Analiz ediliyor...' : '🤖 AI Raporu Al'}
+                </button>
+              )}
+            </div>
+            {winReport ? (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                  {[
+                    { label: 'Buyer Intent', value: winReport.intent_score + '/100', color: '#0071e3' },
+                    { label: 'Rekabet', value: winReport.competition_level, color: '#ff9f0a' },
+                    { label: 'Buyer Stage', value: winReport.buyer_stage, color: '#34c759' },
+                  ].map((item, i) => (
+                    <div key={i} style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: item.color }}>{item.value}</div>
+                      <div style={{ fontSize: '10px', color: '#8e8e93' }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {winReport.summary && (
+                  <div style={{ fontSize: '12px', color: '#374151', padding: '10px 12px', background: '#f0fdf4', borderRadius: '8px', marginBottom: '10px' }}>
+                    💡 {winReport.summary}
+                  </div>
+                )}
+                {winReport.long_tail_ideas?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px' }}>🎯 Hedef Keywordler</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {winReport.long_tail_ideas.map((kw, i) => (
+                        <span key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: '#e8f0fe', color: '#0071e3' }}>{kw}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '16px' }}>
+                AI raporu için butona tıkla — buyer intent, hedef keywordler ve strateji
+              </div>
+            )}
+          </div>
+
           {Object.values(flags).some(v => v) && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>🚩 Red Flags</div>
@@ -547,6 +658,141 @@ export default function ProductPage() {
               </a>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Keepa Grafikleri */}
+      {activeTab === 'keepa' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {!keepaData ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>📈</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>Keepa Geçmiş Verileri</div>
+              <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '16px' }}>BSR geçmişi, fiyat trendi ve Gini rekabet analizi</div>
+              <button onClick={fetchKeepa} disabled={keepaLoading}
+                style={{ padding: '10px 24px', background: '#0071e3', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {keepaLoading ? '⏳ Yükleniyor...' : '🔑 Keepa Verisi Çek (1 token)'}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Keepa Özet */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                {[
+                  { label: 'Gini', value: keepaData.gini?.toFixed(3), sub: keepaData.gini_label, color: keepaData.gini < 0.3 ? '#16a34a' : keepaData.gini < 0.5 ? '#b45309' : '#dc2626' },
+                  { label: 'Aylık Satış', value: keepaData.monthly_sales_estimate?.toLocaleString(), sub: 'tahmini', color: '#0071e3' },
+                  { label: 'BSR Trendi', value: keepaData.bsr_trend === 'improving' ? '📈 İyileşiyor' : keepaData.bsr_trend === 'declining' ? '📉 Kötüleşiyor' : '➡️ Stabil', sub: 'son 30 gün', color: '#1d1d1f' },
+                ].map((item, i) => (
+                  <div key={i} style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: item.color }}>{item.value}</div>
+                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d1d1f' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: '#8e8e93' }}>{item.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* BSR Grafiği */}
+              {keepaData.bsr_history?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📊 BSR Geçmişi</div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
+                    {keepaData.bsr_history.slice(-30).map((b, i) => {
+                      const maxBsr = Math.max(...keepaData.bsr_history.slice(-30).map(x => x.bsr))
+                      const minBsr = Math.min(...keepaData.bsr_history.slice(-30).map(x => x.bsr))
+                      const range = maxBsr - minBsr || 1
+                      const height = Math.max(4, ((maxBsr - b.bsr) / range) * 76 + 4)
+                      return (
+                        <div key={i} style={{ flex: 1, background: '#0071e3', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.7 + (i / 30) * 0.3 }} />
+                      )
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                    <span>30 gün önce</span>
+                    <span style={{ color: '#0071e3', fontWeight: '500' }}>Bugün</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Fiyat Grafiği */}
+              {keepaData.price_history?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>💰 Fiyat Geçmişi</div>
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
+                      <span style={{ color: '#64748b' }}>Min: <strong>${keepaData.price_stats?.min_90d}</strong></span>
+                      <span style={{ color: '#64748b' }}>Max: <strong>${keepaData.price_stats?.max_90d}</strong></span>
+                      <span style={{ color: '#0071e3' }}>Şimdi: <strong>${keepaData.price_stats?.current}</strong></span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '60px' }}>
+                    {keepaData.price_history.slice(-30).map((p, i) => {
+                      const maxP = Math.max(...keepaData.price_history.slice(-30).map(x => x.price))
+                      const minP = Math.min(...keepaData.price_history.slice(-30).map(x => x.price))
+                      const range = maxP - minP || 1
+                      const height = Math.max(4, ((p.price - minP) / range) * 56 + 4)
+                      return (
+                        <div key={i} style={{ flex: 1, background: '#34c759', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.6 + (i / 30) * 0.4 }} />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Fiyat Savaşı */}
+              {keepaData.price_war?.detected && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #fde68a', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>⚔️ {keepaData.price_war.level_tr}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>{keepaData.price_war.recommendation}</div>
+                  {keepaData.price_war.signals?.map((s, i) => (
+                    <div key={i} style={{ fontSize: '12px', padding: '6px 10px', background: '#fff7ed', borderRadius: '6px', marginBottom: '4px', color: '#374151' }}>{s.message}</div>
+                  ))}
+                </div>
+              )}
+
+              {/* Kültürel Takvim */}
+              {keepaData.cultural_calendar?.best_listing_time && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>📅 En İyi Listeleme Zamanı</div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1, background: '#f0fdf4', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '20px', fontWeight: '700', color: '#16a34a' }}>{keepaData.cultural_calendar.best_listing_time.month_name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{keepaData.cultural_calendar.best_listing_time.for_event}</div>
+                    </div>
+                    <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {keepaData.cultural_calendar.upcoming_events?.slice(0, 3).map((ev, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: '#f8fafc', borderRadius: '6px', fontSize: '11px' }}>
+                          <span style={{ fontWeight: '500' }}>{ev.event}</span>
+                          <span style={{ color: '#b45309', fontWeight: '600' }}>+{ev.boost_score}% {ev.months_until_event}ay</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Review Helpfulness */}
+              {reviews && reviews.love && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>⭐ En Kritik Yorumlar</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
+                    Müşterilerin en çok şikayet ettiği konular (arXiv:2412.02884 metodolojisi)
+                  </div>
+                  {reviews.hate?.slice(0, 3).map((item, i) => (
+                    <div key={i} style={{ padding: '10px 12px', background: '#fff1f0', borderRadius: '8px', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#c00' }}>🚨 {item.word}</span>
+                        <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: '600' }}>{item.count} şikayet</span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#8e8e93', fontStyle: 'italic' }}>"{item.example}"</div>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', padding: '8px 10px', background: '#f0fdf4', borderRadius: '6px' }}>
+                    💡 Bu sorunları çözen ürün → anında rekabet avantajı
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

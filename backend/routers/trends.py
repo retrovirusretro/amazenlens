@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from services.trend_service import get_trend_data, get_related_queries, compare_keywords
+from services.trend_service import get_trend_data, get_related_queries, compare_keywords, get_best_listing_time
 
 router = APIRouter(prefix="/api/trends", tags=["Trends"])
 
@@ -34,5 +34,17 @@ async def compare(data: dict):
         raise HTTPException(status_code=400, detail="Keywords gerekli")
     try:
         return compare_keywords(keywords, timeframe)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/calendar")
+async def cultural_calendar(
+    keyword: str = Query(..., description="Ürün keyword"),
+    market: str = Query("US", description="US / DE / TR / FR / JP / KR")
+):
+    """Kültürel takvim — en iyi listeleme zamanı"""
+    try:
+        return get_best_listing_time(keyword.strip(), market.upper())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

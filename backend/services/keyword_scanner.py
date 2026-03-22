@@ -28,7 +28,62 @@ async def get_autocomplete(keyword: str, market: str = "US") -> list:
         print(f"Autocomplete error ({market}): {e}")
     return []
 
+async def estimate_volume_binary(keyword: str, market: str = "US") -> int:
+    """
+    TunaYagci/amazon-estimation binary search algoritması.
+    Kaynak: github.com/TunaYagci/amazon-estimation
+    
+    Mantık: keyword'ü harf harf kısaltarak autocomplete'e sor.
+    Ne kadar az harfle öneriliyor → o kadar yüksek arama hacmi.
+    
+    Örnek: "iphone charger" için "i" yazınca çıkıyorsa → hacim 100
+    Tam keyword yazınca çıkıyorsa → hacim düşük
+    Hiç çıkmıyorsa → hacim 0
+    
+    O(log n) binary search ile optimize edilmiş.
+    """
+    if not keyword or len(keyword) < 2:
+        return 0
+
+    keyword_lower = keyword.lower().strip()
+    n = len(keyword_lower)
+    EXPONENTIAL_FACTOR = 1.25
+
+    # Önce tam keyword'ü dene — çıkmıyorsa direkt 0
+    full_suggestions = await get_autocomplete(keyword_lower, market)
+    full_lower = [s.lower() for s in full_suggestions]
+    if keyword_lower not in full_lower:
+        return 0
+
+    # Binary search: kaç harfle çıkıyor?
+    low, high = 1, n
+    first_appear = n  # en az kaç harfle çıktığı
+
+    while low <= high:
+        mid = (low + high) // 2
+        prefix = keyword_lower[:mid]
+        suggestions = await get_autocomplete(prefix, market)
+        suggestions_lower = [s.lower() for s in suggestions]
+
+        if keyword_lower in suggestions_lower:
+            first_appear = mid
+            high = mid - 1  # daha az harfle dene
+        else:
+            low = mid + 1  # daha fazla harf lazım
+
+    # Skor hesapla: ne kadar az harfle çıkıyorsa o kadar yüksek skor
+    # first_appear = 1 → skor 100 (tek harfle çıkıyor = çok popüler)
+    # first_appear = n → skor düşük (ancak tam yazınca çıkıyor)
+    pct_used = (first_appear - 1) / max(n - 1, 1)
+    score = int(100 - pct_used * 80)  # 20-100 arası
+    return max(0, min(score, 100))
+
+
 def estimate_volume(keyword: str, suggestions: list) -> int:
+    """
+    Hızlı pozisyon bazlı tahmin — binary search yokken fallback.
+    Autocomplete listesindeki pozisyona göre hacim tahmini.
+    """
     keywords_lower = [s.lower() for s in suggestions]
     keyword_lower = keyword.lower()
     if keyword_lower in keywords_lower:
@@ -138,8 +193,18 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
     us_suggestions = results[0] if not isinstance(results[0], Exception) else []
     de_suggestions = results[1] if include_de and not isinstance(results[1], Exception) else []
 
-    us_volume = estimate_volume(keyword, us_suggestions)
-    de_volume = estimate_volume(keyword, de_suggestions) if include_de else 0
+    # TunaYagci binary search ile gerçek hacim skoru
+    try:
+        us_volume = await estimate_volume_binary(keyword, "US")
+        if us_volume == 0:  # binary search 0 döndürdüyse pozisyon bazlı kullan
+            us_volume = estimate_volume(keyword, us_suggestions)
+        de_volume = await estimate_volume_binary(keyword, "DE") if include_de else 0
+        if include_de and de_volume == 0:
+            de_volume = estimate_volume(keyword, de_suggestions)
+    except Exception as e:
+        print(f"Binary search error: {e}")
+        us_volume = estimate_volume(keyword, us_suggestions)
+        de_volume = estimate_volume(keyword, de_suggestions) if include_de else 0
 
     competing_us = len(us_suggestions) * 50 + 500
     competing_de = len(de_suggestions) * 40 + 300 if include_de else 0
@@ -201,6 +266,9 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
 
     all_keywords.sort(key=lambda x: x.get("buyer_score", 0), reverse=True)
 
+    # Keyword Difficulty
+    difficulty = calc_keyword_difficulty(keyword, us_suggestions, us_suggestions)
+
     # Google Trends verisi
     trend_data = {}
     related_data = {}
@@ -242,4 +310,227 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
         "listing_tips": claude_data.get("listing_tips", {}),
         "cross_market": claude_data.get("cross_market", {}),
         "total_keywords": len(all_keywords),
+        "difficulty": difficulty,
+    }
+
+
+# ─── FR/TR/ES Pazar Desteği ──────────────────────────────────────────────────
+MARKET_CONFIG = {
+    "US": {"domain": "com",    "mid": "ATVPDKIKX0DER",  "lang": "English"},
+    "DE": {"domain": "de",     "mid": "A1PA6795UKMFR9",  "lang": "German"},
+    "FR": {"domain": "fr",     "mid": "A13V1IB3VIYZZH",  "lang": "French"},
+    "ES": {"domain": "es",     "mid": "A1RKKUPIHCS9HS",  "lang": "Spanish"},
+    "TR": {"domain": "com.tr", "mid": "A33AVAJ2PDY3EV",  "lang": "Turkish"},
+    "UK": {"domain": "co.uk",  "mid": "A1F83G8C2ARO7P",  "lang": "English"},
+    "IT": {"domain": "it",     "mid": "APJ6JRA9NG5V4",   "lang": "Italian"},
+    "JP": {"domain": "co.jp",  "mid": "A1VC38T7YXB528",  "lang": "Japanese"},
+}
+
+async def get_autocomplete_multi(keyword: str, markets: list) -> dict:
+    """Birden fazla pazarda autocomplete — paralel"""
+    tasks = [get_autocomplete(keyword, m) for m in markets]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return {
+        market: (result if not isinstance(result, Exception) else [])
+        for market, result in zip(markets, results)
+    }
+
+
+# ─── Keyword Difficulty Skoru ─────────────────────────────────────────────────
+def calc_keyword_difficulty(keyword: str, suggestions: list, us_suggestions: list) -> dict:
+    """
+    Keyword Difficulty — rakip yoğunluğu tahmini.
+    Title density + autocomplete pozisyonu + keyword uzunluğu
+    """
+    keyword_lower = keyword.lower()
+    words = keyword_lower.split()
+
+    # 1. Title density (öneriler içinde keyword ne kadar geçiyor)
+    density = calc_title_density(keyword, suggestions)
+    density_score = min(density.get("density_pct", 0) * 2, 100)
+
+    # 2. Autocomplete pozisyonu — erken çıkıyorsa popüler = zor
+    suggestions_lower = [s.lower() for s in suggestions]
+    if keyword_lower in suggestions_lower:
+        pos = suggestions_lower.index(keyword_lower)
+        position_score = max(0, 100 - pos * 15)
+    else:
+        position_score = 20
+
+    # 3. Keyword uzunluğu — uzun kuyruk = daha kolay
+    length_score = max(0, 100 - (len(words) - 1) * 20)
+
+    # 4. Genel öneri sayısı — çok öneri = rekabetçi alan
+    suggestion_count_score = min(len(suggestions) * 10, 100)
+
+    # Ağırlıklı toplam
+    difficulty = int(
+        0.35 * density_score +
+        0.30 * position_score +
+        0.20 * length_score +
+        0.15 * suggestion_count_score
+    )
+    difficulty = max(0, min(difficulty, 100))
+
+    if difficulty >= 70:
+        level = "hard"
+        level_tr = "🔴 Zor"
+        advice = "Uzun kuyruk varyantlarını hedefle"
+    elif difficulty >= 40:
+        level = "medium"
+        level_tr = "🟡 Orta"
+        advice = "Girilebilir, ama iyi listing şart"
+    else:
+        level = "easy"
+        level_tr = "🟢 Kolay"
+        advice = "Düşük rekabet — hemen girilebilir!"
+
+    return {
+        "score": difficulty,
+        "level": level,
+        "level_tr": level_tr,
+        "advice": advice,
+        "breakdown": {
+            "density": round(density_score),
+            "position": round(position_score),
+            "length": round(length_score),
+            "competition": round(suggestion_count_score),
+        }
+    }
+
+
+# ─── ASIN Rezerv Checker ─────────────────────────────────────────────────────
+async def get_ranking_asins(keyword: str, market: str = "US") -> list:
+    """
+    Keyword için Amazon arama sonuçlarından ASIN listesi çek.
+    Easyparser yoksa autocomplete önerilerinden tahmin üret.
+    """
+    config = MARKET_CONFIG.get(market, MARKET_CONFIG["US"])
+
+    # Amazon arama URL'inden ASIN parse etmeyi dene
+    search_url = f"https://www.amazon.{config['domain']}/s"
+    params = {"k": keyword, "ref": "nb_sb_noss"}
+
+    asins = []
+    try:
+        async with httpx.AsyncClient(timeout=15, verify=False, follow_redirects=True) as client:
+            r = await client.get(search_url, params=params, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml",
+            })
+            if r.status_code == 200:
+                import re
+                # ASIN pattern: /dp/XXXXXXXXXX
+                found = re.findall(r'/dp/([A-Z0-9]{10})', r.text)
+                # Deduplicate, ilk 10
+                seen = set()
+                for asin in found:
+                    if asin not in seen and not asin.startswith("B000000"):
+                        seen.add(asin)
+                        asins.append(asin)
+                        if len(asins) >= 10:
+                            break
+    except Exception as e:
+        print(f"ASIN scrape error: {e}")
+
+    return asins
+
+
+async def asin_reserve_checker(keyword: str, market: str = "US") -> dict:
+    """
+    Keyword'de rank alan rakip ASIN'leri bul + niş skoru tahmini
+    """
+    asins = await get_ranking_asins(keyword, market)
+
+    results = []
+    for i, asin in enumerate(asins[:10]):
+        results.append({
+            "rank": i + 1,
+            "asin": asin,
+            "amazon_url": f"https://www.amazon.{'com' if market == 'US' else MARKET_CONFIG.get(market, {}).get('domain', 'com')}/dp/{asin}",
+            "niche_url": f"/app/niche?asin={asin}",
+        })
+
+    return {
+        "keyword": keyword,
+        "market": market,
+        "ranking_asins": results,
+        "total_found": len(results),
+        "note": "İlk sayfada rank alan ürünler — rakip analizi için tıkla"
+    }
+
+
+# ─── Reverse ASIN ─────────────────────────────────────────────────────────────
+async def reverse_asin(asin: str, market: str = "US") -> dict:
+    """
+    ASIN → bu ürünün rank aldığı keyword'ler.
+    Strateji: ürün başlığını parse et + autocomplete ile genişlet
+    """
+    config = MARKET_CONFIG.get(market, MARKET_CONFIG["US"])
+    product_url = f"https://www.amazon.{config['domain']}/dp/{asin}"
+
+    title = ""
+    keywords_found = []
+
+    try:
+        async with httpx.AsyncClient(timeout=15, verify=False, follow_redirects=True) as client:
+            r = await client.get(product_url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+            })
+            if r.status_code == 200:
+                import re
+                # Title çek
+                title_match = re.search(r'<span id="productTitle"[^>]*>(.*?)</span>', r.text, re.DOTALL)
+                if title_match:
+                    title = title_match.group(1).strip()
+                    title = re.sub(r'<[^>]+>', '', title).strip()
+
+                # Bullet points'ten keyword çıkar
+                bullets = re.findall(r'<span class="a-list-item">(.*?)</span>', r.text, re.DOTALL)
+                bullet_text = " ".join(bullets[:5])
+                bullet_text = re.sub(r'<[^>]+>', '', bullet_text)
+
+    except Exception as e:
+        print(f"Reverse ASIN scrape error: {e}")
+
+    # Title'dan keyword'ler üret
+    if title:
+        words = title.lower().split()
+        # Stop words filtrele
+        stop_words = {"the", "a", "an", "and", "or", "for", "with", "in", "on", "at", "by", "of", "to", "from"}
+        meaningful_words = [w for w in words if w not in stop_words and len(w) > 2]
+
+        # 2-3 kelimelik kombinasyonlar
+        for i in range(len(meaningful_words)):
+            kw2 = " ".join(meaningful_words[i:i+2])
+            kw3 = " ".join(meaningful_words[i:i+3])
+            if len(kw2) > 5:
+                keywords_found.append(kw2)
+            if len(kw3) > 8:
+                keywords_found.append(kw3)
+
+    # Autocomplete ile genişlet — paralel
+    expanded = {}
+    if keywords_found[:5]:
+        tasks = [get_autocomplete(kw, market) for kw in keywords_found[:5]]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for kw, result in zip(keywords_found[:5], results):
+            if not isinstance(result, Exception) and result:
+                vol = estimate_volume(kw, result)
+                expanded[kw] = {
+                    "keyword": kw,
+                    "volume": vol,
+                    "suggestions": result[:5],
+                    "source": "reverse_asin"
+                }
+
+    return {
+        "asin": asin,
+        "market": market,
+        "product_title": title or f"ASIN: {asin}",
+        "keywords": list(expanded.values()),
+        "total_keywords": len(expanded),
+        "note": "Ürünün rank aldığı tahmini keyword'ler — title analizi"
     }

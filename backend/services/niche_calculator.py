@@ -263,4 +263,14 @@ async def calculate_niche_score_with_keepa(product: dict) -> dict:
             keepa_data = await get_keepa_data(asin, category)
         except Exception as e:
             print(f"Keepa fetch error: {e}")
-    return calculate_niche_score(product, keepa_data)
+    result = calculate_niche_score(product, keepa_data)
+
+    # Kültürel takvim ekle
+    try:
+        from services.trend_service import get_best_listing_time
+        title = product.get("title", "")
+        result["cultural_calendar"] = get_best_listing_time(title, "US")
+    except Exception as e:
+        print(f"Cultural calendar error: {e}")
+
+    return result
