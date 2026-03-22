@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from services.easyparser import search_products, get_product, check_availability
+from services.easyparser import search_products, get_product, check_availability, get_easyparser_stats
 from services.niche_calculator import calculate_niche_score, calculate_niche_score_with_keepa
 from typing import List
 import random
@@ -105,3 +105,27 @@ async def quick_picks(limit: int = Query(6)):
     shuffled.sort(key=lambda x: x["niche_score"], reverse=True)
     return {"picks": shuffled[:limit], "total": len(shuffled),
             "date": str(date.today()), "keywords_scanned": QUICK_PICKS_KEYWORDS[:4], "mock": True}
+
+
+@router.get("/cache/stats")
+async def easyparser_cache_stats():
+    """Easyparser kredi tasarruf istatistikleri"""
+    from services.keepa_service import get_token_stats
+    return {
+        "easyparser": get_easyparser_stats(),
+        "keepa": get_token_stats(),
+    }
+
+@router.delete("/cache/{asin}")
+async def clear_product_cache(asin: str):
+    """Belirli bir ASIN cache'ini temizle (force refresh)"""
+    from services.easyparser import cache_set, _mem_cache
+    key = f"product:{asin.upper()}"
+    if key in _mem_cache:
+        del _mem_cache[key]
+    try:
+        from database.supabase import get_supabase
+        get_supabase().table("easyparser_cache").delete().eq("cache_key", key).execute()
+    except Exception:
+        pass
+    return {"cleared": True, "key": key}

@@ -1,36 +1,101 @@
 import httpx
 import os
 import time
+import json
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 load_dotenv()
 
 EASYPARSER_API_KEY = os.getenv("EASYPARSER_API_KEY")
 BASE_URL = "https://realtime.easyparser.com/v1/request"
 
-# In-memory cache — aynı ASIN için tekrar API çağrısı yapma
-_cache = {}
-CACHE_TTL = 3600  # 1 saat
+# Cache TTL ayarlari
+CACHE_TTL_PRODUCT = 24 * 3600   # Urun detay: 24 saat
+CACHE_TTL_SEARCH  = 6  * 3600   # Arama sonucu: 6 saat
 
-def get_cache(key: str):
-    if key in _cache:
-        data, ts = _cache[key]
-        if time.time() - ts < CACHE_TTL:
-            print(f"[CACHE HIT] {key}")
+# Token istatistikleri
+_stats = {"cache_hits": 0, "api_calls": 0, "credits_saved": 0}
+
+def get_easyparser_stats():
+    total = _stats["cache_hits"] + _stats["api_calls"]
+    return {
+        **_stats,
+        "total_requests": total,
+        "cache_hit_rate_pct": int((_stats["cache_hits"] / total * 100) if total > 0 else 0),
+    }
+
+# ─── Supabase Cache ───────────────────────────────────────────────────────────
+try:
+    from database.supabase import get_supabase
+    SUPABASE_AVAILABLE = True
+except Exception:
+    SUPABASE_AVAILABLE = False
+
+# In-memory fallback (Supabase yoksa)
+_mem_cache = {}
+
+async def cache_get(key: str, ttl: int) -> dict | None:
+    """Supabase veya memory cache'den veri al"""
+    # 1. Supabase dene
+    if SUPABASE_AVAILABLE:
+        try:
+            sb = get_supabase()
+            res = sb.table("easyparser_cache").select("data,updated_at").eq("cache_key", key).execute()
+            if res.data:
+                row = res.data[0]
+                updated = datetime.fromisoformat(row["updated_at"].replace("Z", "+00:00"))
+                age = (datetime.now(updated.tzinfo) - updated).total_seconds()
+                if age < ttl:
+                    _stats["cache_hits"] += 1
+                    _stats["credits_saved"] += 1
+                    print(f"[SUPABASE CACHE HIT] {key} ({int(age/3600)}h old)")
+                    return row["data"]
+        except Exception as e:
+            print(f"Supabase cache get error: {e}")
+
+    # 2. Memory fallback
+    if key in _mem_cache:
+        data, ts = _mem_cache[key]
+        if time.time() - ts < ttl:
+            _stats["cache_hits"] += 1
+            _stats["credits_saved"] += 1
+            print(f"[MEMORY CACHE HIT] {key}")
             return data
-        del _cache[key]
+        del _mem_cache[key]
     return None
 
-def set_cache(key: str, data):
-    _cache[key] = (data, time.time())
-    print(f"[CACHE SET] {key} — toplam {len(_cache)} kayıt")
+async def cache_set(key: str, data: dict):
+    """Supabase ve memory cache'e yaz"""
+    # Memory'e yaz
+    _mem_cache[key] = (data, time.time())
+
+    # Supabase'e yaz
+    if SUPABASE_AVAILABLE:
+        try:
+            sb = get_supabase()
+            sb.table("easyparser_cache").upsert({
+                "cache_key": key,
+                "data": data,
+                "updated_at": datetime.utcnow().isoformat(),
+            }).execute()
+            print(f"[SUPABASE CACHE SET] {key}")
+        except Exception as e:
+            print(f"Supabase cache set error: {e}")
 
 async def search_products(keyword: str, page: int = 1):
     cache_key = f"search:{keyword}:{page}"
-    cached = get_cache(cache_key)
+
+    # Cache kontrol
+    cached = await cache_get(cache_key, CACHE_TTL_SEARCH)
     if cached:
         return cached
+
+    if not EASYPARSER_API_KEY:
+        return get_mock_search(keyword)
+
     try:
+        _stats["api_calls"] += 1
         async with httpx.AsyncClient(timeout=30, verify=False) as client:
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
@@ -39,7 +104,7 @@ async def search_products(keyword: str, page: int = 1):
             })
             if response.status_code == 200:
                 result = format_search_results(response.json())
-                set_cache(cache_key, result)
+                await cache_set(cache_key, result)
                 return result
             print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
             return get_mock_search(keyword)
@@ -49,10 +114,17 @@ async def search_products(keyword: str, page: int = 1):
 
 async def get_product(asin: str):
     cache_key = f"product:{asin}"
-    cached = get_cache(cache_key)
+
+    # Cache kontrol — 24 saat
+    cached = await cache_get(cache_key, CACHE_TTL_PRODUCT)
     if cached:
         return cached
+
+    if not EASYPARSER_API_KEY:
+        return get_mock_product(asin)
+
     try:
+        _stats["api_calls"] += 1
         async with httpx.AsyncClient(timeout=30, verify=False) as client:
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
@@ -60,7 +132,7 @@ async def get_product(asin: str):
             })
             if response.status_code == 200:
                 result = format_product(response.json(), asin)
-                set_cache(cache_key, result)
+                await cache_set(cache_key, result)
                 return result
             print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
             return get_mock_product(asin)
