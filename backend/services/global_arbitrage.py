@@ -33,7 +33,41 @@ AMAZON_MARKETS = {
     "JP": {"domain": ".co.jp", "flag": "🇯🇵", "currency": "JPY", "name": "Amazon.co.jp"},
 }
 
+# Frankfurter API cache — 1 saat gecerli
+_rates_cache = {"rates": {}, "ts": 0}
+
 async def get_exchange_rates() -> dict:
+    """
+    Frankfurter API ile anlik doviz kurlari.
+    Tamamen ucretsiz, API key gerektirmez, limitsiz.
+    https://api.frankfurter.app
+    """
+    import time
+    # 1 saatlik cache
+    if _rates_cache["ts"] and time.time() - _rates_cache["ts"] < 3600 and _rates_cache["rates"]:
+        return _rates_cache["rates"]
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(
+                "https://api.frankfurter.app/latest",
+                params={"from": "USD", "to": "TRY,EUR,GBP,CAD,JPY,AUD,SEK,PLN,CZK,HUF"}
+            )
+            if response.status_code == 200:
+                data = response.json()
+                rates = data.get("rates", {})
+                rates["USD"] = 1.0  # USD/USD = 1
+                _rates_cache["rates"] = rates
+                _rates_cache["ts"] = time.time()
+                print(f"[Frankfurter] Kurlar guncellendi: {list(rates.keys())}")
+                return rates
+    except Exception as e:
+        print(f"Frankfurter API error: {e}")
+
+    # Fallback — sabit kurlar
+    return {"TRY": 38.5, "EUR": 0.92, "GBP": 0.79, "CAD": 1.36, "JPY": 149.0, "USD": 1.0}
+
+async def _get_exchange_rates_old() -> dict:
     try:
         async with httpx.AsyncClient(timeout=10, verify=False) as client:
             response = await client.get("https://api.exchangerate-api.com/v4/latest/USD")

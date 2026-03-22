@@ -110,3 +110,28 @@ async def vat_calculator(
         "net_revenue": round(amazon_price - amazon_price * vat, 2),
         "currency": market_info.get("currency", "EUR"),
     }
+
+
+@router.get("/exchange-rates")
+async def exchange_rates():
+    """
+    Frankfurter API ile anlik doviz kurlari.
+    Tamamen ucretsiz, API key yok, limitsiz.
+    Cache: 1 saat
+    """
+    try:
+        from services.global_arbitrage import get_exchange_rates
+        rates = await get_exchange_rates()
+        return {
+            "rates": rates,
+            "base": "USD",
+            "source": "Frankfurter API (api.frankfurter.app)",
+            "pairs": {
+                "USD_TRY": rates.get("TRY", 38.5),
+                "USD_EUR": rates.get("EUR", 0.92),
+                "USD_GBP": rates.get("GBP", 0.79),
+                "USD_JPY": rates.get("JPY", 149.0),
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
