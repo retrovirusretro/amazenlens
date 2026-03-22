@@ -114,7 +114,7 @@ export default function ProductPage() {
     try {
       const [prodRes, nicheRes] = await Promise.all([
         cachedProduct ? Promise.resolve({ data: cachedProduct }) : axios.get(`${API}/api/amazon/product/${asin}`),
-        cachedNiche ? Promise.resolve({ data: cachedNiche }) : axios.get(`${API}/api/amazon/niche-score/${asin}`),
+        cachedNiche ? Promise.resolve({ data: cachedNiche }) : axios.get(`${API}/api/amazon/niche-score/${asin}?use_keepa=true`),
       ])
 
       const productData = prodRes.data
@@ -184,8 +184,10 @@ export default function ProductPage() {
     </div>
   )
 
-  const score = niche?.niche_score?.total_score || niche?.total_score || 0
-  const nicheData = niche?.niche_score || niche || {}
+  // API: {asin, niche_score: {...}} veya direkt {...} formatlarını destekle
+  const _nicheRaw = niche?.niche_score || niche || {}
+  const score = _nicheRaw?.total_score || 0
+  const nicheData = _nicheRaw
   const dims = nicheData?.dimensions || {}
   const insights = nicheData?.dimension_insights || {}
   const [openInsight, setOpenInsight] = useState(null)
