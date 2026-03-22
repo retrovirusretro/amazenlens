@@ -109,12 +109,21 @@ async def quick_picks(limit: int = Query(6)):
 
 @router.get("/cache/stats")
 async def easyparser_cache_stats():
-    """Easyparser kredi tasarruf istatistikleri"""
+    """Tum cache istatistikleri — Easyparser + Keepa + Redis"""
     from services.keepa_service import get_token_stats
+    from services.redis_cache import get_redis_stats
     return {
         "easyparser": get_easyparser_stats(),
         "keepa": get_token_stats(),
+        "redis": get_redis_stats(),
     }
+
+@router.post("/cache/flush")
+async def flush_cache(pattern: str = "keyword_analyze:*"):
+    """Redis cache temizle"""
+    from services.redis_cache import cache_flush_pattern
+    count = await cache_flush_pattern(pattern)
+    return {"flushed": count, "pattern": pattern}
 
 @router.delete("/cache/{asin}")
 async def clear_product_cache(asin: str):

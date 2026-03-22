@@ -183,6 +183,16 @@ Generate 15-20 long_tail keywords."""
         }
 
 async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = True) -> dict:
+    # Redis cache kontrol
+    try:
+        from services.redis_cache import cache_get, cache_set, make_cache_key
+        cache_key = make_cache_key("keyword_analyze", keyword, market, include_de)
+        cached = await cache_get(cache_key)
+        if cached:
+            return cached
+    except Exception:
+        cache_key = None
+
     from services.trend_service import get_trend_data, get_related_queries
 
     tasks = [get_autocomplete(keyword, "US")]
@@ -285,7 +295,7 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
     trend_score_val = trend_data.get("trend_score", 0)
     is_seasonal = trend_data.get("is_seasonal", False)
 
-    return {
+    result = {
         "seed_keyword": keyword,
         "markets": {
             "US": {"volume": us_volume, "competing_products": competing_us, "iq_score": iq_us, "suggestions": us_suggestions},
@@ -312,6 +322,16 @@ async def analyze_keyword(keyword: str, market: str = "US", include_de: bool = T
         "total_keywords": len(all_keywords),
         "difficulty": difficulty,
     }
+
+    # Redis'e yaz
+    try:
+        if cache_key:
+            from services.redis_cache import cache_set
+            await cache_set(cache_key, result, "keyword_analyze")
+    except Exception:
+        pass
+
+    return result
 
 
 # ─── FR/TR/ES Pazar Desteği ──────────────────────────────────────────────────

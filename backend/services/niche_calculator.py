@@ -28,6 +28,29 @@ def demand_trend_score(bsr: int, bsr_30d_ago: int = None) -> dict:
     return {"trend": trend, "change_pct": round(change_pct, 1), "score": score}
 
 
+async def calculate_niche_score_cached(product: dict, keepa_data: dict = None) -> dict:
+    """Redis cache ile niche score — aynı ASIN için tekrar hesaplama"""
+    asin = product.get("asin", "")
+    try:
+        from services.redis_cache import cache_get, cache_set, make_cache_key
+        cache_key = make_cache_key("niche_score", asin)
+        cached = await cache_get(cache_key)
+        if cached:
+            return cached
+    except Exception:
+        cache_key = None
+
+    result = calculate_niche_score(product, keepa_data)
+
+    try:
+        if cache_key and asin:
+            from services.redis_cache import cache_set
+            await cache_set(cache_key, result, "niche_score")
+    except Exception:
+        pass
+
+    return result
+
 def calculate_niche_score(product: dict, keepa_data: dict = None) -> dict:
     dimensions_data = product.get("dimensions", {})
     weight = dimensions_data.get("weight", 0)
