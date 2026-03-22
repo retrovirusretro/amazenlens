@@ -37,7 +37,7 @@ async def unavailable_scanner(asins: List[str]):
             "available_count": len(available), "unavailable": unavailable, "available": available}
 
 @router.get("/niche-score/{asin}")
-async def niche_score(asin: str, use_keepa: bool = Query(False)):
+async def niche_score(asin: str, use_keepa: bool = Query(True)):
     """
     use_keepa=true  → Gerçek BSR geçmişi + Gini + RVI (1 Keepa token)
     use_keepa=false → Hızlı, token harcamaz

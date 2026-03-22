@@ -187,6 +187,8 @@ export default function ProductPage() {
   const score = niche?.niche_score?.total_score || niche?.total_score || 0
   const nicheData = niche?.niche_score || niche || {}
   const dims = nicheData?.dimensions || {}
+  const insights = nicheData?.dimension_insights || {}
+  const [openInsight, setOpenInsight] = useState(null)
   const flags = nicheData?.flags || {}
   const unmetDemand = nicheData?.unmet_demand || {}
   const prongTest = nicheData?.prong_test || {}
@@ -421,18 +423,47 @@ export default function ProductPage() {
               { key: 'profitability', label: 'Karlılık', max: 25, color: '#af52de', desc: 'Fiyat aralığı, marj, talep trendi' },
             ].map(dim => {
               const val = dims[dim.key] ?? 0
+              const insight = insights[dim.key] || {}
+              const isOpen = openInsight === dim.key
               return (
                 <div key={dim.key} style={{ marginBottom: '18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{dim.label}</div>
                       <div style={{ fontSize: '11px', color: '#8e8e93', marginTop: '2px' }}>{dim.desc}</div>
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: '600', color: dim.color }}>{val}/{dim.max}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ fontSize: '15px', fontWeight: '600', color: dim.color }}>{val}/{dim.max}</div>
+                      {insight.reasons?.length > 0 && (
+                        <button onClick={() => setOpenInsight(isOpen ? null : dim.key)}
+                          style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '6px', border: `0.5px solid ${dim.color}`, background: isOpen ? dim.color : 'white', color: isOpen ? 'white' : dim.color, cursor: 'pointer', fontFamily: 'inherit' }}>
+                          {isOpen ? 'Kapat' : 'Neden?'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ height: '6px', background: '#f0f0f5', borderRadius: '3px' }}>
+                  <div style={{ height: '6px', background: '#f0f0f5', borderRadius: '3px', marginBottom: isOpen ? '10px' : '0' }}>
                     <div style={{ height: '100%', borderRadius: '3px', background: dim.color, width: `${(val / dim.max) * 100}%` }}></div>
                   </div>
+                  {isOpen && insight.reasons?.length > 0 && (
+                    <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '10px 12px', marginTop: '4px' }}>
+                      {insight.reasons.map((r, i) => (
+                        <div key={i} style={{ fontSize: '12px', color: '#374151', marginBottom: '4px', display: 'flex', gap: '6px' }}>
+                          <span style={{ color: dim.color, flexShrink: 0 }}>•</span>{r}
+                        </div>
+                      ))}
+                      {insight.actions?.length > 0 && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '0.5px solid #e2e8f0' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#1d1d1f', marginBottom: '4px' }}>Ne yapmalısın?</div>
+                          {insight.actions.map((a, i) => (
+                            <div key={i} style={{ fontSize: '12px', color: '#374151', marginBottom: '4px', display: 'flex', gap: '6px' }}>
+                              <span style={{ color: '#34c759', flexShrink: 0 }}>→</span>{a}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })}

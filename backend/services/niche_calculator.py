@@ -51,6 +51,102 @@ async def calculate_niche_score_cached(product: dict, keepa_data: dict = None) -
 
     return result
 
+
+def _volume_insight(score: int, weight: float, bsr: int) -> dict:
+    reasons = []
+    actions = []
+    if weight <= 0.5:
+        reasons.append(f"Urun hafif ({weight}kg) — FBA depolama maliyeti dusuk")
+    elif weight <= 2:
+        reasons.append(f"Orta agirlik ({weight}kg) — kabul edilebilir depolama")
+    else:
+        reasons.append(f"Agir urun ({weight}kg) — yuksek depolama maliyeti")
+        actions.append("Daha hafif varyant veya ambalaj kucultme dusun")
+    if bsr < 10000:
+        reasons.append(f"BSR #{bsr:,} — yuksek talep")
+    elif bsr < 50000:
+        reasons.append(f"BSR #{bsr:,} — orta talep")
+    else:
+        reasons.append(f"BSR #{bsr:,} — dusuk talep, pazar kucuk olabilir")
+        actions.append("Daha dusuk BSR'li alt kategori dene")
+    return {"score": score, "max": 25, "reasons": reasons, "actions": actions}
+
+
+def _logistics_insight(score: int, weight: float, is_fragile: bool) -> dict:
+    reasons = []
+    actions = []
+    if weight <= 0.5:
+        reasons.append("Hafif urun — FBA gonderim ucretleri dusuk")
+    elif weight <= 2:
+        reasons.append("Makul agirlik — FBA uygun")
+    else:
+        reasons.append(f"Agir ({weight}kg) — FBA ucreti yukseliyor")
+        actions.append("FBM veya 3PL alternatiflerini hesapla")
+    if is_fragile:
+        reasons.append("Kirgan urun — hasar riski yuksek, iade artabilir")
+        actions.append("Guclendirmeli ambalaj kullan, hasar sigortasi al")
+    else:
+        reasons.append("Kirgan degil — standart ambalaj yeterli")
+    return {"score": score, "max": 25, "reasons": reasons, "actions": actions}
+
+
+def _competition_insight(score: int, rvi: float, rvi_label: str, big_brand: bool, patent: bool, bsr: int) -> dict:
+    reasons = []
+    actions = []
+    reasons.append(f"RVI (yorum hizi): {rvi:.0f}/ay — {rvi_label}")
+    if rvi >= 60:
+        actions.append("Pazar dolu — farklilasmadan girme, unmet demand bul")
+    elif rvi < 10:
+        actions.append("Dusuk RVI — pazar girmis yeni oyuncu icin yer var")
+    if big_brand:
+        reasons.append("Buyuk marka tespiti — rekabetin zor")
+        actions.append("Buyuk markanin yapamadigi bir seyi yap: ozel tasarim, bundle, niche varyant")
+    else:
+        reasons.append("Buyuk marka yok — rakip sahasi acik")
+    if patent:
+        reasons.append("Patent/trademark isareti var — hukuki risk")
+        actions.append("Patent arastirmasi yap, benzeri urun uret")
+    if bsr < 5000:
+        reasons.append(f"BSR #{bsr:,} — yuksek rekabet bolgesi")
+    elif bsr < 20000:
+        reasons.append(f"BSR #{bsr:,} — orta rekabet")
+    return {"score": score, "max": 25, "reasons": reasons, "actions": actions}
+
+
+def _profitability_insight(score: int, price: float, margin: float, net_profit: float, trend: dict) -> dict:
+    reasons = []
+    actions = []
+    if price == 0:
+        reasons.append("Fiyat bilgisi alinamadi — karlilik hesaplanamadi")
+        actions.append("Urunu manuel fiyat ile kar hesaplayicidan gec")
+        return {"score": score, "max": 25, "reasons": reasons, "actions": actions}
+    if 15 <= price <= 50:
+        reasons.append(f"${price} ideal FBA fiyat araligindasin (FBA icin $15-$50 optimum)")
+    elif price < 15:
+        reasons.append(f"${price} cok dusuk — FBA ucreti marji yutuyor")
+        actions.append("En az $15 fiyat hedefle veya bundle ile ortalama siparis degerini artir")
+    elif price > 80:
+        reasons.append(f"${price} yuksek fiyat — daha az rekabet ama daha az hacim")
+    reasons.append(f"Tahmini net kar: ${net_profit:.2f}/urun, marj: %{margin:.0f}")
+    if margin >= 50:
+        reasons.append("Mukemmel marj — bu nishi koru")
+    elif margin >= 35:
+        reasons.append("Iyi marj — buyume icin alan var")
+    elif margin >= 20:
+        reasons.append("Orta marj — tedarik fiyatini dusur")
+        actions.append("Alibaba'da MOQ artirarak birim maliyeti %10-15 dusur")
+    else:
+        reasons.append("Dusuk marj — dikkat")
+        actions.append("Tedarik maliyetini gozden gecir veya fiyat artir")
+    trend_label = trend.get("trend", "belirsiz")
+    if trend_label == "yukselen":
+        reasons.append("Talep trendi yukseliyor — iyi zamanlama")
+    elif trend_label == "dusen":
+        reasons.append("Talep trendi dusuyor — dikkatli ol")
+        actions.append("Girmeden once Google Trends'te son 12 ayi kontrol et")
+    return {"score": score, "max": 25, "reasons": reasons, "actions": actions}
+
+
 def calculate_niche_score(product: dict, keepa_data: dict = None) -> dict:
     dimensions_data = product.get("dimensions", {})
     weight = dimensions_data.get("weight", 0)
@@ -241,6 +337,12 @@ def calculate_niche_score(product: dict, keepa_data: dict = None) -> dict:
             "logistics": logistics_score,
             "competition": competition_score,
             "profitability": profit_score,
+        },
+        "dimension_insights": {
+            "volume": _volume_insight(storage_score, weight, bsr),
+            "logistics": _logistics_insight(logistics_score, weight, is_fragile),
+            "competition": _competition_insight(competition_score, rvi_val, rvi_label, has_big_brand, has_patent, bsr),
+            "profitability": _profitability_insight(profit_score, price, margin, net_profit, trend_data),
         },
         "estimated_margin": round(margin, 1),
         "net_profit": round(net_profit, 2),

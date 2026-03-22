@@ -16,7 +16,7 @@ const SCORE_COLOR = (s) => s >= 70 ? '#34c759' : s >= 50 ? '#ff9f0a' : '#ff3b30'
 const SCORE_BG = (s) => s >= 70 ? '#e8f9ee' : s >= 50 ? '#fff4e0' : '#fff1f0'
 const SCORE_TEXT = (s) => s >= 70 ? '#1a7f37' : s >= 50 ? '#b45309' : '#c00'
 
-const seededRandom = (seed) => { const x = Math.sin(seed) * 10000; return x - Math.floor(x) }
+const seededRandom = (seed) => { const x = Math.abs(Math.sin(seed + 1) * 10000); return x - Math.floor(x) }
 
 const getMockData = (asin) => {
   const seed = asin.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
@@ -30,12 +30,11 @@ const getMockData = (asin) => {
 }
 
 const bsrToSales = (bsr) => {
-  if (!bsr) return 50
-  if (bsr < 500) return Math.floor(seededRandom(bsr) * 1000) + 800
-  if (bsr < 2000) return Math.floor(seededRandom(bsr) * 500) + 300
-  if (bsr < 5000) return Math.floor(seededRandom(bsr) * 200) + 100
-  if (bsr < 15000) return Math.floor(seededRandom(bsr) * 100) + 30
-  return Math.floor(seededRandom(bsr) * 30) + 5
+  if (!bsr || bsr <= 0) return 0
+  // Power-law formulu — akademik literatür (Sports & Outdoors kategorisi)
+  const k = 1900, alpha = 0.78
+  const sales = Math.round(k * Math.pow(bsr, -alpha))
+  return Math.max(1, sales)
 }
 
 const estRevenue = (sales, price) => {
