@@ -109,6 +109,7 @@ export default function NichePage() {
   const dims = nicheData?.dimensions || {}
   const flags = nicheData?.flags || {}
   const unmet = nicheData?.unmet_demand || {}
+  const priceWar = nicheData?.price_war || {}
   const prong = nicheData?.prong_test || {}
   const rvi = nicheData?.review_velocity || {}
   const trend = nicheData?.demand_trend || {}
@@ -386,6 +387,36 @@ export default function NichePage() {
                 ))}
               </div>
               {prong.verdict && <div style={{ padding: '10px 14px', background: '#f5f5f7', borderRadius: '8px', fontSize: '12px', color: '#3c3c43' }}>📝 {prong.verdict}</div>}
+            </div>
+          )}
+
+          {/* Fiyat Savaşı Uyarısı */}
+          {priceWar?.detected && (
+            <div style={{ background: 'white', borderRadius: '12px', border: `0.5px solid ${priceWar.level === 'critical' ? '#ffd0ce' : '#fde68a'}`, padding: '16px 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>⚔️ Fiyat Savaşı Analizi</div>
+                <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '10px', fontWeight: '600',
+                  background: priceWar.level === 'critical' ? '#fee2e2' : '#fff4e0',
+                  color: priceWar.level === 'critical' ? '#dc2626' : '#b45309'
+                }}>{priceWar.level_tr}</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
+                💡 {priceWar.recommendation}
+              </div>
+              {priceWar.signals?.map((s, i) => (
+                <div key={i} style={{ display: 'flex', gap: '8px', padding: '8px 12px', borderRadius: '8px', marginBottom: '6px',
+                  background: s.type === 'critical_price_drop' ? '#fee2e2' : '#fff7ed'
+                }}>
+                  <span style={{ fontSize: '12px', color: '#374151' }}>{s.message}</span>
+                </div>
+              ))}
+              {priceWar.price_current > 0 && (
+                <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px', color: '#64748b' }}>
+                  <span>Mevcut: <strong>${priceWar.price_current}</strong></span>
+                  <span>90g Zirve: <strong>${priceWar.price_max_90d}</strong></span>
+                  <span>Risk Skoru: <strong style={{ color: priceWar.risk_score >= 60 ? '#dc2626' : '#b45309' }}>{priceWar.risk_score}/100</strong></span>
+                </div>
+              )}
             </div>
           )}
 

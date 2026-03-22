@@ -5,6 +5,7 @@ from services.keepa_service import (
     gini_to_score,
     calculate_rvi,
     get_keepa_data,
+    detect_price_war,
 )
 
 def review_velocity_index(reviews: int, product_age_days: int = 180) -> float:
@@ -56,7 +57,6 @@ def calculate_niche_score(product: dict, keepa_data: dict = None) -> dict:
         keepa_reviews = keepa_data.get("current_reviews", 0)
         if keepa_reviews > 0:
             reviews = keepa_reviews
-
     if not monthly_sales:
         monthly_sales = bsr_to_monthly_sales(bsr, category)
     est_monthly_revenue = round(monthly_sales * price, 2)
@@ -241,6 +241,14 @@ def calculate_niche_score(product: dict, keepa_data: dict = None) -> dict:
             "bsr_history": keepa_data.get("bsr_history", [])[-30:],
             "price_history": keepa_data.get("price_history", [])[-30:],
         }
+        # Fiyat savaşı tespiti
+        price_war = detect_price_war(keepa_data)
+        result["price_war"] = price_war
+        # Fiyat savaşı varsa unmet demand sinyallerine ekle
+        if price_war.get("detected"):
+            result["unmet_demand"]["signals"].insert(0,
+                f"⚔️ {price_war['level_tr']} — {price_war['recommendation']}"
+            )
 
     return result
 

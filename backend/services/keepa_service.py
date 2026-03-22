@@ -448,3 +448,116 @@ def _mock_keepa_data(asin: str, category: str = "default") -> dict:
         "rvi": rvi_data,
         "mock": True,
     }
+
+
+# ─── Fiyat Savaşı Erken Uyarı Sistemi ───────────────────────────────────────
+def detect_price_war(keepa_data: dict) -> dict:
+    """
+    Keepa fiyat + BSR geçmişinden fiyat savaşı tespiti.
+    Sinyaller:
+    - Son 30 günde fiyat düşüşü > %15 → ⚠️ Uyarı
+    - Son 30 günde fiyat düşüşü > %30 → 🔴 Kritik
+    - BSR kötüleşirken fiyat düşüyorsa → satış hacmi düşüyor demek
+    """
+    price_history = keepa_data.get("price_history", [])
+    bsr_history = keepa_data.get("bsr_history", [])
+    price_stats = keepa_data.get("price_stats", {})
+
+    if not price_history or len(price_history) < 3:
+        return {"detected": False, "level": "unknown", "signals": []}
+
+    prices = [p["price"] for p in price_history if p.get("price", 0) > 0]
+    if not prices or len(prices) < 3:
+        return {"detected": False, "level": "unknown", "signals": []}
+
+    current_price = prices[-1]
+    # 30 gün önceki fiyat (yaklaşık — son %33'lük dilim)
+    old_price_idx = max(0, len(prices) - len(prices) // 3)
+    old_price = prices[old_price_idx]
+    max_price_90d = price_stats.get("max_90d", current_price)
+
+    signals = []
+    risk_score = 0
+
+    # Sinyal 1: Son dönem fiyat düşüşü
+    if old_price > 0:
+        price_drop_pct = ((old_price - current_price) / old_price) * 100
+        if price_drop_pct > 30:
+            signals.append({
+                "type": "critical_price_drop",
+                "message": f"🔴 Fiyat son dönemde %{round(price_drop_pct)}düştü — ciddi fiyat savaşı!",
+                "value": round(price_drop_pct, 1)
+            })
+            risk_score += 50
+        elif price_drop_pct > 15:
+            signals.append({
+                "type": "price_drop",
+                "message": f"⚠️ Fiyat son dönemde %{round(price_drop_pct)} düştü — rakip baskısı var.",
+                "value": round(price_drop_pct, 1)
+            })
+            risk_score += 25
+
+    # Sinyal 2: Zirve fiyattan uzaklık
+    if max_price_90d > 0 and current_price > 0:
+        from_peak_pct = ((max_price_90d - current_price) / max_price_90d) * 100
+        if from_peak_pct > 35:
+            signals.append({
+                "type": "far_from_peak",
+                "message": f"⚠️ Mevcut fiyat 90 günlük zirvesinin %{round(from_peak_pct)} altında.",
+                "value": round(from_peak_pct, 1)
+            })
+            risk_score += 20
+
+    # Sinyal 3: Fiyat oynaklığı (volatilite)
+    if len(prices) >= 5:
+        price_std = float(np.std(prices))
+        price_mean = float(np.mean(prices))
+        volatility = (price_std / price_mean * 100) if price_mean > 0 else 0
+        if volatility > 25:
+            signals.append({
+                "type": "high_volatility",
+                "message": f"📊 Fiyat oynaklığı yüksek (%{round(volatility)}) — istikrarsız pazar.",
+                "value": round(volatility, 1)
+            })
+            risk_score += 15
+
+    # Sinyal 4: BSR kötüleşiyor mu?
+    if bsr_history and len(bsr_history) >= 6:
+        recent_bsr = np.mean([b["bsr"] for b in bsr_history[-3:]])
+        older_bsr = np.mean([b["bsr"] for b in bsr_history[:3]])
+        if recent_bsr > older_bsr * 1.5:
+            signals.append({
+                "type": "bsr_declining",
+                "message": "📉 BSR kötüleşiyor — fiyat düşse de satışlar artmıyor.",
+                "value": round(((recent_bsr - older_bsr) / older_bsr) * 100, 1)
+            })
+            risk_score += 20
+
+    # Seviye belirle
+    if risk_score >= 60:
+        level = "critical"
+        level_tr = "🔴 Kritik — Fiyat Savaşı Var"
+        recommendation = "Bu nişe şu an girme. Fiyatlar dip yapmadan beklemeyi düşün."
+    elif risk_score >= 30:
+        level = "warning"
+        level_tr = "⚠️ Uyarı — Fiyat Baskısı Var"
+        recommendation = "Dikkatli ol. Fiyat trendin tersine dönmesini bekle."
+    elif risk_score > 0:
+        level = "mild"
+        level_tr = "🟡 Hafif Risk"
+        recommendation = "Normalin dışında bir durum yok ama takipte kal."
+    else:
+        level = "safe"
+        level_tr = "✅ Güvenli — Fiyat Savaşı Yok"
+        recommendation = "Fiyatlar stabil. Giriş için iyi sinyal."
+
+    return {
+        "detected": risk_score >= 30,
+        "level": level,
+        "level_tr": level_tr,
+        "risk_score": risk_score,
+        "recommendation": recommendation,
+        "signals": signals,
+        "price_current": current_price,
+        "price_max_90d": max_price_90d,
+    }
