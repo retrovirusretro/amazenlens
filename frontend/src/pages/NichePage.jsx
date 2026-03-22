@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { track, Events } from '../lib/analytics'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || ''
 
 const SCORE_COLOR = (s) => s >= 80 ? '#34c759' : s >= 60 ? '#ff9f0a' : s >= 40 ? '#ff6b35' : '#ff3b30'
 const SCORE_BG = (s) => s >= 80 ? '#e8f9ee' : s >= 60 ? '#fff4e0' : s >= 40 ? '#fff1e8' : '#fff1f0'

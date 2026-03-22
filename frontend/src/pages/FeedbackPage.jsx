@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-const API = 'https://amazenlens-production.up.railway.app'
+const API = import.meta.env.VITE_API_URL || ''
 
 const BOT_SYSTEM = `Sen AmazenLens'in AI asistanısın. AmazenLens, Türk Amazon satıcıları için geliştirilmiş bir araştırma platformudur.
 
