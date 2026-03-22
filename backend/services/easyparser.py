@@ -112,6 +112,42 @@ async def search_products(keyword: str, page: int = 1):
         print(f"Easyparser exception: {e}")
         return get_mock_search(keyword)
 
+def _merge_search_into_product(item: dict, asin: str) -> dict:
+    """Search sonucunu product formatina donustur"""
+    image = item.get("image", "")
+    if image and not image.startswith("http"):
+        image = f"https://m.media-amazon.com/images/I/{image}.jpg"
+    price_data = item.get("price", {})
+    price = price_data.get("value", price_data.get("current", 0)) if isinstance(price_data, dict) else (price_data or 0)
+    bsr = item.get("bsr", item.get("bestseller_rank", 0))
+    if isinstance(bsr, list) and bsr:
+        bsr = bsr[0].get("rank", 0) if isinstance(bsr[0], dict) else bsr[0]
+    return {
+        "asin": asin,
+        "title": item.get("title", ""),
+        "price": price,
+        "rating": item.get("rating", item.get("stars", 0)),
+        "reviews_count": item.get("reviews", item.get("ratings_total", 0)),
+        "image": image,
+        "images": [],
+        "url": f"https://amazon.com/dp/{asin}",
+        "bestseller_rank": bsr,
+        "in_stock": item.get("in_stock", True),
+        "dimensions": {"weight": 0.5},
+        "category": item.get("category", ""),
+        "sellers_count": None,
+        "fba_status": None,
+        "buybox_seller": "",
+        "variants": [],
+        "variant_types": [],
+        "brand": item.get("brand", ""),
+        "features": [],
+        "description": "",
+        "mock": False,
+        "from_search": True,
+    }
+
+
 async def get_product(asin: str):
     cache_key = f"product:{asin}"
 
@@ -126,15 +162,46 @@ async def get_product(asin: str):
     try:
         _stats["api_calls"] += 1
         async with httpx.AsyncClient(timeout=30, verify=False) as client:
+            # Once DETAIL dene
             response = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
                 "operation": "DETAIL", "domain": ".com", "asin": asin
             })
             if response.status_code == 200:
-                result = format_product(response.json(), asin)
+                data = response.json()
+                result = format_product(data, asin)
+                # Baslik bos geldiyse SEARCH ile fallback
+                if not result.get("title"):
+                    print(f"[DETAIL boş] {asin} — SEARCH fallback deneniyor")
+                    search_res = await client.get(BASE_URL, params={
+                        "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
+                        "operation": "SEARCH", "domain": ".com", "keyword": asin
+                    })
+                    if search_res.status_code == 200:
+                        search_data = search_res.json()
+                        items = search_data.get("result", {}).get("search_results", []) if isinstance(search_data.get("result"), dict) else []
+                        if items:
+                            # ASIN esleseni bul
+                            matched = next((x for x in items if x.get("asin") == asin), items[0] if items else None)
+                            if matched:
+                                result = _merge_search_into_product(matched, asin)
+                                print(f"[SEARCH fallback OK] {asin} — {result.get('title', '')[:50]}")
                 await cache_set(cache_key, result)
                 return result
             print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
+            # 402/404'te SEARCH ile fallback
+            search_res = await client.get(BASE_URL, params={
+                "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
+                "operation": "SEARCH", "domain": ".com", "keyword": asin
+            })
+            if search_res.status_code == 200:
+                search_data = search_res.json()
+                items = search_data.get("result", {}).get("search_results", []) if isinstance(search_data.get("result"), dict) else []
+                matched = next((x for x in items if x.get("asin") == asin), items[0] if items else None)
+                if matched:
+                    result = _merge_search_into_product(matched, asin)
+                    await cache_set(cache_key, result)
+                    return result
             return get_mock_product(asin)
     except Exception as e:
         print(f"Easyparser exception: {e}")
