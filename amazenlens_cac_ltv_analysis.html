@@ -1,0 +1,260 @@
+
+<style>
+  .sec { margin-bottom: 2rem; }
+  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  .lbl { font-size: 13px; color: var(--color-text-secondary); min-width: 160px; }
+  .val { font-size: 13px; font-weight: 500; min-width: 48px; text-align: right; color: var(--color-text-primary); }
+  .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
+  .m-label { font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 4px; }
+  .m-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .m-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .divider { height: 0.5px; background: var(--color-border-tertiary); margin: 1.5rem 0; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 99px; }
+  .b-green { background: var(--color-background-success); color: var(--color-text-success); }
+  .b-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .b-red   { background: var(--color-background-danger);  color: var(--color-text-danger); }
+  .b-blue  { background: var(--color-background-info);    color: var(--color-text-info); }
+  .ratio-bar { height: 8px; border-radius: 99px; background: var(--color-background-secondary); overflow: hidden; margin-top: 6px; }
+  .ratio-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+  .plan-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 6px; font-size: 12px; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); align-items: center; }
+  .plan-hdr { font-size: 11px; color: var(--color-text-tertiary); font-weight: 500; }
+  .signal { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--border-radius-md); margin-bottom: 8px; }
+  .signal-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+</style>
+
+<div style="padding: 1rem 0;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+    <div>
+      <div style="font-size: 13px; color: var(--color-text-tertiary); margin-bottom: 4px;">AmazenLens · SaaS Unit Economics</div>
+      <div style="font-size: 18px; font-weight: 500; color: var(--color-text-primary);">CAC vs LTV Analizi</div>
+    </div>
+    <span class="badge b-blue">Sektör kıyaslı · Mart 2026</span>
+  </div>
+
+  <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 16px; margin-bottom: 1.5rem;">
+    <div style="font-size: 12px; color: var(--color-text-tertiary); margin-bottom: 12px;">Churn oranını değiştirerek sonuçları anlık görün</div>
+    <div class="row" style="margin-bottom: 0;">
+      <label class="lbl">Aylık churn oranı (%)</label>
+      <input type="range" min="1" max="10" value="5" step="1" id="churn-slider" style="flex:1;">
+      <span class="val" id="churn-val">%5</span>
+    </div>
+  </div>
+
+  <div class="grid4" id="top-metrics"></div>
+
+  <div class="divider"></div>
+
+  <div style="font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem;">LTV:CAC oranı — senaryolar</div>
+
+  <div id="scenario-cards"></div>
+
+  <div class="divider"></div>
+
+  <div style="font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem;">Plan bazlı LTV analizi</div>
+
+  <div class="card">
+    <div class="plan-row" style="border-bottom: 0.5px solid var(--color-border-secondary); padding-bottom: 8px; margin-bottom: 4px;">
+      <span class="plan-hdr">Plan</span>
+      <span class="plan-hdr">Fiyat/ay</span>
+      <span class="plan-hdr">LTV</span>
+      <span class="plan-hdr">Geri ödeme</span>
+      <span class="plan-hdr">LTV:CAC</span>
+    </div>
+    <div id="plan-rows"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem;">Gelir projeksiyonu — 100 kullanıcı</div>
+
+  <div style="position: relative; width: 100%; height: 220px; margin-bottom: 1.5rem;">
+    <canvas id="revChart"></canvas>
+  </div>
+
+  <div class="divider"></div>
+
+  <div style="font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 1rem;">Sinyaller ve öneriler</div>
+  <div id="signals"></div>
+
+  <div style="margin-top: 1rem; padding: 10px 14px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md);">
+    <div style="font-size: 12px; color: var(--color-text-tertiary);">Formüller: LTV = (ARPU × Brüt Marj) ÷ Aylık Churn · CAC = Toplam pazarlama harcaması ÷ Yeni müşteri sayısı · Geri ödeme süresi = CAC ÷ (ARPU × Brüt Marj) · Benchmark: LTV:CAC ≥ 3:1 sağlıklı, ≥ 5:1 mükemmel (SaaS Capital, 2025, N=939)</div>
+  </div>
+
+  <div style="margin-top: 1rem; text-align: center;">
+    <button onclick="sendPrompt('Bu CAC/LTV analizine göre fiyatlandırma stratejimizi nasıl optimize edebiliriz?')" style="font-size: 13px;">Fiyatlandırma optimizasyonu öner ↗</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const PLANS = [
+  { name: "Starter", price: 19, color: "#378ADD", mix: 0.55 },
+  { name: "Pro",     price: 49, color: "#1D9E75", mix: 0.35 },
+  { name: "Agency",  price: 99, color: "#534AB7", mix: 0.10 },
+];
+const GROSS_MARGIN = 0.82;
+const CAC_ORGANIC  = 35;
+const CAC_PAID     = 95;
+const CAC_BLENDED  = 65;
+let chartInst = null;
+
+function arpu() {
+  return PLANS.reduce((s,p) => s + p.price * p.mix, 0);
+}
+function ltv(churnPct) {
+  return (arpu() * GROSS_MARGIN) / (churnPct / 100);
+}
+function payback(cac) {
+  return cac / (arpu() * GROSS_MARGIN);
+}
+function ratio(churnPct, cac) {
+  return ltv(churnPct) / cac;
+}
+function fmt$(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtR(r) { return r.toFixed(1) + ':1'; }
+function fmtMo(m) { return Math.round(m * 10) / 10 + ' ay'; }
+
+function ratingClass(r) {
+  if (r >= 5) return 'b-green';
+  if (r >= 3) return 'b-blue';
+  if (r >= 2) return 'b-amber';
+  return 'b-red';
+}
+function ratingLabel(r) {
+  if (r >= 5) return 'Mükemmel';
+  if (r >= 3) return 'Sağlıklı';
+  if (r >= 2) return 'Dikkat';
+  return 'Risk';
+}
+function barColor(r) {
+  if (r >= 5) return '#1D9E75';
+  if (r >= 3) return '#378ADD';
+  if (r >= 2) return '#BA7517';
+  return '#E24B4A';
+}
+
+function update() {
+  const churn = parseInt(document.getElementById('churn-slider').value);
+  document.getElementById('churn-val').textContent = '%' + churn;
+
+  const LTV = ltv(churn);
+  const lifeMo = 100 / churn;
+  const PB_B = payback(CAC_BLENDED);
+  const R_B = ratio(churn, CAC_BLENDED);
+  const R_O = ratio(churn, CAC_ORGANIC);
+
+  // top metrics
+  document.getElementById('top-metrics').innerHTML = `
+    <div class="metric"><div class="m-label">Ağırlıklı ARPU</div><div class="m-value">${fmt$(arpu())}<span style="font-size:12px;font-weight:400;">/ay</span></div><div class="m-sub">Starter 55% · Pro 35% · Agency 10%</div></div>
+    <div class="metric"><div class="m-label">Müşteri ömrü</div><div class="m-value">${Math.round(lifeMo * 10)/10}<span style="font-size:12px;font-weight:400;"> ay</span></div><div class="m-sub">1 ÷ %${churn} churn</div></div>
+    <div class="metric"><div class="m-label">LTV (karma)</div><div class="m-value">${fmt$(LTV)}</div><div class="m-sub">%82 brüt marj dahil</div></div>
+    <div class="metric"><div class="m-label">Geri ödeme süresi</div><div class="m-value">${fmtMo(PB_B)}</div><div class="m-sub">CAC ${fmt$(CAC_BLENDED)} baz alındı</div></div>
+  `;
+
+  // scenario cards
+  const scenarios = [
+    { label: "Organik büyüme", cac: CAC_ORGANIC, desc: "SEO + içerik + product hunt", sub: "Solo kurucu, ilk 6 ay" },
+    { label: "Karma kanal", cac: CAC_BLENDED,  desc: "Ağırlıklı gerçekçi senaryo", sub: "Sektör ortalaması" },
+    { label: "Ücretli reklamlar", cac: CAC_PAID,  desc: "Google Ads + sosyal medya", sub: "Büyüme fazı" },
+  ];
+  document.getElementById('scenario-cards').innerHTML = scenarios.map(s => {
+    const r = ratio(churn, s.cac);
+    const pb = payback(s.cac);
+    const bw = Math.min(r / 8 * 100, 100);
+    return `<div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--color-text-primary);">${s.label}</div>
+          <div style="font-size:12px;color:var(--color-text-tertiary);">${s.desc} · CAC ${fmt$(s.cac)}</div>
+        </div>
+        <span class="badge ${ratingClass(r)}">${ratingLabel(r)}</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:6px;">
+        <div><div style="font-size:11px;color:var(--color-text-tertiary);">LTV:CAC</div><div style="font-size:20px;font-weight:500;color:var(--color-text-primary);">${fmtR(r)}</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-tertiary);">Geri ödeme</div><div style="font-size:18px;font-weight:500;color:var(--color-text-primary);">${fmtMo(pb)}</div></div>
+        <div><div style="font-size:11px;color:var(--color-text-tertiary);">LTV</div><div style="font-size:18px;font-weight:500;color:var(--color-text-primary);">${fmt$(ltv(churn))}</div></div>
+      </div>
+      <div class="ratio-bar"><div class="ratio-fill" style="width:${bw}%;background:${barColor(r)};"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--color-text-tertiary);margin-top:4px;"><span>0</span><span>3:1 sağlıklı</span><span>5:1 ideal</span><span>8:1+</span></div>
+    </div>`;
+  }).join('');
+
+  // plan rows
+  document.getElementById('plan-rows').innerHTML = PLANS.map(p => {
+    const pLTV = (p.price * GROSS_MARGIN) / (churn / 100);
+    const pb = CAC_BLENDED / (p.price * GROSS_MARGIN);
+    const r = pLTV / CAC_BLENDED;
+    return `<div class="plan-row">
+      <span style="font-weight:500;color:var(--color-text-primary);">${p.name}</span>
+      <span style="color:var(--color-text-secondary);">${fmt$(p.price)}</span>
+      <span style="font-weight:500;color:${barColor(r)};">${fmt$(pLTV)}</span>
+      <span style="color:var(--color-text-secondary);">${fmtMo(pb)}</span>
+      <span><span class="badge ${ratingClass(r)}">${fmtR(r)}</span></span>
+    </div>`;
+  }).join('');
+
+  // signals
+  const sigs = [];
+  const R = R_B;
+  if (R >= 5) {
+    sigs.push({ c:'#1D9E75', t:'Güçlü unit economics', d:`LTV:CAC oranınız ${fmtR(R)} — sektör idealinin (5:1) üzerinde. Yatırımcı için çok çekici.` });
+  } else if (R >= 3) {
+    sigs.push({ c:'#378ADD', t:'Sağlıklı oran', d:`LTV:CAC ${fmtR(R)} — benchmark olan 3:1'in üzerinde. Sürdürülebilir büyüme mümkün.` });
+  } else {
+    sigs.push({ c:'#E24B4A', t:'Oran riski', d:`LTV:CAC ${fmtR(R)} — 3:1'in altı. Churn'ü düşürmeden büyüme kararı verme.` });
+  }
+  if (churn <= 3) {
+    sigs.push({ c:'#1D9E75', t:'Düşük churn — en kritik metrik', d:'%3 altı churn mükemmel. Bu seviyeyi korumak tüm pazarlama harcamasından daha değerli.' });
+  } else if (churn <= 5) {
+    sigs.push({ c:'#BA7517', t:'Churn kritik eşikte', d:`%${churn} aylık churn sektör ortalaması (3.5%). Onboarding iyileştirilirse LTV ${fmt$(ltv(churn-1))} olur.` });
+  } else {
+    sigs.push({ c:'#E24B4A', t:'Churn yüksek — acil aksiyon', d:`%${churn} aylık churn LTV'yi dramatik düşürüyor. Churn'ü %3'e düşürün → LTV ${fmt$(ltv(3))} olur.` });
+  }
+  sigs.push({ c:'#378ADD', t:'Starter plan optimize edilmeli', d:'Starter $19 en düşük LTV\'yi üretiyor. Yıllık ödemeye indirimle (2 ay ücretsiz) teşvik churn\'ü %40 düşürebilir.' });
+  sigs.push({ c:'#534AB7', t:'Expansion revenue fırsatı', d:'Mevcut kullanıcıları Pro\'ya yükseltmek yeni kullanıcı kazanmaktan 5x ucuz. Upsell akışı kurulursa ARPU 10$+ artabilir.' });
+
+  document.getElementById('signals').innerHTML = sigs.map(s =>
+    `<div class="signal" style="background:var(--color-background-secondary);">
+      <div class="signal-dot" style="background:${s.c};"></div>
+      <div><div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px;">${s.t}</div><div style="font-size:12px;color:var(--color-text-secondary);">${s.d}</div></div>
+    </div>`
+  ).join('');
+
+  // chart
+  const labels = PLANS.map(p=>p.name);
+  const ltvData = PLANS.map(p => Math.round((p.price * GROSS_MARGIN) / (churn/100)));
+  const cacLine = PLANS.map(() => CAC_BLENDED * 3);
+
+  if (chartInst) { chartInst.destroy(); chartInst = null; }
+  const ctx = document.getElementById('revChart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Starter\n$19/ay', 'Pro\n$49/ay', 'Agency\n$99/ay'],
+      datasets: [
+        { label: 'LTV', data: ltvData, backgroundColor: PLANS.map(p=>p.color+'33'), borderColor: PLANS.map(p=>p.color), borderWidth: 1.5, borderRadius: 6 },
+        { label: '3x CAC (sağlıklı eşik)', data: cacLine, type: 'line', borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,4], pointRadius: 0, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': $' + ctx.parsed.y.toLocaleString() } }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => '$'+v.toLocaleString(), font:{size:11} }, grid:{color:'rgba(0,0,0,0.06)'} },
+        x: { ticks: { font:{size:12} }, grid:{display:false} }
+      }
+    }
+  });
+}
+
+document.getElementById('churn-slider').addEventListener('input', update);
+update();
+</script>
