@@ -29,12 +29,12 @@ export default function ProductPage() {
   const navigate = useNavigate()
   const prevAsin = useRef(null)
 
+  // ── Tüm useState'ler burada — hiçbir return'den önce ──
   const [product, setProduct] = useState(null)
   const [niche, setNiche] = useState(null)
   const [suppliers, setSuppliers] = useState([])
   const [arbitrage, setArbitrage] = useState(null)
   const [reviews, setReviews] = useState(null)
-
   const [loading, setLoading] = useState(true)
   const [productLoading, setProductLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
@@ -43,6 +43,7 @@ export default function ProductPage() {
   const [keepaLoading, setKeepaLoading] = useState(false)
   const [winReport, setWinReport] = useState(null)
   const [winLoading, setWinLoading] = useState(false)
+  const [openInsight, setOpenInsight] = useState(null) // ← düzeltildi: return'lerden önce
 
   useEffect(() => {
     const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
@@ -106,7 +107,6 @@ export default function ProductPage() {
       setSuppliers(cachedSuppliers)
       setArbitrage(cachedArbitrage)
       setLoading(false)
-      // Cache'den gelse de tracking yap
       track(Events.PRODUCT_VIEW, { asin, title: cachedProduct?.title, price: cachedProduct?.price, from_cache: true })
       return
     }
@@ -124,7 +124,6 @@ export default function ProductPage() {
       cacheSet(`product_${asin}`, productData)
       cacheSet(`niche_${asin}`, nicheData)
 
-      // Event tracking — ürün görüntüleme
       track(Events.PRODUCT_VIEW, {
         asin,
         title: productData?.title,
@@ -167,6 +166,7 @@ export default function ProductPage() {
     }
   }, [activeTab, product])
 
+  // ── Erken return'ler — tüm hook'lardan SONRA ──
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '400px', flexDirection: 'column', gap: '12px' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -184,13 +184,11 @@ export default function ProductPage() {
     </div>
   )
 
-  // API: {asin, niche_score: {...}} veya direkt {...} formatlarını destekle
   const _nicheRaw = niche?.niche_score || niche || {}
   const score = _nicheRaw?.total_score || 0
   const nicheData = _nicheRaw
   const dims = nicheData?.dimensions || {}
   const insights = nicheData?.dimension_insights || {}
-  const [openInsight, setOpenInsight] = useState(null)
   const flags = nicheData?.flags || {}
   const unmetDemand = nicheData?.unmet_demand || {}
   const prongTest = nicheData?.prong_test || {}
@@ -486,7 +484,6 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Fiyat Savaşı Uyarısı */}
           {keepaData?.price_war?.detected && (
             <div style={{ background: 'white', borderRadius: '12px', border: `0.5px solid ${keepaData.price_war.level === 'critical' ? '#ffd0ce' : '#fde68a'}`, padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -503,7 +500,6 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Kültürel Takvim */}
           {keepaData?.cultural_calendar?.best_listing_time && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>📅 En İyi Listeleme Zamanı</div>
@@ -522,7 +518,6 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Bu Nişi Kazanmak İçin Ne Lazım */}
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>🏆 Bu Nişi Kazanmak İçin Ne Lazım?</div>
@@ -694,7 +689,7 @@ export default function ProductPage() {
         </div>
       )}
 
-      {/* Keepa Grafikleri */}
+      {/* Keepa */}
       {activeTab === 'keepa' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {!keepaData ? (
@@ -709,7 +704,6 @@ export default function ProductPage() {
             </div>
           ) : (
             <>
-              {/* Keepa Özet */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 {[
                   { label: 'Gini', value: keepaData.gini?.toFixed(3), sub: keepaData.gini_label, color: keepaData.gini < 0.3 ? '#16a34a' : keepaData.gini < 0.5 ? '#b45309' : '#dc2626' },
@@ -724,7 +718,6 @@ export default function ProductPage() {
                 ))}
               </div>
 
-              {/* BSR Grafiği */}
               {keepaData.bsr_history?.length > 0 && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📊 BSR Geçmişi</div>
@@ -734,9 +727,7 @@ export default function ProductPage() {
                       const minBsr = Math.min(...keepaData.bsr_history.slice(-30).map(x => x.bsr))
                       const range = maxBsr - minBsr || 1
                       const height = Math.max(4, ((maxBsr - b.bsr) / range) * 76 + 4)
-                      return (
-                        <div key={i} style={{ flex: 1, background: '#0071e3', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.7 + (i / 30) * 0.3 }} />
-                      )
+                      return <div key={i} style={{ flex: 1, background: '#0071e3', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.7 + (i / 30) * 0.3 }} />
                     })}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
@@ -746,7 +737,6 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Fiyat Grafiği */}
               {keepaData.price_history?.length > 0 && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -763,15 +753,12 @@ export default function ProductPage() {
                       const minP = Math.min(...keepaData.price_history.slice(-30).map(x => x.price))
                       const range = maxP - minP || 1
                       const height = Math.max(4, ((p.price - minP) / range) * 56 + 4)
-                      return (
-                        <div key={i} style={{ flex: 1, background: '#34c759', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.6 + (i / 30) * 0.4 }} />
-                      )
+                      return <div key={i} style={{ flex: 1, background: '#34c759', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.6 + (i / 30) * 0.4 }} />
                     })}
                   </div>
                 </div>
               )}
 
-              {/* Fiyat Savaşı */}
               {keepaData.price_war?.detected && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #fde68a', padding: '16px 20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '8px' }}>⚔️ {keepaData.price_war.level_tr}</div>
@@ -782,7 +769,6 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Kültürel Takvim */}
               {keepaData.cultural_calendar?.best_listing_time && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>📅 En İyi Listeleme Zamanı</div>
@@ -803,8 +789,7 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Review Helpfulness */}
-              {reviews && reviews.love && (
+              {reviews && reviews.hate && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>⭐ En Kritik Yorumlar</div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px' }}>
