@@ -38,12 +38,17 @@ origins = [
     "http://127.0.0.1:5174",
     "http://127.0.0.1:5175",
     "http://127.0.0.1:5176",
+    "https://amazenlens.vercel.app",
+    "https://www.amazenlens.vercel.app",
+    "https://amazenlens.com",
+    "https://www.amazenlens.com"
+
 ]
 
 if FRONTEND_URL and FRONTEND_URL not in origins:
     origins.append(FRONTEND_URL)
-    if FRONTEND_URL.startswith("https://"):
-        origins.append(FRONTEND_URL.replace("https://", "https://www."))
+    if FRONTEND_URL.startswith("https://amazenlens.vercel.app"):
+        origins.append(FRONTEND_URL.replace("https://", "https://amazenlens.vercel.app"))
 
 app.add_middleware(
     CORSMiddleware,
