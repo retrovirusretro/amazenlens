@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 
-const API_URL = const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 // Supabase client — auth için direkt
 export const supabase = createClient(
@@ -34,7 +34,7 @@ export const logoutUser = async () => {
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-);
+});
 
 export const searchProducts = (keyword, page = 1) =>
   api.get(`/api/amazon/search?keyword=${keyword}&page=${page}`);
