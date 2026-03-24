@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { track, Events } from '../lib/analytics'
 
@@ -27,7 +28,9 @@ function cacheSet(key, data) {
 export default function ProductPage() {
   const { asin } = useParams()
   const navigate = useNavigate()
+  const { i18n } = useTranslation()
   const prevAsin = useRef(null)
+  const lang = i18n.language?.split('-')[0] || 'tr'
 
   // ── Tüm useState'ler burada — hiçbir return'den önce ──
   const [product, setProduct] = useState(null)
@@ -36,6 +39,7 @@ export default function ProductPage() {
   const [arbitrage, setArbitrage] = useState(null)
   const [reviews, setReviews] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [productLoading, setProductLoading] = useState(false)
   const [reviewsLoading, setReviewsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
@@ -44,6 +48,15 @@ export default function ProductPage() {
   const [winReport, setWinReport] = useState(null)
   const [winLoading, setWinLoading] = useState(false)
   const [openInsight, setOpenInsight] = useState(null) // ← düzeltildi: return'lerden önce
+  const [trendsData, setTrendsData] = useState(null)
+  const [trendsLoading, setTrendsLoading] = useState(false)
+  const [listingReport, setListingReport] = useState(null)
+  const [listingLoading, setListingLoading] = useState(false)
+  const [rankKeyword, setRankKeyword] = useState('')
+  const [rankResults, setRankResults] = useState(null)
+  const [rankLoading, setRankLoading] = useState(false)
+  const [demandData, setDemandData] = useState(null)
+  const [demandLoading, setDemandLoading] = useState(false)
 
   useEffect(() => {
     const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
@@ -76,6 +89,57 @@ export default function ProductPage() {
       setWinReport(res.data)
     } catch (e) { console.error(e) }
     finally { setWinLoading(false) }
+  }
+
+  const fetchRank = async () => {
+    if (!rankKeyword.trim() || rankLoading) return
+    setRankLoading(true)
+    try {
+      const keywords = rankKeyword.split(',').map(k => k.trim()).filter(Boolean).slice(0, 10)
+      const res = await axios.post(`${API}/api/rank/bulk`, { asin, keywords, market: 'US' })
+      setRankResults(res.data)
+    } catch (e) { console.error(e) }
+    finally { setRankLoading(false) }
+  }
+
+  const fetchListing = async () => {
+    if (!product || listingLoading) return
+    setListingLoading(true)
+    try {
+      const keywords = (product.title || '').split(' ').filter(w => w.length > 3).slice(0, 10)
+      const res = await axios.post(`${API}/api/ai/listing-optimize`, {
+        title: product.title || '',
+        keywords,
+        category: product.category || 'General',
+        locale: lang,
+        marketplace: 'Amazon.com'
+      })
+      setListingReport(res.data)
+    } catch (e) { console.error(e) }
+    finally { setListingLoading(false) }
+  }
+
+  const fetchDemand = async () => {
+    if (demandData || demandLoading || !product) return
+    setDemandLoading(true)
+    try {
+      const keyword = (product.title || '').split(' ').slice(0, 4).join(' ')
+      const res = await axios.get(`${API}/api/demand/forecast?keyword=${encodeURIComponent(keyword)}&asin=${asin}&market=US&horizon=90`)
+      setDemandData(res.data)
+    } catch (e) { console.error(e) }
+    finally { setDemandLoading(false) }
+  }
+
+  const fetchTrends = async (title) => {
+    if (trendsData || trendsLoading) return
+    const kw = (title || '').split(' ').slice(0, 3).join(' ')
+    if (!kw) return
+    setTrendsLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/trends/keyword?keyword=${encodeURIComponent(kw)}&timeframe=today+12-m`)
+      setTrendsData(res.data)
+    } catch (e) { console.error(e) }
+    finally { setTrendsLoading(false) }
   }
 
   const fetchProductOnly = async () => {
@@ -112,13 +176,13 @@ export default function ProductPage() {
     }
 
     try {
-      const [prodRes, nicheRes] = await Promise.all([
-        cachedProduct ? Promise.resolve({ data: cachedProduct }) : axios.get(`${API}/api/amazon/product/${asin}`),
-        cachedNiche ? Promise.resolve({ data: cachedNiche }) : axios.get(`${API}/api/amazon/niche-score/${asin}?use_keepa=true`),
-      ])
+      const prodRes = cachedProduct
+        ? { data: cachedProduct }
+        : await axios.get(`${API}/api/amazon/product/${asin}`)
 
       const productData = prodRes.data
-      const nicheData = nicheRes.data
+      // niche_score is already embedded in the product response — no separate call needed
+      const nicheData = cachedNiche || productData?.niche_score || {}
       setProduct(productData)
       setNiche(nicheData)
       cacheSet(`product_${asin}`, productData)
@@ -128,27 +192,29 @@ export default function ProductPage() {
         asin,
         title: productData?.title,
         price: productData?.price,
-        niche_score: nicheData?.niche_score?.total_score || nicheData?.total_score,
+        niche_score: nicheData?.total_score,
         category: productData?.category,
       })
 
+      // Sourcing/arbitrage are secondary — don't block product display if they fail
       const keyword = productData?.title?.split(' ').slice(0, 3).join(' ') || asin
       const price = productData?.price || 30
-
-      const [suppRes, arbRes] = await Promise.all([
-        cachedSuppliers ? Promise.resolve({ data: { suppliers: cachedSuppliers } }) : axios.get(`${API}/api/sourcing/alibaba?keyword=${encodeURIComponent(keyword)}`),
-        cachedArbitrage ? Promise.resolve({ data: cachedArbitrage }) : axios.get(`${API}/api/sourcing/arbitrage?keyword=${encodeURIComponent(keyword)}&amazon_price=${price}&include_euro=true`),
-      ])
-
-      const suppData = suppRes.data.suppliers || []
-      const arbData = arbRes.data
-      setSuppliers(suppData)
-      setArbitrage(arbData)
-      cacheSet(`suppliers_${asin}`, suppData)
-      cacheSet(`arbitrage_${asin}`, arbData)
+      try {
+        const [suppRes, arbRes] = await Promise.all([
+          cachedSuppliers ? Promise.resolve({ data: { suppliers: cachedSuppliers } }) : axios.get(`${API}/api/sourcing/alibaba?keyword=${encodeURIComponent(keyword)}`),
+          cachedArbitrage ? Promise.resolve({ data: cachedArbitrage }) : axios.get(`${API}/api/sourcing/arbitrage?keyword=${encodeURIComponent(keyword)}&amazon_price=${price}&include_euro=true`),
+        ])
+        const suppData = suppRes.data.suppliers || []
+        const arbData = arbRes.data
+        setSuppliers(suppData)
+        setArbitrage(arbData)
+        cacheSet(`suppliers_${asin}`, suppData)
+        cacheSet(`arbitrage_${asin}`, arbData)
+      } catch { /* sourcing data optional */ }
 
     } catch (err) {
       console.error(err)
+      setFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -156,13 +222,20 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (activeTab === 'lovehate' && !reviews && product) {
-      const cachedReviews = cacheGet(`reviews_${asin}`)
+      const cacheKey = `reviews_${asin}_${lang}`
+      const cachedReviews = cacheGet(cacheKey)
       if (cachedReviews) { setReviews(cachedReviews); return }
       setReviewsLoading(true)
-      axios.get(`${API}/api/reviews/analyze/${asin}?title=${encodeURIComponent(product?.title || '')}`)
-        .then(r => { setReviews(r.data); cacheSet(`reviews_${asin}`, r.data) })
+      axios.get(`${API}/api/reviews/analyze/${asin}?title=${encodeURIComponent(product?.title || '')}&lang=${lang}`)
+        .then(r => { setReviews(r.data); cacheSet(cacheKey, r.data) })
         .catch(console.error)
         .finally(() => setReviewsLoading(false))
+    }
+    if (activeTab === 'keepa' && product && !trendsData) {
+      fetchTrends(product.title)
+    }
+    if (activeTab === 'demand' && product && !demandData) {
+      fetchDemand()
     }
   }, [activeTab, product])
 
@@ -176,10 +249,16 @@ export default function ProductPage() {
   )
 
   if (!product) return (
-    <div style={{ textAlign: 'center', padding: '60px' }}>
-      <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔍</div>
-      <button onClick={() => navigate('/app/search')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>
-        Aramaya Dön
+    <div style={{ textAlign: 'center', padding: '60px', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ fontSize: '40px', marginBottom: '12px' }}>{fetchError ? '⚠️' : '🔍'}</div>
+      <div style={{ fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '6px' }}>
+        {fetchError ? 'Ürün yüklenemedi' : 'Ürün bulunamadı'}
+      </div>
+      <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '20px' }}>
+        {fetchError ? 'Backend bağlantısı kurulamadı. Lütfen backend\'in çalıştığından emin olun.' : `ASIN: ${asin}`}
+      </div>
+      <button onClick={() => navigate('/app/search')} style={{ background: '#0071e3', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+        ← Aramaya Dön
       </button>
     </div>
   )
@@ -211,6 +290,9 @@ export default function ProductPage() {
     { key: 'keepa', label: '📈 Keepa' },
     { key: 'sourcing', label: 'Tedarik' },
     { key: 'arbitrage', label: 'Arbitraj' },
+    { key: 'listing', label: '✨ Listing' },
+    { key: 'rank', label: '🎯 Rank' },
+    { key: 'demand', label: '📊 Talep' },
   ]
 
   return (
@@ -316,6 +398,71 @@ export default function ProductPage() {
 
       {/* Genel Bakış */}
       {activeTab === 'overview' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+        {/* AI Hızlı Değerlendirme */}
+        {(() => {
+          const trend = nicheData?.demand_trend?.trend || ''
+          const rviLabel = nicheData?.review_velocity?.label || ''
+          const redFlagCount = Object.values(flags).filter(Boolean).length
+
+          const profitBadge = score >= 70
+            ? { text: '✅ Karlı', bg: '#e8f9ee', color: '#1a7f37' }
+            : score >= 50
+            ? { text: '⚠️ Marjinal', bg: '#fff4e0', color: '#b45309' }
+            : { text: '❌ Karlı Değil', bg: '#fff1f0', color: '#c00' }
+
+          const competBadge = rviLabel.includes('Düşük')
+            ? { text: '🟢 Rekabet Az', bg: '#e8f9ee', color: '#1a7f37' }
+            : rviLabel.includes('Yüksek') || rviLabel.includes('doldu')
+            ? { text: '🔴 Rekabet Yüksek', bg: '#fff1f0', color: '#c00' }
+            : { text: '🟡 Rekabet Orta', bg: '#fff4e0', color: '#b45309' }
+
+          const trendBadge = trend === 'yükselen' || trend === 'hızlı yükselen'
+            ? { text: '🔥 Yükselen Trend', bg: '#fff4e0', color: '#b45309' }
+            : trend === 'düşen' || trend === 'hızlı düşen'
+            ? { text: '📉 Düşen Trend', bg: '#fff1f0', color: '#c00' }
+            : { text: '➡️ Stabil Trend', bg: '#f5f5f7', color: '#3c3c43' }
+
+          const summary = nicheData?.recommendation || (
+            score >= 70 ? 'Bu ürün karlı bir niş adayı. Detaylı analiz için aşağıdaki bölümleri incele.' :
+            score >= 50 ? 'Orta potansiyelli ürün. Riskler var, derinlemesine araştır.' :
+            'Bu niş zayıf görünüyor. Tedarik ve rekabet koşullarını dikkatlice değerlendir.'
+          )
+
+          return (
+            <div style={{ background: 'linear-gradient(135deg, #1d1d1f 0%, #2d2d30 100%)', borderRadius: '14px', padding: '18px 20px', color: 'white' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.5px', marginBottom: '12px' }}>🤖 HIZLI DEĞERLENDİRME</div>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                {[profitBadge, competBadge, trendBadge].map((b, i) => (
+                  <span key={i} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: b.bg, color: b.color, fontWeight: '600' }}>{b.text}</span>
+                ))}
+                {redFlagCount > 0 && (
+                  <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: '#fff1f0', color: '#c00', fontWeight: '600' }}>🚩 {redFlagCount} Risk</span>
+                )}
+                {unmetDemand.detected && (
+                  <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: '#fff4e0', color: '#b45309', fontWeight: '600' }}>⚡ Fırsat</span>
+                )}
+              </div>
+              <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: '1.6', marginBottom: '14px' }}>
+                {summary}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[
+                  { label: '📊 Niş Detayı', tab: 'niche', bg: 'rgba(255,255,255,0.12)', color: 'white' },
+                  { label: '🏭 Tedarik Bul', tab: 'sourcing', bg: 'rgba(52,199,89,0.2)', color: '#34c759' },
+                  { label: '💚 Yorumları Gör', tab: 'lovehate', bg: 'rgba(0,113,227,0.2)', color: '#4da3ff' },
+                ].map(btn => (
+                  <button key={btn.tab} onClick={() => setActiveTab(btn.tab)}
+                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: btn.bg, color: btn.color, fontSize: '11px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px' }}>
             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '14px' }}>Ürün Metrikleri</div>
@@ -388,6 +535,7 @@ export default function ProductPage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       )}
 
@@ -597,12 +745,20 @@ export default function ProductPage() {
             </div>
           ) : reviews ? (
             <div>
+              {reviews.mock && (
+                <div style={{ background: '#fff9e6', border: '1px solid #ffe066', borderRadius: '10px', padding: '10px 16px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '16px' }}>⚠️</span>
+                  <div>
+                    <div style={{ fontSize: '12.5px', fontWeight: '600', color: '#92400e' }}>Bu ürün için gerçek yorum verisi bulunamadı</div>
+                    <div style={{ fontSize: '11.5px', color: '#b45309', marginTop: '2px' }}>Aşağıdaki veriler örnek analizdir — bu ürüne ait değildir.</div>
+                  </div>
+                </div>
+              )}
               <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>Genel Memnuniyet</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ fontSize: '22px', fontWeight: '600', color: reviews.sentiment_score >= 70 ? '#34c759' : '#ff9f0a' }}>%{reviews.sentiment_score}</div>
-                    {reviews.mock && <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '4px', background: '#f5f5f7', color: '#8e8e93' }}>Demo</span>}
                   </div>
                 </div>
                 <div style={{ height: '6px', background: '#f0f0f5', borderRadius: '3px', marginBottom: '8px' }}>
@@ -718,46 +874,151 @@ export default function ProductPage() {
                 ))}
               </div>
 
-              {keepaData.bsr_history?.length > 0 && (
-                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📊 BSR Geçmişi</div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
-                    {keepaData.bsr_history.slice(-30).map((b, i) => {
-                      const maxBsr = Math.max(...keepaData.bsr_history.slice(-30).map(x => x.bsr))
-                      const minBsr = Math.min(...keepaData.bsr_history.slice(-30).map(x => x.bsr))
-                      const range = maxBsr - minBsr || 1
-                      const height = Math.max(4, ((maxBsr - b.bsr) / range) * 76 + 4)
-                      return <div key={i} style={{ flex: 1, background: '#0071e3', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.7 + (i / 30) * 0.3 }} />
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
-                    <span>30 gün önce</span>
-                    <span style={{ color: '#0071e3', fontWeight: '500' }}>Bugün</span>
-                  </div>
-                </div>
-              )}
-
-              {keepaData.price_history?.length > 0 && (
-                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>💰 Fiyat Geçmişi</div>
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
-                      <span style={{ color: '#64748b' }}>Min: <strong>${keepaData.price_stats?.min_90d}</strong></span>
-                      <span style={{ color: '#64748b' }}>Max: <strong>${keepaData.price_stats?.max_90d}</strong></span>
-                      <span style={{ color: '#0071e3' }}>Şimdi: <strong>${keepaData.price_stats?.current}</strong></span>
+              {keepaData.bsr_history?.length > 0 && (() => {
+                const data = keepaData.bsr_history.slice(-30)
+                const maxBsr = Math.max(...data.map(x => x.bsr))
+                const minBsr = Math.min(...data.map(x => x.bsr))
+                const range = maxBsr - minBsr || 1
+                const current = data[data.length - 1]?.bsr
+                return (
+                  <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>📊 BSR Geçmişi (30 gün)</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        En iyi: <strong style={{ color: '#34c759' }}>#{minBsr?.toLocaleString()}</strong>
+                        {' · '}En kötü: <strong style={{ color: '#ff3b30' }}>#{maxBsr?.toLocaleString()}</strong>
+                      </div>
+                    </div>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px', paddingTop: '18px' }}>
+                      {data.map((b, i) => {
+                        const height = Math.max(4, ((maxBsr - b.bsr) / range) * 62 + 4)
+                        const isLast = i === data.length - 1
+                        const isBest = b.bsr === minBsr
+                        return (
+                          <div key={i} style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', height: '62px', justifyContent: 'flex-end' }}>
+                            {(isLast || isBest) && (
+                              <div style={{ position: 'absolute', top: -2, fontSize: '8px', fontWeight: '600', color: isLast ? '#0071e3' : '#34c759', whiteSpace: 'nowrap', transform: 'translateX(-50%)', left: '50%' }}>
+                                #{b.bsr?.toLocaleString()}
+                              </div>
+                            )}
+                            <div title={`BSR: #${b.bsr?.toLocaleString()}`}
+                              style={{ width: '100%', background: isLast ? '#0071e3' : isBest ? '#34c759' : '#0071e3', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: isLast ? 1 : 0.5 + (i / 30) * 0.35 }} />
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                      <span>30 gün önce</span>
+                      <span style={{ color: '#0071e3', fontWeight: '600' }}>Bugün #{current?.toLocaleString()}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '60px' }}>
-                    {keepaData.price_history.slice(-30).map((p, i) => {
-                      const maxP = Math.max(...keepaData.price_history.slice(-30).map(x => x.price))
-                      const minP = Math.min(...keepaData.price_history.slice(-30).map(x => x.price))
-                      const range = maxP - minP || 1
-                      const height = Math.max(4, ((p.price - minP) / range) * 56 + 4)
-                      return <div key={i} style={{ flex: 1, background: '#34c759', borderRadius: '2px 2px 0 0', height: `${height}px`, opacity: 0.6 + (i / 30) * 0.4 }} />
-                    })}
+                )
+              })()}
+
+              {keepaData.price_history?.length > 0 && (() => {
+                const data = keepaData.price_history.slice(-30)
+                const W = 400, H = 80, PAD = 16
+                const maxP = Math.max(...data.map(x => x.price))
+                const minP = Math.min(...data.map(x => x.price))
+                const range = maxP - minP || 0.01
+                const pts = data.map((p, i) => ({
+                  x: PAD + (i / Math.max(data.length - 1, 1)) * (W - PAD * 2),
+                  y: PAD + ((maxP - p.price) / range) * (H - PAD * 2),
+                  price: p.price
+                }))
+                const polyPts = pts.map(p => `${p.x},${p.y}`).join(' ')
+                const minIdx = data.findIndex(x => x.price === minP)
+                const maxIdx = data.findIndex(x => x.price === maxP)
+                const lastIdx = pts.length - 1
+                return (
+                  <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>💰 Fiyat Geçmişi (30 gün)</div>
+                      <div style={{ display: 'flex', gap: '10px', fontSize: '11px' }}>
+                        <span>Min: <strong style={{ color: '#ff3b30' }}>${minP}</strong></span>
+                        <span>Max: <strong style={{ color: '#ff9f0a' }}>${maxP}</strong></span>
+                        <span>Şimdi: <strong style={{ color: '#0071e3' }}>${data[lastIdx]?.price}</strong></span>
+                      </div>
+                    </div>
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '80px', overflow: 'visible' }}>
+                      <polygon points={`${pts[0].x},${H - PAD} ${polyPts} ${pts[lastIdx].x},${H - PAD}`} fill="rgba(52,199,89,0.08)" />
+                      <polyline points={polyPts} fill="none" stroke="#34c759" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {/* Min */}
+                      <circle cx={pts[minIdx].x} cy={pts[minIdx].y} r="3" fill="#ff3b30" />
+                      <text x={pts[minIdx].x} y={pts[minIdx].y - 5} fontSize="8" fill="#ff3b30" textAnchor="middle">${minP}</text>
+                      {/* Max */}
+                      {maxIdx !== minIdx && <circle cx={pts[maxIdx].x} cy={pts[maxIdx].y} r="3" fill="#ff9f0a" />}
+                      {maxIdx !== minIdx && <text x={pts[maxIdx].x} y={pts[maxIdx].y - 5} fontSize="8" fill="#ff9f0a" textAnchor="middle">${maxP}</text>}
+                      {/* Current */}
+                      <circle cx={pts[lastIdx].x} cy={pts[lastIdx].y} r="3.5" fill="#0071e3" />
+                      <text x={pts[lastIdx].x} y={pts[lastIdx].y - 6} fontSize="8.5" fill="#0071e3" fontWeight="600" textAnchor="end">${data[lastIdx]?.price}</text>
+                      {/* Baseline */}
+                      <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#f0f0f5" strokeWidth="0.5" />
+                    </svg>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8' }}>
+                      <span>30 gün önce</span><span style={{ color: '#0071e3', fontWeight: '600' }}>Bugün</span>
+                    </div>
                   </div>
+                )
+              })()}
+
+              {/* Google Trends */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>📈 Google Trends (12 ay)</div>
+                  {trendsData && (
+                    <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '10px', fontWeight: '600',
+                      background: trendsData.direction === 'rising' ? '#e8f9ee' : trendsData.direction === 'falling' ? '#fff1f0' : '#f5f5f7',
+                      color: trendsData.direction === 'rising' ? '#1a7f37' : trendsData.direction === 'falling' ? '#c00' : '#3c3c43'
+                    }}>{trendsData.direction_tr}</span>
+                  )}
                 </div>
-              )}
+                {trendsLoading ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: '#8e8e93', fontSize: '12px' }}>⏳ Yükleniyor...</div>
+                ) : trendsData?.monthly?.length > 0 ? (() => {
+                  const vals = trendsData.monthly
+                  const W = 400, H = 70, PAD = 12
+                  const maxV = Math.max(...vals), minV = Math.min(...vals)
+                  const range = maxV - minV || 0.01
+                  const pts = vals.map((v, i) => ({
+                    x: PAD + (i / Math.max(vals.length - 1, 1)) * (W - PAD * 2),
+                    y: PAD + ((maxV - v) / range) * (H - PAD * 2),
+                    v
+                  }))
+                  const polyPts = pts.map(p => `${p.x},${p.y}`).join(' ')
+                  const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+                  const now = new Date()
+                  return (
+                    <div>
+                      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '70px', overflow: 'visible' }}>
+                        <polygon points={`${pts[0].x},${H - PAD} ${polyPts} ${pts[pts.length-1].x},${H - PAD}`} fill="rgba(0,113,227,0.07)" />
+                        <polyline points={polyPts} fill="none" stroke="#0071e3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        {pts.map((p, i) => i % 3 === 0 && (
+                          <g key={i}>
+                            <circle cx={p.x} cy={p.y} r="2" fill="#0071e3" opacity="0.6" />
+                            <text x={p.x} y={H - 2} fontSize="7" fill="#94a3b8" textAnchor="middle">
+                              {months[(now.getMonth() - (vals.length - 1 - i) + 12) % 12]}
+                            </text>
+                          </g>
+                        ))}
+                        {/* Current (last) */}
+                        <circle cx={pts[pts.length-1].x} cy={pts[pts.length-1].y} r="3" fill="#0071e3" />
+                        <text x={pts[pts.length-1].x} y={pts[pts.length-1].y - 5} fontSize="8" fill="#0071e3" fontWeight="600" textAnchor="end">{vals[vals.length-1]}</text>
+                        <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="#f0f0f5" strokeWidth="0.5" />
+                      </svg>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '11px', color: '#64748b' }}>
+                        <span>Ort: <strong>{trendsData.avg_score}</strong></span>
+                        <span>Güncel: <strong style={{ color: '#0071e3' }}>{trendsData.recent_score}</strong></span>
+                        {trendsData.is_seasonal && <span style={{ color: '#b45309', background: '#fff4e0', padding: '1px 8px', borderRadius: '10px' }}>📅 Sezonsal</span>}
+                      </div>
+                    </div>
+                  )
+                })() : (
+                  <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '12px' }}>
+                    {trendsData?.direction === 'unknown' ? 'Trend verisi bulunamadı' : 'Keepa verisi yüklenince otomatik gösterilir'}
+                  </div>
+                )}
+              </div>
 
               {keepaData.price_war?.detected && (
                 <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #fde68a', padding: '16px 20px' }}>
@@ -891,6 +1152,291 @@ export default function ProductPage() {
                 ))}
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Rank Tracker */}
+      {activeTab === 'rank' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>🎯 Rank Tracker</div>
+            <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '14px' }}>Bu ASIN'in hangi keywordlerde kaçıncı sırada olduğunu öğren. Virgülle ayırarak max 10 keyword gir.</div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <input
+                value={rankKeyword}
+                onChange={e => setRankKeyword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && fetchRank()}
+                placeholder="led desk lamp, desk light, usb lamp..."
+                style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '0.5px solid #d2d2d7', fontSize: '13px', fontFamily: 'inherit', background: '#f5f5f7', outline: 'none' }}
+              />
+              <button onClick={fetchRank} disabled={rankLoading || !rankKeyword.trim()}
+                style={{ padding: '9px 20px', background: rankKeyword.trim() ? '#0071e3' : '#d2d2d7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                {rankLoading ? '⏳ Tarıyor...' : '🔍 Tara'}
+              </button>
+            </div>
+            {/* Hızlı öneri — ürün başlığından */}
+            {product?.title && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#8e8e93' }}>Önerilen:</span>
+                {product.title.split(' ').filter(w => w.length > 3).slice(0, 5).map(w => w.toLowerCase()).map((kw, i) => (
+                  <span key={i} onClick={() => setRankKeyword(prev => prev ? `${prev}, ${kw}` : kw)}
+                    style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', border: '0.5px solid #d2d2d7', background: 'white', color: '#0071e3', cursor: 'pointer' }}>
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {rankResults && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>
+                  Sonuçlar — {rankResults.found_count}/{rankResults.total_checked} keyword'de bulundu
+                </div>
+                {rankResults.best_rank && (
+                  <span style={{ fontSize: '12px', padding: '3px 12px', borderRadius: '20px', background: rankResults.best_rank <= 10 ? '#e8f9ee' : '#fff4e0', color: rankResults.best_rank <= 10 ? '#1a7f37' : '#b45309', fontWeight: '600' }}>
+                    En iyi: #{rankResults.best_rank}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {rankResults.results?.map((r, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '10px',
+                    background: r.found ? (r.rank <= 10 ? '#e8f9ee' : r.rank <= 30 ? '#fff4e0' : '#f5f5f7') : '#fff1f0' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                      background: r.found ? (r.rank <= 10 ? '#34c759' : r.rank <= 30 ? '#ff9f0a' : '#8e8e93') : '#ff3b30',
+                      color: 'white', fontSize: '13px', fontWeight: '700' }}>
+                      {r.found ? `#${r.rank}` : '—'}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', marginBottom: '2px' }}>{r.keyword}</div>
+                      <div style={{ fontSize: '11px', color: '#8e8e93' }}>{r.commentary || (r.found ? '' : `İlk ${r.total_scanned} sonuçta bulunamadı`)}</div>
+                    </div>
+                    {r.is_sponsored && (
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: '#fff4e0', color: '#b45309', fontWeight: '500' }}>Sponsored</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Demand Forecast */}
+      {activeTab === 'demand' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {demandLoading ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '60px', textAlign: 'center' }}>
+              <div style={{ width: '32px', height: '32px', border: '2px solid #f0f0f5', borderTop: '2px solid #0071e3', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }}></div>
+              <div style={{ fontSize: '13px', color: '#8e8e93' }}>90 günlük talep tahmini hesaplanıyor...</div>
+            </div>
+          ) : !demandData ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>📊</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>Talep Tahmini</div>
+              <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '20px' }}>90 günlük satış hacmi ve trend tahmini</div>
+              <button onClick={fetchDemand}
+                style={{ padding: '10px 28px', background: 'linear-gradient(135deg,#0071e3,#34aadc)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+                📊 Tahmini Hesapla
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Özet Kartlar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+                {[
+                  { label: 'Aylık Tahmini Satış', value: demandData.monthly_units_estimate ? `~${demandData.monthly_units_estimate.toLocaleString()} adet` : '—', icon: '📦', color: '#0071e3', bg: '#e8f0fe' },
+                  { label: 'Trend Yönü', value: demandData.trend_direction_tr || demandData.trend_direction || '—', icon: demandData.trend_direction === 'rising' ? '📈' : demandData.trend_direction === 'falling' ? '📉' : '➡️', color: demandData.trend_direction === 'rising' ? '#1a7f37' : demandData.trend_direction === 'falling' ? '#c00' : '#3c3c43', bg: demandData.trend_direction === 'rising' ? '#e8f9ee' : demandData.trend_direction === 'falling' ? '#fff1f0' : '#f5f5f7' },
+                  { label: 'Talep Skoru', value: demandData.demand_score != null ? `${demandData.demand_score}/100` : '—', icon: '🎯', color: demandData.demand_score >= 70 ? '#1a7f37' : demandData.demand_score >= 50 ? '#b45309' : '#c00', bg: demandData.demand_score >= 70 ? '#e8f9ee' : demandData.demand_score >= 50 ? '#fff4e0' : '#fff1f0' },
+                ].map((card, i) => (
+                  <div key={i} style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px' }}>
+                    <div style={{ fontSize: '20px', marginBottom: '6px' }}>{card.icon}</div>
+                    <div style={{ fontSize: '18px', fontWeight: '700', color: card.color, marginBottom: '2px' }}>{card.value}</div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>{card.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 90 Günlük Tahmin Grafiği */}
+              {demandData.forecast?.length > 0 && (() => {
+                const pts = demandData.forecast
+                const vals = pts.map(p => p.units || p.value || 0)
+                const W = 600, H = 120, PAD = 30
+                const minV = Math.min(...vals), maxV = Math.max(...vals)
+                const range = maxV - minV || 1
+                const coords = vals.map((v, i) => ({
+                  x: PAD + (i / (vals.length - 1)) * (W - PAD * 2),
+                  y: H - PAD - ((v - minV) / range) * (H - PAD * 2),
+                  v
+                }))
+                const poly = coords.map(c => `${c.x},${c.y}`).join(' ')
+                const area = `${coords[0].x},${H - PAD} ${poly} ${coords[coords.length - 1].x},${H - PAD}`
+                const maxIdx = vals.indexOf(Math.max(...vals))
+                const minIdx = vals.indexOf(Math.min(...vals))
+                const lastIdx = vals.length - 1
+                return (
+                  <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>90 Günlük Tahmin</div>
+                      <div style={{ fontSize: '11px', color: '#8e8e93' }}>{pts.length} veri noktası</div>
+                    </div>
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '120px', overflow: 'visible' }}>
+                      <polygon points={area} fill="rgba(0,113,227,0.08)" />
+                      <polyline points={poly} fill="none" stroke="#0071e3" strokeWidth="1.5" strokeLinejoin="round" />
+                      {/* En yüksek nokta */}
+                      <circle cx={coords[maxIdx].x} cy={coords[maxIdx].y} r="3.5" fill="#34c759" />
+                      <text x={coords[maxIdx].x} y={coords[maxIdx].y - 7} textAnchor="middle" fontSize="9" fill="#34c759" fontWeight="600">{coords[maxIdx].v.toLocaleString()}</text>
+                      {/* En düşük nokta */}
+                      {minIdx !== maxIdx && (
+                        <>
+                          <circle cx={coords[minIdx].x} cy={coords[minIdx].y} r="3" fill="#ff3b30" />
+                          <text x={coords[minIdx].x} y={coords[minIdx].y + 14} textAnchor="middle" fontSize="9" fill="#ff3b30">{coords[minIdx].v.toLocaleString()}</text>
+                        </>
+                      )}
+                      {/* Son nokta (tahminin ucu) */}
+                      <circle cx={coords[lastIdx].x} cy={coords[lastIdx].y} r="4" fill="#0071e3" />
+                      <text x={coords[lastIdx].x} y={coords[lastIdx].y - 8} textAnchor="end" fontSize="9" fill="#0071e3" fontWeight="700">{coords[lastIdx].v.toLocaleString()}</text>
+                      {/* Güven aralığı bandı */}
+                      {pts[0]?.lower != null && pts[0]?.upper != null && (() => {
+                        const upperCoords = pts.map((p, i) => ({ x: PAD + (i / (vals.length - 1)) * (W - PAD * 2), y: H - PAD - ((p.upper - minV) / range) * (H - PAD * 2) }))
+                        const lowerCoords = pts.map((p, i) => ({ x: PAD + (i / (vals.length - 1)) * (W - PAD * 2), y: H - PAD - ((p.lower - minV) / range) * (H - PAD * 2) }))
+                        const bandPoly = [...upperCoords.map(c => `${c.x},${c.y}`), ...[...lowerCoords].reverse().map(c => `${c.x},${c.y}`)].join(' ')
+                        return <polygon points={bandPoly} fill="rgba(0,113,227,0.05)" />
+                      })()}
+                    </svg>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#8e8e93', marginTop: '4px', paddingLeft: `${PAD}px`, paddingRight: `${PAD}px` }}>
+                      <span>{pts[0]?.date || 'Bugün'}</span>
+                      <span>{pts[Math.floor(pts.length / 2)]?.date || '45. Gün'}</span>
+                      <span>{pts[lastIdx]?.date || '90. Gün'}</span>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Sezonsal Takvim */}
+              {demandData.seasonal_peaks?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📅 Sezonsal Zirveler</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {demandData.seasonal_peaks.map((peak, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '10px 14px', borderRadius: '10px', background: '#f5f5f7' }}>
+                        <span style={{ fontSize: '20px' }}>{peak.icon || '📅'}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f' }}>{peak.name || peak.event}</div>
+                          <div style={{ fontSize: '11px', color: '#8e8e93' }}>{peak.period || peak.date}</div>
+                        </div>
+                        {peak.boost && (
+                          <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '600' }}>
+                            +{peak.boost}% boost
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Yorumu */}
+              {demandData.summary && (
+                <div style={{ background: 'linear-gradient(135deg,#0071e3,#34aadc)', borderRadius: '12px', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.7)', marginBottom: '6px' }}>AI TAHMİN ÖZETİ</div>
+                  <div style={{ fontSize: '13px', color: 'white', lineHeight: '1.6' }}>{demandData.summary}</div>
+                </div>
+              )}
+
+              <button onClick={() => setDemandData(null)}
+                style={{ alignSelf: 'flex-end', fontSize: '11px', padding: '6px 14px', borderRadius: '7px', border: '0.5px solid #d2d2d7', background: 'white', color: '#8e8e93', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Yenile
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Listing Optimizer */}
+      {activeTab === 'listing' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {!listingReport ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>✨</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>AI Listing Optimizer</div>
+              <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '4px' }}>Gemini AI ile Amazon'a hazır listing oluştur</div>
+              <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '20px' }}>Optimized title · 5 bullet point · Description · Backend keywords</div>
+              <button onClick={fetchListing} disabled={listingLoading}
+                style={{ padding: '10px 28px', background: 'linear-gradient(135deg,#7c3aed,#a855f7)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {listingLoading ? '⏳ AI Oluşturuyor...' : '✨ Listing Oluştur'}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Skor */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+                  {[
+                    { label: 'Önceki Skor', v: listingReport.score_before, color: '#ff3b30' },
+                    { label: '→', v: null },
+                    { label: 'Yeni Skor', v: listingReport.score_after, color: '#34c759' },
+                  ].map((item, i) => item.v !== null ? (
+                    <div key={i} style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '700', color: item.color }}>{item.v}</div>
+                      <div style={{ fontSize: '10px', color: '#8e8e93' }}>{item.label}</div>
+                    </div>
+                  ) : (
+                    <div key={i} style={{ fontSize: '20px', color: '#8e8e93', alignSelf: 'center' }}>→</div>
+                  ))}
+                </div>
+                <button onClick={() => setListingReport(null)}
+                  style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '7px', border: '0.5px solid #d2d2d7', background: 'white', color: '#8e8e93', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Yenile
+                </button>
+              </div>
+
+              {/* Optimized Title */}
+              <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '6px' }}>OPTİMİZE TITLE</div>
+                <div style={{ fontSize: '13px', color: '#1d1d1f', lineHeight: '1.6', background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '0.5px solid #b7f0c8' }}>
+                  {listingReport.optimized_title}
+                </div>
+              </div>
+
+              {/* Bullet Points */}
+              {listingReport.bullet_points?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '10px' }}>BULLET POINTS</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {listingReport.bullet_points.map((bp, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px', color: '#1d1d1f', lineHeight: '1.5' }}>
+                        <span style={{ color: '#7c3aed', fontWeight: '700', flexShrink: 0 }}>{i + 1}.</span>
+                        {bp}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Backend Keywords */}
+              {listingReport.backend_keywords?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '10px' }}>BACKEND KEYWORDS</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {listingReport.backend_keywords.map((kw, i) => (
+                      <span key={i} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: '#f3e8ff', color: '#7c3aed', fontWeight: '500' }}>{kw}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {listingReport.description && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '600', color: '#8e8e93', marginBottom: '8px' }}>DESCRIPTION</div>
+                  <div style={{ fontSize: '12px', color: '#3c3c43', lineHeight: '1.7' }}>{listingReport.description}</div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
