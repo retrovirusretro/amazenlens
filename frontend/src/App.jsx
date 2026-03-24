@@ -23,6 +23,7 @@ import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import ContactPage from './pages/ContactPage'
 import ApiDocsPage from './pages/ApiDocsPage'
+import TrendRadarPage from './pages/TrendRadarPage'
 
 import './App.css'
 
@@ -180,6 +181,7 @@ function App() {
           <Route path="about" element={<AboutPage />} />
           <Route path="keywords" element={<KeywordPage />} />
           <Route path="api-docs" element={<ApiDocsPage />} />
+          <Route path="trends" element={<TrendRadarPage />} />
           {/* <Route path="/rank-tracker" element={<RankTrackerPage />} /> */}
 
         </Route>
