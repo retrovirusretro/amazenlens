@@ -57,6 +57,8 @@ export default function ProductPage() {
   const [rankLoading, setRankLoading] = useState(false)
   const [demandData, setDemandData] = useState(null)
   const [demandLoading, setDemandLoading] = useState(false)
+  const [reverseData, setReverseData] = useState(null)
+  const [reverseLoading, setReverseLoading] = useState(false)
 
   useEffect(() => {
     const isVariantSwitch = prevAsin.current !== null && prevAsin.current !== asin
@@ -117,6 +119,16 @@ export default function ProductPage() {
       setListingReport(res.data)
     } catch (e) { console.error(e) }
     finally { setListingLoading(false) }
+  }
+
+  const fetchReverse = async () => {
+    if (reverseData || reverseLoading) return
+    setReverseLoading(true)
+    try {
+      const res = await axios.get(`${API}/api/keywords/reverse-asin?asin=${asin}&market=US`)
+      setReverseData(res.data)
+    } catch (e) { console.error(e) }
+    finally { setReverseLoading(false) }
   }
 
   const fetchDemand = async () => {
@@ -237,6 +249,9 @@ export default function ProductPage() {
     if (activeTab === 'demand' && product && !demandData) {
       fetchDemand()
     }
+    if (activeTab === 'reverse' && product && !reverseData) {
+      fetchReverse()
+    }
   }, [activeTab, product])
 
   // ── Erken return'ler — tüm hook'lardan SONRA ──
@@ -293,6 +308,7 @@ export default function ProductPage() {
     { key: 'listing', label: '✨ Listing' },
     { key: 'rank', label: '🎯 Rank' },
     { key: 'demand', label: '📊 Talep' },
+    { key: 'reverse', label: '🔑 Reverse ASIN' },
   ]
 
   return (
@@ -1351,6 +1367,108 @@ export default function ProductPage() {
                 style={{ alignSelf: 'flex-end', fontSize: '11px', padding: '6px 14px', borderRadius: '7px', border: '0.5px solid #d2d2d7', background: 'white', color: '#8e8e93', cursor: 'pointer', fontFamily: 'inherit' }}>
                 Yenile
               </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Reverse ASIN */}
+      {activeTab === 'reverse' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {reverseLoading ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '60px', textAlign: 'center' }}>
+              <div style={{ width: '32px', height: '32px', border: '2px solid #f0f0f5', borderTop: '2px solid #0071e3', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }}></div>
+              <div style={{ fontSize: '13px', color: '#8e8e93' }}>Keywordler taranıyor...</div>
+            </div>
+          ) : !reverseData ? (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '40px', textAlign: 'center' }}>
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔑</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '6px' }}>Reverse ASIN</div>
+              <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '20px' }}>Bu ürünün Amazon'da hangi keywordlerde sıralandığını keşfet</div>
+              <button onClick={fetchReverse}
+                style={{ padding: '10px 28px', background: 'linear-gradient(135deg,#ff6b35,#f7931e)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+                🔑 Keyword Tara
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Özet */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px' }}>
+                {[
+                  { label: 'Toplam Keyword', value: reverseData.total_keywords ?? reverseData.keywords?.length ?? '—', icon: '🔑', color: '#ff6b35', bg: '#fff4ee' },
+                  { label: 'İlk 10\'da', value: reverseData.top10_count ?? reverseData.keywords?.filter(k => k.rank <= 10).length ?? '—', icon: '🥇', color: '#1a7f37', bg: '#e8f9ee' },
+                  { label: 'Tahmini Trafik', value: reverseData.estimated_traffic ? reverseData.estimated_traffic.toLocaleString() : '—', icon: '👁️', color: '#0071e3', bg: '#e8f0fe' },
+                ].map((card, i) => (
+                  <div key={i} style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px' }}>
+                    <div style={{ fontSize: '20px', marginBottom: '6px' }}>{card.icon}</div>
+                    <div style={{ fontSize: '22px', fontWeight: '700', color: card.color, marginBottom: '2px' }}>{card.value}</div>
+                    <div style={{ fontSize: '11px', color: '#8e8e93' }}>{card.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Keyword Listesi */}
+              {reverseData.keywords?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>
+                      Bulunan Keywordler ({reverseData.keywords.length})
+                    </div>
+                    <button onClick={() => setReverseData(null)}
+                      style={{ fontSize: '11px', padding: '5px 12px', borderRadius: '7px', border: '0.5px solid #d2d2d7', background: 'white', color: '#8e8e93', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Yenile
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {reverseData.keywords.slice(0, 30).map((kw, i) => {
+                      const rank = kw.rank ?? kw.position ?? null
+                      const rankColor = rank == null ? '#8e8e93' : rank <= 10 ? '#1a7f37' : rank <= 30 ? '#b45309' : '#3c3c43'
+                      const rankBg = rank == null ? '#f5f5f7' : rank <= 10 ? '#e8f9ee' : rank <= 30 ? '#fff4e0' : '#f5f5f7'
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '10px', background: '#f8fafc', border: '0.5px solid #f0f0f5' }}>
+                          <span style={{ fontSize: '11px', color: '#8e8e93', width: '18px', flexShrink: 0, textAlign: 'right' }}>{i + 1}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', color: '#1d1d1f', fontWeight: '500' }}>{kw.keyword || kw.term}</div>
+                            {kw.search_volume && (
+                              <div style={{ fontSize: '10px', color: '#8e8e93', marginTop: '1px' }}>
+                                {kw.search_volume.toLocaleString()} aylık arama
+                                {kw.cpc ? ` · $${kw.cpc} CPC` : ''}
+                              </div>
+                            )}
+                          </div>
+                          {rank != null && (
+                            <span style={{ fontSize: '12px', fontWeight: '700', padding: '3px 10px', borderRadius: '20px', background: rankBg, color: rankColor, flexShrink: 0 }}>
+                              #{rank}
+                            </span>
+                          )}
+                          {kw.organic && <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#e8f0fe', color: '#0071e3', flexShrink: 0 }}>Organik</span>}
+                          {kw.sponsored && <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: '#fff4e0', color: '#b45309', flexShrink: 0 }}>Sponsored</span>}
+                        </div>
+                      )
+                    })}
+                    {reverseData.keywords.length > 30 && (
+                      <div style={{ textAlign: 'center', fontSize: '12px', color: '#8e8e93', padding: '8px' }}>
+                        +{reverseData.keywords.length - 30} daha fazla keyword...
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Fırsatlar */}
+              {reverseData.opportunities?.length > 0 && (
+                <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>💡 Keyword Fırsatları</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {reverseData.opportunities.map((op, i) => (
+                      <div key={i} style={{ padding: '10px 14px', borderRadius: '10px', background: '#fff4ee', border: '0.5px solid #ffd4b8' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', marginBottom: '2px' }}>{op.keyword}</div>
+                        <div style={{ fontSize: '11px', color: '#b45309' }}>{op.reason || op.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
