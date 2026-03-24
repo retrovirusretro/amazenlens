@@ -19,12 +19,34 @@ import PricingPage from './pages/PricingPage'
 import FeedbackPage from './pages/FeedbackPage'
 import AboutPage from './pages/AboutPage'
 import KeywordPage from './pages/KeywordPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
+import ContactPage from './pages/ContactPage'
+import ApiDocsPage from './pages/ApiDocsPage'
 
 import './App.css'
 
+// Backend'i canlı tutmak için keep-alive ping
+const API_URL = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
+fetch(`${API_URL}/health`).catch(() => {})
+
 function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/auth" replace />
+  const [status, setStatus] = useState('loading')
+
+  useEffect(() => {
+    // Misafir erişimi
+    if (localStorage.getItem('token') === 'guest') {
+      setStatus('auth')
+      return
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setStatus(session ? 'auth' : 'unauth')
+    })
+  }, [])
+
+  if (status === 'loading') return null
+  if (status === 'unauth') return <Navigate to="/auth" replace />
+  return children
 }
 
 // Blog slug redirect — /blog/:slug → /app/blog/:slug
@@ -128,6 +150,12 @@ function App() {
         {/* Public sayfalar */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        {/* Public blog — Google indexleyebilsin */}
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
 
         {/* Korumalı sayfalar — Layout içinde */}
         <Route path="/app" element={
@@ -151,6 +179,7 @@ function App() {
           <Route path="feedback" element={<FeedbackPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="keywords" element={<KeywordPage />} />
+          <Route path="api-docs" element={<ApiDocsPage />} />
           {/* <Route path="/rank-tracker" element={<RankTrackerPage />} /> */}
 
         </Route>
@@ -165,8 +194,7 @@ function App() {
         <Route path="/sourcing" element={<Navigate to="/app/sourcing" replace />} />
         <Route path="/bulk" element={<Navigate to="/app/bulk" replace />} />
         <Route path="/unavailable" element={<Navigate to="/app/unavailable" replace />} />
-        <Route path="/blog" element={<Navigate to="/app/blog" replace />} />
-        <Route path="/blog/:slug" element={<BlogSlugRedirect />} />
+        {/* /app/blog da çalışmaya devam etsin */}
         <Route path="/blog-admin" element={<Navigate to="/app/blog-admin" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Helmet } from 'react-helmet-async'
 import axios from 'axios'
 
 const PLAN_COLORS = {
@@ -28,7 +29,7 @@ export default function PricingPage() {
       cta: t('pricing.cta_free'), highlighted: false
     },
     {
-      id: 'starter', name: 'Starter', price: 19,
+      id: 'starter', name: 'Starter', price: 24,
       features: [t('pricing.features.searches_50'), t('pricing.features.lovehate'), t('pricing.features.euro_flips'), t('pricing.features.email_support')],
       cta: t('pricing.cta_starter'), highlighted: false
     },
@@ -73,6 +74,11 @@ export default function PricingPage() {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", maxWidth: '900px' }}>
+      <Helmet>
+        <title>Fiyatlandırma — AmazenLens | $19/ay'dan Başlayan Planlar</title>
+        <meta name="description" content="AmazenLens Free, Starter ($19), Pro ($49) ve Agency ($99) planları. 7 gün ücretsiz deneme, kredi kartı gerekmez." />
+        <link rel="canonical" href="https://amazenlens.com/app/pricing" />
+      </Helmet>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {successMsg && (
@@ -95,7 +101,7 @@ export default function PricingPage() {
           {[
             { name: 'Helium 10', price: '$97' + t('pricing.per_month') },
             { name: 'Jungle Scout', price: '$49' + t('pricing.per_month') },
-            { name: 'AmazenLens', price: '$19' + t('pricing.per_month'), highlight: true },
+            { name: 'AmazenLens', price: '$24' + t('pricing.per_month'), highlight: true },
           ].map(c => (
             <div key={c.name} style={{ fontSize: '12px', color: c.highlight ? '#0071e3' : '#8e8e93', fontWeight: c.highlight ? '600' : '400' }}>
               {c.name} <span style={{ fontWeight: '600' }}>{c.price}</span>

@@ -1,13 +1,47 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Helmet } from 'react-helmet-async'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+
+const SITE = 'https://amazenlens.com'
+const softwareSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AmazenLens',
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  url: SITE,
+  description: 'Amazon FBA satıcıları için Türkçe ürün araştırma ve niş analiz platformu. Helium 10 alternatifi.',
+  offers: { '@type': 'Offer', price: '19', priceCurrency: 'USD', priceValidUntil: '2026-12-31' },
+  aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', reviewCount: '127' },
+  publisher: { '@type': 'Organization', name: 'AmazenLens', url: SITE },
+}
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'AmazenLens nedir?', acceptedAnswer: { '@type': 'Answer', text: 'AmazenLens, Amazon FBA satıcıları için geliştirilmiş Türkçe destekli bir ürün araştırma ve niş analiz platformudur.' } },
+    { '@type': 'Question', name: 'Helium 10\'dan farkı nedir?', acceptedAnswer: { '@type': 'Answer', text: 'AmazenLens Türkçe arayüz, Trendyol arbitrajı ve Alibaba entegrasyonu sunar. Fiyatı ise Helium 10\'un beşte biridir.' } },
+    { '@type': 'Question', name: 'Ücretsiz deneme var mı?', acceptedAnswer: { '@type': 'Answer', text: 'Evet, 7 gün ücretsiz deneme sunulmaktadır. Kredi kartı gerekmez.' } },
+    { '@type': 'Question', name: 'Hangi pazaryerlerini destekliyor?', acceptedAnswer: { '@type': 'Answer', text: 'Amazon.com, Amazon.de, Amazon.co.uk ve diğer Amazon pazaryerleri ile Trendyol ve Alibaba desteklenmektedir.' } },
+  ],
+}
 
 export default function LandingPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [scrollY, setScrollY] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
+  const [activeVideo, setActiveVideo] = useState(0)
+
+  // Demo video ID'leri — YouTube video ID'lerini buraya girin
+  const DEMO_VIDEOS = [
+    { id: 'REPLACE_VIDEO_ID_1', title: t('demo.v1_title'), desc: t('demo.v1_desc'), icon: '🎯' },
+    { id: 'REPLACE_VIDEO_ID_2', title: t('demo.v2_title'), desc: t('demo.v2_desc'), icon: '💚' },
+    { id: 'REPLACE_VIDEO_ID_3', title: t('demo.v3_title'), desc: t('demo.v3_desc'), icon: '🇪🇺' },
+    { id: 'REPLACE_VIDEO_ID_4', title: t('demo.v4_title'), desc: t('demo.v4_desc'), icon: '📊' },
+  ]
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -22,6 +56,9 @@ export default function LandingPage() {
     { icon: '🇹🇷', title: t('features.supplier_title'), desc: t('features.supplier_desc'), ai: null },
     { icon: '🔍', title: t('features.scanner_title'), desc: t('features.scanner_desc'), ai: 'AI' },
     { icon: '📊', title: t('features.paneu_title'), desc: t('features.paneu_desc'), ai: null },
+    { icon: '🔤', title: t('features.keyword_title'), desc: t('features.keyword_desc'), ai: 'AI' },
+    { icon: '📦', title: t('features.bulk_title'), desc: t('features.bulk_desc'), ai: null },
+    { icon: '🔑', title: t('features.api_title'), desc: t('features.api_desc'), ai: 'B2B' },
   ]
 
   const PRODUCTS = [
@@ -32,7 +69,7 @@ export default function LandingPage() {
 
   const PLANS = [
     { name: 'Free', price: 0, features: [t('pricing.features.searches_5'), t('pricing.features.niche_score'), t('pricing.features.basic')], featured: false },
-    { name: 'Starter', price: 19, features: [t('pricing.features.searches_50'), t('pricing.features.lovehate'), t('pricing.features.euro_flips'), t('pricing.features.email_support')], featured: false },
+    { name: 'Starter', price: 24, features: [t('pricing.features.searches_50'), t('pricing.features.lovehate'), t('pricing.features.euro_flips'), t('pricing.features.email_support')], featured: false },
     { name: 'Pro', price: 49, features: [t('pricing.features.searches_200'), t('pricing.features.paneu'), t('pricing.features.supplier'), t('pricing.features.priority_support')], featured: true },
     { name: 'Agency', price: 99, features: [t('pricing.features.searches_unlimited'), t('pricing.features.api'), t('pricing.features.white_label'), t('pricing.features.dedicated')], featured: false },
   ]
@@ -42,9 +79,28 @@ export default function LandingPage() {
     { q: t('faq.q2'), a: t('faq.a2') },
     { q: t('faq.q3'), a: t('faq.a3') },
     { q: t('faq.q4'), a: t('faq.a4') },
+    { q: t('faq.q5'), a: t('faq.a5') },
+    { q: t('faq.q6'), a: t('faq.a6') },
   ]
 
   return (
+    <>
+    <Helmet>
+      <title>AmazenLens — Amazon Satıcıları için Türkçe Araştırma Platformu</title>
+      <meta name="description" content="Amazon FBA ürün araştırması, niş analizi, Trendyol arbitrajı ve Alibaba entegrasyonu. Helium 10'dan 5x ucuz, Türkçe arayüz. 7 gün ücretsiz dene." />
+      <meta name="keywords" content="amazon ürün araştırma, amazon fba türkçe, helium 10 alternatif, jungle scout alternatif, amazon niş analizi, trendyol arbitraj" />
+      <meta property="og:title" content="AmazenLens — Amazon Satıcıları için Türkçe Araştırma Platformu" />
+      <meta property="og:description" content="Amazon FBA ürün araştırması ve niş analizi. Türkçe arayüz, 5x ucuz fiyat. 7 gün ücretsiz dene." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={SITE} />
+      <meta property="og:image" content={`${SITE}/logo-light.svg`} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="AmazenLens — Amazon Araştırma Platformu" />
+      <meta name="twitter:description" content="Amazon FBA için Türkçe niş analizi ve ürün araştırması. $19/ay'dan başlayan fiyatlar." />
+      <link rel="canonical" href={SITE} />
+      <script type="application/ld+json">{JSON.stringify(softwareSchema)}</script>
+      <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+    </Helmet>
     <div style={{ fontFamily: "'Space Grotesk', sans-serif", background: '#fafafa', overflowX: 'hidden' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
@@ -60,15 +116,15 @@ export default function LandingPage() {
 
       {/* NAV */}
       <nav style={{ padding: '18px 60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: scrollY > 20 ? 'rgba(255,255,255,0.95)' : 'white', borderBottom: '1px solid #e4e4e7', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(20px)', transition: 'all 0.3s' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '30px', height: '30px', background: 'linear-gradient(135deg, #6366f1, #ec4899)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🔍</div>
-          <span style={{ fontSize: '16px', fontWeight: '700', color: '#09090b' }}>AmazenLens</span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/logo-light.svg" alt="AmazenLens" style={{ height: '32px', objectFit: 'contain' }} />
         </div>
         <div style={{ display: 'flex', gap: '28px' }}>
           <a href="#özellikler" className="nav-link">{t('nav.features')}</a>
           <a href="#fiyatlar" className="nav-link">{t('nav.pricing')}</a>
-          <a href="#blog" className="nav-link">{t('nav.blog')}</a>
+          <a href="/app/blog" className="nav-link">{t('nav.blog')}</a>
           <a href="#roadmap" className="nav-link">{t('nav.roadmap')}</a>
+          <a href="/app/api-docs" className="nav-link">API</a>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <LanguageSwitcher />
@@ -107,7 +163,7 @@ export default function LandingPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {['🎯 Niş Skoru AI', '💚 Love/Hate', '🇪🇺 Euro Flips', '🇹🇷 Türk Tedarikçi'].map(chip => (
+            {['🎯 Niş Skoru AI', '💚 Love/Hate', '🇪🇺 Euro Flips', '🔑 API v1', '📦 Toplu Import'].map(chip => (
               <div key={chip} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: '500' }}>
                 {chip}
               </div>
@@ -149,7 +205,7 @@ export default function LandingPage() {
             { name: 'Helium 10 $97/mo', crossed: true },
             { name: 'Jungle Scout $49/mo', crossed: true },
             { name: 'AMZScout $45/mo', crossed: true },
-            { name: '✓ AmazenLens $19/mo', crossed: false },
+            { name: '✓ AmazenLens $24/mo', crossed: false },
           ].map(c => (
             <span key={c.name} style={{ fontSize: '13px', color: c.crossed ? '#a1a1aa' : '#6366f1', fontWeight: '600', textDecoration: c.crossed ? 'line-through' : 'none' }}>{c.name}</span>
           ))}
@@ -177,6 +233,50 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* DEMO VIDEO */}
+      <div id="demo" style={{ padding: '80px 60px', background: '#09090b' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#a78bfa', background: 'rgba(167,139,250,0.1)', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>▶ {t('demo.label')}</div>
+            <h2 style={{ fontSize: '44px', fontWeight: '700', letterSpacing: '-1.5px', color: 'white', marginBottom: '12px' }}>{t('demo.title')}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '16px' }}>{t('demo.subtitle')}</p>
+          </div>
+
+          {/* Ana Video Player */}
+          <div style={{ borderRadius: '16px', overflow: 'hidden', marginBottom: '20px', background: '#1c1917', border: '1px solid rgba(255,255,255,0.08)', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            {DEMO_VIDEOS[activeVideo].id.startsWith('REPLACE') ? (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
+                <div style={{ fontSize: '64px', marginBottom: '16px' }}>{DEMO_VIDEOS[activeVideo].icon}</div>
+                <div style={{ fontSize: '18px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>{DEMO_VIDEOS[activeVideo].title}</div>
+                <div style={{ fontSize: '13px' }}>Video yakında eklenecek</div>
+              </div>
+            ) : (
+              <iframe
+                width="100%" height="100%"
+                src={`https://www.youtube.com/embed/${DEMO_VIDEOS[activeVideo].id}?autoplay=1&rel=0`}
+                title={DEMO_VIDEOS[activeVideo].title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ display: 'block' }}
+              />
+            )}
+          </div>
+
+          {/* 4 Video Tab */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            {DEMO_VIDEOS.map((v, i) => (
+              <button key={i} onClick={() => setActiveVideo(i)}
+                style={{ padding: '16px', borderRadius: '12px', border: activeVideo === i ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.08)', background: activeVideo === i ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.03)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s', fontFamily: 'inherit' }}>
+                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{v.icon}</div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: activeVideo === i ? '#a78bfa' : 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>{v.title}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', lineHeight: '1.4' }}>{v.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ROADMAP */}
       <div id="roadmap" style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', padding: '80px 60px' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -188,17 +288,17 @@ export default function LandingPage() {
             {[
               {
                 label: `✅ ${t('roadmap.phase1_label')}`, color: '#34d399', chipBg: 'rgba(52,211,153,0.15)', chipColor: '#34d399', chipText: t('roadmap.chip_active'),
-                items: ['Niş Skoru (100pt)', 'Love/Hate AI', 'Euro Flips Arbitraj', 'Pan-EU FBA Hesabı', 'Unavailable Scanner', 'Türk Tedarikçi DB'],
+                items: ['Niş Skoru (100pt)', 'Love/Hate AI', 'Euro Flips Arbitraj', 'Pan-EU FBA Hesabı', 'Keyword Scanner', 'Toplu Import (500 ASIN)', 'API v1 (B2B)', 'Blog Sistemi'],
                 done: true
               },
               {
                 label: `🚀 ${t('roadmap.phase2_label')}`, color: '#818cf8', chipBg: 'rgba(129,140,248,0.15)', chipColor: '#818cf8', chipText: t('roadmap.chip_soon'),
-                items: ['Chrome Extension', 'Trend Radar', 'WhatsApp Alerts', 'Business Valuation', 'Product Opp. Gap', 'AI Listing Optimizer'],
+                items: ['Chrome Extension', 'Trend Radar', 'WhatsApp / Telegram Alerts', 'Business Valuation', 'Product Opportunity Gap', 'AI Listing Optimizer'],
                 done: false
               },
               {
                 label: `🔮 ${t('roadmap.phase3_label')}`, color: '#f472b6', chipBg: 'rgba(244,114,182,0.15)', chipColor: '#f472b6', chipText: t('roadmap.chip_future'),
-                items: ['Mobile App', 'Barcode Scanner', 'API Access', 'Seller Segmentation', 'SnapSearch (Visual)', 'Telegram Alerts'],
+                items: ['Mobile App', 'Barcode Scanner', 'RapidAPI Marketplace', 'Seller Segmentation', 'SnapSearch (Visual)', 'Easyparser WebSocket'],
                 done: false
               }
             ].map((phase, i) => (
@@ -215,6 +315,62 @@ export default function LandingPage() {
                 ))}
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* API SECTION */}
+      <div style={{ background: '#09090b', padding: '80px 60px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '60px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1', minWidth: '280px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#34d399', background: 'rgba(52,211,153,0.1)', padding: '4px 12px', borderRadius: '100px', marginBottom: '16px' }}>🔑 API v1</div>
+              <h2 style={{ fontSize: '38px', fontWeight: '700', letterSpacing: '-1.5px', color: 'white', marginBottom: '12px' }}>Amazon zekasını<br />uygulamanıza taşıyın</h2>
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', lineHeight: '1.7', marginBottom: '28px' }}>4 endpoint, tek key. Niş skoru, keyword analizi ve yorum sentiment'i kendi SaaS'ınıza veya ajans aracınıza entegre edin.</p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '28px' }}>
+                {[
+                  { label: '100 sorgu/ay', sub: 'Ücretsiz' },
+                  { label: '5.000 sorgu/ay', sub: '$49/ay' },
+                  { label: '25.000 sorgu/ay', sub: '$149/ay' },
+                ].map((t, i) => (
+                  <div key={i} style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>{t.label}</div>
+                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>{t.sub}</div>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => navigate('/auth')} style={{ background: 'white', color: '#09090b', border: 'none', padding: '12px 24px', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit' }}>
+                API Docs →
+              </button>
+            </div>
+            <div style={{ flex: '1', minWidth: '320px' }}>
+              <div style={{ background: '#111', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '6px' }}>
+                  {['#ff5f57', '#febc2e', '#28c840'].map(c => <div key={c} style={{ width: '10px', height: '10px', borderRadius: '50%', background: c }} />)}
+                </div>
+                <div style={{ padding: '20px', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.8' }}>
+                  <div style={{ color: '#71717a' }}># Niş skoru al</div>
+                  <div><span style={{ color: '#818cf8' }}>GET</span> <span style={{ color: '#34d399' }}>/v1/niche/score</span></div>
+                  <div style={{ color: '#71717a', marginTop: '4px' }}>  ?asin=B07QK955LS&marketplace=US</div>
+                  <div style={{ color: '#f472b6' }}>  X-API-Key: al_xxxxxxxx</div>
+                  <div style={{ marginTop: '16px', color: '#71717a' }}># Yanıt</div>
+                  <div style={{ color: '#e4e4e7' }}>{'{'}</div>
+                  <div style={{ paddingLeft: '16px' }}>
+                    <div><span style={{ color: '#fbbf24' }}>"total"</span><span style={{ color: '#e4e4e7' }}>: </span><span style={{ color: '#34d399' }}>87</span><span style={{ color: '#e4e4e7' }}>,</span></div>
+                    <div><span style={{ color: '#fbbf24' }}>"verdict"</span><span style={{ color: '#e4e4e7' }}>: </span><span style={{ color: '#a78bfa' }}>"🟢 Excellent"</span><span style={{ color: '#e4e4e7' }}>,</span></div>
+                    <div><span style={{ color: '#fbbf24' }}>"unmet_demand"</span><span style={{ color: '#e4e4e7' }}>: </span><span style={{ color: '#34d399' }}>true</span></div>
+                  </div>
+                  <div style={{ color: '#e4e4e7' }}>{'}'}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                {['/v1/niche/score', '/v1/keyword/analyze', '/v1/review/sentiment', '/v1/product/detail'].map(ep => (
+                  <div key={ep} style={{ padding: '8px 12px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '11px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.5)' }}>
+                    <span style={{ color: '#818cf8' }}>GET</span> {ep}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -274,17 +430,17 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer style={{ background: '#09090b', padding: '40px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '26px', height: '26px', background: 'linear-gradient(135deg, #6366f1, #ec4899)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>🔍</div>
-          <span style={{ fontSize: '15px', fontWeight: '700', color: 'white' }}>AmazenLens</span>
-          <span style={{ fontSize: '12px', color: '#52525b', marginLeft: '4px' }}>© 2025</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img src="/logo-dark.svg" alt="AmazenLens" style={{ height: '28px', objectFit: 'contain' }} />
+          <span style={{ fontSize: '12px', color: '#52525b' }}>© 2025</span>
         </div>
         <div style={{ display: 'flex', gap: '24px' }}>
-          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.privacy')}</a>
-          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.terms')}</a>
-          <a href="#" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.contact')}</a>
+          <a href="/privacy" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.privacy')}</a>
+          <a href="/terms" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.terms')}</a>
+          <a href="/contact" style={{ fontSize: '13px', color: '#52525b', textDecoration: 'none' }}>{t('footer.contact')}</a>
         </div>
       </footer>
     </div>
+    </>
   )
 }
