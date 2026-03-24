@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import { useTranslation } from 'react-i18next'
 
 const API = import.meta.env.VITE_API_URL || ''
 
@@ -9,8 +10,8 @@ Bildiğin konular:
 - AmazenLens özellikleri: Niş Skoru, Love/Hate analizi, Euro Flips arbitraj, Pan-EU FBA kar hesabı, Unavailable Scanner, Türk tedarikçi modülü, Quick Picks
 - Amazon FBA: fulfillment, BSR, Buy Box, PPC, ürün araştırması, kategori analizi
 - Niş skoru metodolojisi: 100 puanlık sistem, 4 boyut (Hacim/Lojistik/Rekabet/Karlılık), BSR power-law, RVI, Trend skoru, 3-Prong testi
-- Fiyatlandırma: Free (5 arama/gün), Starter $19/ay (50 arama), Pro $49/ay (200 arama), Agency $99/ay (sınırsız)
-- 7 günlük ücretsiz Pro deneme var
+- Fiyatlandırma: Free (5 arama/gün), Starter $24/ay (50 arama), Pro $49/ay (200 arama), Agency $99/ay (sınırsız)
+- 14 günlük ücretsiz Pro deneme var
 
 Kısa, net ve yardımcı cevaplar ver. Türkçe konuş.`
 
@@ -30,6 +31,7 @@ const POINT_ACTIONS = {
 }
 
 export default function FeedbackPage() {
+  const { t } = useTranslation()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [activeTab, setActiveTab] = useState('feature')
   const [feedbackText, setFeedbackText] = useState('')
@@ -133,10 +135,10 @@ export default function FeedbackPage() {
 
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '22px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.4px', marginBottom: '4px' }}>
-          Geri Bildirim & Destek
+          {t('feedback.title')}
         </div>
         <div style={{ fontSize: '13px', color: '#8e8e93' }}>
-          Fikirlerinizi paylaşın, puan kazanın — AmazenLens'i birlikte geliştirelim
+          {t('feedback.subtitle')}
         </div>
       </div>
 
@@ -151,13 +153,13 @@ export default function FeedbackPage() {
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: levelColor + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>🪙</div>
               <div>
                 <div style={{ fontSize: '22px', fontWeight: '600', color: '#1d1d1f' }}>{points.toLocaleString()}</div>
-                <div style={{ fontSize: '12px', color: '#8e8e93' }}>Lens Puanı · <span style={{ color: levelColor, fontWeight: '500' }}>{levelName}</span></div>
+                <div style={{ fontSize: '12px', color: '#8e8e93' }}>{t('feedback.lens_points')} · <span style={{ color: levelColor, fontWeight: '500' }}>{levelName}</span></div>
               </div>
             </div>
             <div style={{ textAlign: 'right', fontSize: '12px', color: '#8e8e93' }}>
-              <div>Feedback gönder <span style={{ color: '#34c759', fontWeight: '500' }}>+50</span></div>
-              <div>Bug raporu <span style={{ color: '#34c759', fontWeight: '500' }}>+200</span></div>
-              <div>NPS skoru <span style={{ color: '#34c759', fontWeight: '500' }}>+20</span></div>
+              <div>{t('feedback.send_feedback')} <span style={{ color: '#34c759', fontWeight: '500' }}>+50</span></div>
+              <div>{t('feedback.bug_report')} <span style={{ color: '#34c759', fontWeight: '500' }}>+200</span></div>
+              <div>{t('feedback.nps_score')} <span style={{ color: '#34c759', fontWeight: '500' }}>+20</span></div>
             </div>
           </div>
 
@@ -166,20 +168,20 @@ export default function FeedbackPage() {
             {submitted ? (
               <div style={{ textAlign: 'center', padding: '24px', animation: 'fadeUp 0.3s ease' }}>
                 <div style={{ fontSize: '32px', marginBottom: '10px' }}>🎉</div>
-                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1a7f37', marginBottom: '4px' }}>Teşekkürler!</div>
-                <div style={{ fontSize: '13px', color: '#8e8e93' }}>Geri bildiriminiz alındı. Puan hesabınıza eklendi!</div>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#1a7f37', marginBottom: '4px' }}>{t('feedback.thanks_title')}</div>
+                <div style={{ fontSize: '13px', color: '#8e8e93' }}>{t('feedback.thanks_desc')}</div>
               </div>
             ) : (
               <>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
                   {[
-                    { key: 'feature', label: '💡 Özellik Önerisi', color: '#0071e3' },
-                    { key: 'bug', label: '🐛 Bug Raporu', color: '#ff3b30' },
-                    { key: 'general', label: '💬 Genel Görüş', color: '#8e8e93' },
-                  ].map(t => (
-                    <button key={t.key} className="tab-btn" onClick={() => setActiveTab(t.key)}
-                      style={{ background: activeTab === t.key ? t.color + '15' : '#f5f5f7', color: activeTab === t.key ? t.color : '#8e8e93', border: activeTab === t.key ? `0.5px solid ${t.color}40` : '0.5px solid transparent' }}>
-                      {t.label}
+                    { key: 'feature', label: `💡 ${t('feedback.tab_feature')}`, color: '#0071e3' },
+                    { key: 'bug', label: `🐛 ${t('feedback.tab_bug')}`, color: '#ff3b30' },
+                    { key: 'general', label: `💬 ${t('feedback.tab_general')}`, color: '#8e8e93' },
+                  ].map(tab => (
+                    <button key={tab.key} className="tab-btn" onClick={() => setActiveTab(tab.key)}
+                      style={{ background: activeTab === tab.key ? tab.color + '15' : '#f5f5f7', color: activeTab === tab.key ? tab.color : '#8e8e93', border: activeTab === tab.key ? `0.5px solid ${tab.color}40` : '0.5px solid transparent' }}>
+                      {tab.label}
                     </button>
                   ))}
                 </div>
@@ -188,16 +190,16 @@ export default function FeedbackPage() {
                   value={feedbackText}
                   onChange={e => setFeedbackText(e.target.value)}
                   placeholder={
-                    activeTab === 'feature' ? 'Hangi özelliği eklesek daha iyi olur? Detaylı anlat...' :
-                    activeTab === 'bug' ? 'Hangi sayfada, ne yapınca hata oluştu? Adım adım anlat...' :
-                    'AmazenLens hakkında düşüncelerinizi paylaşın...'
+                    activeTab === 'feature' ? t('feedback.placeholder_feature') :
+                    activeTab === 'bug' ? t('feedback.placeholder_bug') :
+                    t('feedback.placeholder_general')
                   }
                   rows={5}
                   style={{ width: '100%', padding: '12px', border: '0.5px solid #d2d2d7', borderRadius: '9px', fontSize: '13px', fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box', background: '#f5f5f7', lineHeight: '1.6' }}
                 />
 
                 <div style={{ marginTop: '16px', marginBottom: '18px' }}>
-                  <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '8px' }}>AmazenLens'i bir arkadaşına tavsiye eder misin? (1-10)</div>
+                  <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '8px' }}>{t('feedback.nps_label')}</div>
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
                       <button key={n} onClick={() => setNpsScore(n)}
@@ -207,13 +209,13 @@ export default function FeedbackPage() {
                     ))}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '10px', color: '#aeaeb2' }}>
-                    <span>Hiç önermem</span><span>Kesinlikle öneririm</span>
+                    <span>{t('feedback.nps_low')}</span><span>{t('feedback.nps_high')}</span>
                   </div>
                 </div>
 
                 <button onClick={handleFeedbackSubmit} disabled={!feedbackText.trim()}
                   style={{ width: '100%', padding: '11px', background: feedbackText.trim() ? '#0071e3' : '#d2d2d7', color: 'white', border: 'none', borderRadius: '9px', fontSize: '13px', fontWeight: '500', cursor: feedbackText.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
-                  Gönder ve {activeTab === 'bug' ? '200' : '50'} Puan Kazan 🪙
+                  {t('feedback.submit_btn_prefix')} {activeTab === 'bug' ? '200' : '50'} {t('feedback.submit_btn_suffix')} 🪙
                 </button>
               </>
             )}
@@ -221,7 +223,7 @@ export default function FeedbackPage() {
 
           {/* Popüler İstekler */}
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px' }}>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '14px' }}>🔥 Popüler İstekler</div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', marginBottom: '14px' }}>🔥 {t('feedback.popular_title')}</div>
             {POPULAR_REQUESTS.map(req => (
               <div key={req.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', borderBottom: req.id < POPULAR_REQUESTS.length ? '0.5px solid #f5f5f7' : 'none' }}>
                 <div style={{ flex: 1 }}>
@@ -244,8 +246,8 @@ export default function FeedbackPage() {
             <div style={{ padding: '14px 16px', borderBottom: '0.5px solid #f5f5f7', display: 'flex', alignItems: 'center', gap: '10px', background: '#1d1d1f' }}>
               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#0071e3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}>🤖</div>
               <div>
-                <div style={{ fontSize: '13px', fontWeight: '500', color: 'white' }}>AmazenLens AI</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>Claude ile destekleniyor</div>
+                <div style={{ fontSize: '13px', fontWeight: '500', color: 'white' }}>{t('feedback.bot_title')}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{t('feedback.bot_powered')}</div>
               </div>
               <div style={{ marginLeft: 'auto', width: '8px', height: '8px', borderRadius: '50%', background: '#34c759' }}></div>
             </div>
@@ -290,7 +292,7 @@ export default function FeedbackPage() {
                 value={botInput}
                 onChange={e => setBotInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendBotMessage(botInput)}
-                placeholder="Soru sor..."
+                placeholder={t('feedback.ask_placeholder')}
                 style={{ flex: 1, padding: '9px 12px', border: '0.5px solid #d2d2d7', borderRadius: '9px', fontSize: '13px', fontFamily: 'inherit', outline: 'none', background: '#f5f5f7' }}
               />
               <button onClick={() => sendBotMessage(botInput)} disabled={!botInput.trim() || botLoading}

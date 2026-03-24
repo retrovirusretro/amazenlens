@@ -55,6 +55,7 @@ export default function ProductPage() {
   const [rankKeyword, setRankKeyword] = useState('')
   const [rankResults, setRankResults] = useState(null)
   const [rankLoading, setRankLoading] = useState(false)
+  const [rankError, setRankError] = useState(null)
   const [demandData, setDemandData] = useState(null)
   const [demandLoading, setDemandLoading] = useState(false)
   const [reverseData, setReverseData] = useState(null)
@@ -70,6 +71,14 @@ export default function ProductPage() {
     prevAsin.current = asin
     setReviews(null)
   }, [asin])
+
+  // Rank sekmesi açıldığında ürün başlığından otomatik keyword set et
+  useEffect(() => {
+    if (activeTab === 'rank' && product?.title && !rankKeyword) {
+      const autoKw = product.title.split(' ').filter(w => w.length > 3).slice(0, 3).map(w => w.toLowerCase()).join(', ')
+      if (autoKw) setRankKeyword(autoKw)
+    }
+  }, [activeTab, product])
 
   const fetchKeepa = async () => {
     setKeepaLoading(true)
@@ -96,11 +105,34 @@ export default function ProductPage() {
   const fetchRank = async () => {
     if (!rankKeyword.trim() || rankLoading) return
     setRankLoading(true)
+    setRankError(null)
+    setRankResults(null)
     try {
       const keywords = rankKeyword.split(',').map(k => k.trim()).filter(Boolean).slice(0, 10)
       const res = await axios.post(`${API}/api/rank/bulk`, { asin, keywords, market: 'US' })
       setRankResults(res.data)
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      // Mock veri göster — sekme boş kalmasın
+      const keywords = rankKeyword.split(',').map(k => k.trim()).filter(Boolean).slice(0, 10)
+      const mockResults = {
+        asin,
+        found_count: Math.floor(keywords.length * 0.6) || 1,
+        total_checked: keywords.length,
+        best_rank: 7,
+        mock: true,
+        results: keywords.map((kw, i) => ({
+          keyword: kw,
+          found: i % 3 !== 2,
+          rank: i % 3 !== 2 ? [7, 14, 23, 38, 5, 11][i % 6] : null,
+          total_scanned: 50,
+          is_sponsored: i === 0,
+          commentary: i % 3 !== 2 ? null : `İlk 50 sonuçta bulunamadı`,
+        }))
+      }
+      setRankResults(mockResults)
+      setRankError('⚠️ Mock veri — ScraperAPI bağlantısı kurulamadı.')
+    }
     finally { setRankLoading(false) }
   }
 
@@ -313,7 +345,7 @@ export default function ProductPage() {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", maxWidth: '960px' }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
 
       <button onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#0071e3', fontSize: '13px', cursor: 'pointer', marginBottom: '16px', padding: 0, fontFamily: 'inherit' }}>
         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
@@ -1183,11 +1215,11 @@ export default function ProductPage() {
                 value={rankKeyword}
                 onChange={e => setRankKeyword(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && fetchRank()}
-                placeholder="led desk lamp, desk light, usb lamp..."
-                style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '0.5px solid #d2d2d7', fontSize: '13px', fontFamily: 'inherit', background: '#f5f5f7', outline: 'none' }}
+                placeholder="örn: yoga mat, laptop stand, desk lamp"
+                style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1px solid #0071e3', fontSize: '13px', fontFamily: 'inherit', background: 'white', outline: 'none', boxShadow: '0 0 0 3px rgba(0,113,227,0.1)' }}
               />
               <button onClick={fetchRank} disabled={rankLoading || !rankKeyword.trim()}
-                style={{ padding: '9px 20px', background: rankKeyword.trim() ? '#0071e3' : '#d2d2d7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                style={{ padding: '9px 20px', background: rankKeyword.trim() ? '#0071e3' : '#d2d2d7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '500', cursor: rankKeyword.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                 {rankLoading ? '⏳ Tarıyor...' : '🔍 Tara'}
               </button>
             </div>
@@ -1204,6 +1236,29 @@ export default function ProductPage() {
               </div>
             )}
           </div>
+
+          {/* Hata / mock uyarı */}
+          {rankError && (
+            <div style={{ background: '#fff4e0', border: '0.5px solid #fcd34d', borderRadius: '10px', padding: '10px 14px', fontSize: '12px', color: '#b45309' }}>
+              {rankError}
+            </div>
+          )}
+
+          {/* Loading skeleton */}
+          {rankLoading && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: i < 3 ? '0.5px solid #f5f5f7' : 'none' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f0f5', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: '12px', width: '60%', background: '#f0f0f5', borderRadius: '6px', marginBottom: '6px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                    <div style={{ height: '10px', width: '40%', background: '#f0f0f5', borderRadius: '6px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                  </div>
+                </div>
+              ))}
+              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px', color: '#8e8e93' }}>Amazon sayfaları taranıyor... (10-30 sn)</div>
+            </div>
+          )}
 
           {rankResults && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
+import { useTranslation } from 'react-i18next'
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
@@ -10,6 +11,7 @@ const VERDICT_STYLE = {
 }
 
 export default function CalculatorPage() {
+  const { t } = useTranslation()
   const [amazonPrice, setAmazonPrice] = useState('')
   const [alibabaPrice, setAlibabaPrice] = useState('')
   const [shippingCost, setShippingCost] = useState('0')
@@ -45,10 +47,10 @@ export default function CalculatorPage() {
       {/* Başlık */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '19px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.3px' }}>
-          Pan-EU FBA Kar Hesabı
+          {t('calc.title')}
         </div>
         <div style={{ fontSize: '13px', color: '#8e8e93', marginTop: '3px' }}>
-          9 Amazon pazarı için VAT dahil gerçek kar hesabı — hangi ülkede satmalısın?
+          {t('calc.subtitle')}
         </div>
       </div>
 
@@ -56,9 +58,9 @@ export default function CalculatorPage() {
       <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'flex-end' }}>
           {[
-            { label: 'Amazon Satış Fiyatı ($)', value: amazonPrice, setter: setAmazonPrice, placeholder: '34.99', icon: '🛒' },
-            { label: 'Alibaba Alış Fiyatı ($)', value: alibabaPrice, setter: setAlibabaPrice, placeholder: '3.50', icon: '🏭' },
-            { label: 'Kargo Maliyeti ($)', value: shippingCost, setter: setShippingCost, placeholder: '0', icon: '📦' },
+            { label: t('calc.amazon_price'), value: amazonPrice, setter: setAmazonPrice, placeholder: '34.99', icon: '🛒' },
+            { label: t('calc.alibaba_price'), value: alibabaPrice, setter: setAlibabaPrice, placeholder: '3.50', icon: '🏭' },
+            { label: t('calc.shipping_cost'), value: shippingCost, setter: setShippingCost, placeholder: '0', icon: '📦' },
           ].map(field => (
             <div key={field.label}>
               <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px', fontWeight: '500' }}>
@@ -91,13 +93,13 @@ export default function CalculatorPage() {
             {loading ? (
               <div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
             ) : '🧮'}
-            Hesapla
+            {t('calc.calculate')}
           </button>
         </div>
 
         {/* Hızlı örnek */}
         <div style={{ marginTop: '12px', display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <div style={{ fontSize: '11px', color: '#8e8e93' }}>Hızlı örnek:</div>
+          <div style={{ fontSize: '11px', color: '#8e8e93' }}>{t('calc.quick_example')}</div>
           {[
             { label: 'Yoga Mat ($28.99)', amazon: '28.99', alibaba: '3.50' },
             { label: 'Silikon Set ($34.99)', amazon: '34.99', alibaba: '4.50' },
@@ -119,22 +121,22 @@ export default function CalculatorPage() {
             <div style={{ background: VERDICT_STYLE[bestMarket.verdict]?.bg || '#e8f9ee', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px', border: `0.5px solid ${VERDICT_STYLE[bestMarket.verdict]?.border || '#b7f0c8'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '600', color: VERDICT_STYLE[bestMarket.verdict]?.color, marginBottom: '4px' }}>
-                  🏆 En Karlı Pazar
+                  🏆 {t('calc.most_profitable')}
                 </div>
                 <div style={{ fontSize: '18px', fontWeight: '600', color: '#1d1d1f' }}>
                   {bestMarket.marketplace_name}
                 </div>
                 <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '4px' }}>
-                  {bestMarket.symbol}{bestMarket.price_local} satış · VAT {bestMarket.vat_rate} · FBA {bestMarket.symbol}{bestMarket.fba_fee}
+                  {bestMarket.symbol}{bestMarket.price_local} {t('calc.sale_price')} · VAT {bestMarket.vat_rate} · FBA {bestMarket.symbol}{bestMarket.fba_fee}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '28px', fontWeight: '600', color: VERDICT_STYLE[bestMarket.verdict]?.color }}>
                   %{bestMarket.margin_pct}
                 </div>
-                <div style={{ fontSize: '12px', color: '#8e8e93' }}>kar marjı</div>
+                <div style={{ fontSize: '12px', color: '#8e8e93' }}>{t('calc.profit_margin_label')}</div>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: VERDICT_STYLE[bestMarket.verdict]?.color, marginTop: '4px' }}>
-                  {bestMarket.symbol}{bestMarket.net_profit} net kar
+                  {bestMarket.symbol}{bestMarket.net_profit} {t('calc.net_profit_label')}
                 </div>
               </div>
             </div>
@@ -143,9 +145,9 @@ export default function CalculatorPage() {
           {/* Özet İstatistikler */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '12px' }}>
             {[
-              { label: 'Karlı Pazar', value: `${result.profitable_count}/${result.total_markets}`, color: '#34c759', bg: '#e8f9ee' },
-              { label: 'En Yüksek Marj', value: `%${bestMarket?.margin_pct}`, color: '#0071e3', bg: '#e8f0fe' },
-              { label: 'En Yüksek Net Kar', value: `${bestMarket?.symbol}${bestMarket?.net_profit}`, color: '#af52de', bg: '#f3e8ff' },
+              { label: t('calc.profitable_markets'), value: `${result.profitable_count}/${result.total_markets}`, color: '#34c759', bg: '#e8f9ee' },
+              { label: t('calc.highest_margin'), value: `%${bestMarket?.margin_pct}`, color: '#0071e3', bg: '#e8f0fe' },
+              { label: t('calc.highest_net'), value: `${bestMarket?.symbol}${bestMarket?.net_profit}`, color: '#af52de', bg: '#f3e8ff' },
             ].map(stat => (
               <div key={stat.label} style={{ background: stat.bg, borderRadius: '10px', padding: '14px 16px' }}>
                 <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '4px' }}>{stat.label}</div>
@@ -156,7 +158,7 @@ export default function CalculatorPage() {
 
           {/* Görünüm Seçici */}
           <div style={{ display: 'flex', gap: '4px', background: 'white', borderRadius: '10px', padding: '4px', border: '0.5px solid #e5e5ea', marginBottom: '12px', width: 'fit-content' }}>
-            {[{ key: 'table', label: '📊 Tablo' }, { key: 'cards', label: '🃏 Kartlar' }].map(v => (
+            {[{ key: 'table', label: `📊 ${t('calc.view_table')}` }, { key: 'cards', label: `🃏 ${t('calc.view_cards')}` }].map(v => (
               <button key={v.key} onClick={() => setActiveView(v.key)}
                 style={{ padding: '6px 16px', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: '500', cursor: 'pointer', fontFamily: 'inherit', background: activeView === v.key ? '#1d1d1f' : 'transparent', color: activeView === v.key ? 'white' : '#8e8e93' }}>
                 {v.label}
@@ -169,13 +171,13 @@ export default function CalculatorPage() {
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.7fr', gap: '8px', padding: '10px 16px', background: '#1d1d1f', fontSize: '10px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                <div>Pazar</div>
-                <div style={{ textAlign: 'right' }}>Satış Fiyatı</div>
-                <div style={{ textAlign: 'right' }}>VAT</div>
-                <div style={{ textAlign: 'right' }}>FBA Ücreti</div>
-                <div style={{ textAlign: 'right' }}>Net Kar</div>
-                <div style={{ textAlign: 'right' }}>Marj</div>
-                <div style={{ textAlign: 'center' }}>Durum</div>
+                <div>{t('calc.table_market')}</div>
+                <div style={{ textAlign: 'right' }}>{t('calc.table_price')}</div>
+                <div style={{ textAlign: 'right' }}>{t('calc.table_vat')}</div>
+                <div style={{ textAlign: 'right' }}>{t('calc.table_fba')}</div>
+                <div style={{ textAlign: 'right' }}>{t('calc.table_net')}</div>
+                <div style={{ textAlign: 'right' }}>{t('calc.table_margin')}</div>
+                <div style={{ textAlign: 'center' }}>{t('calc.table_status')}</div>
               </div>
               {result.results.map((r, i) => {
                 const vs = VERDICT_STYLE[r.verdict] || VERDICT_STYLE['❌']
@@ -187,7 +189,7 @@ export default function CalculatorPage() {
                     background: i === 0 ? '#f9fffe' : 'white'
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: i === 0 ? '600' : '500', color: '#1d1d1f' }}>
-                      {i === 0 && <span style={{ fontSize: '10px', background: '#34c759', color: 'white', padding: '1px 5px', borderRadius: '4px', marginRight: '6px' }}>EN İYİ</span>}
+                      {i === 0 && <span style={{ fontSize: '10px', background: '#34c759', color: 'white', padding: '1px 5px', borderRadius: '4px', marginRight: '6px' }}>{t('calc.best_label')}</span>}
                       {r.marketplace_name}
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '13px', color: '#1d1d1f' }}>
@@ -224,7 +226,7 @@ export default function CalculatorPage() {
                 return (
                   <div key={r.marketplace} style={{ background: 'white', borderRadius: '11px', border: `0.5px solid ${i === 0 ? vs.border : '#e5e5ea'}`, padding: '14px', position: 'relative', overflow: 'hidden' }}>
                     {i === 0 && (
-                      <div style={{ position: 'absolute', top: 0, right: 0, background: '#34c759', color: 'white', fontSize: '9px', fontWeight: '600', padding: '3px 8px', borderBottomLeftRadius: '8px' }}>EN İYİ</div>
+                      <div style={{ position: 'absolute', top: 0, right: 0, background: '#34c759', color: 'white', fontSize: '9px', fontWeight: '600', padding: '3px 8px', borderBottomLeftRadius: '8px' }}>{t('calc.best_label')}</div>
                     )}
                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '10px' }}>
                       {r.marketplace_name}
@@ -233,14 +235,14 @@ export default function CalculatorPage() {
                       %{r.margin_pct}
                     </div>
                     <div style={{ fontSize: '12px', color: '#8e8e93', marginBottom: '10px' }}>
-                      {r.symbol}{r.net_profit} net kar
+                      {r.symbol}{r.net_profit} {t('calc.net_profit_label')}
                     </div>
                     <div style={{ height: '4px', background: '#f0f0f5', borderRadius: '2px', marginBottom: '10px' }}>
                       <div style={{ height: '100%', borderRadius: '2px', background: vs.color, width: `${Math.min(Math.max(r.margin_pct, 0), 100)}%` }}></div>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {[
-                        { label: 'Satış', value: `${r.symbol}${r.price_local}`, color: '#1d1d1f' },
+                        { label: t('calc.sale_price'), value: `${r.symbol}${r.price_local}`, color: '#1d1d1f' },
                         { label: `VAT ${r.vat_rate}`, value: `-${r.symbol}${r.vat_amount}`, color: '#ff3b30' },
                         { label: 'FBA', value: `-${r.symbol}${r.fba_fee}`, color: '#ff9f0a' },
                       ].map(row => (
@@ -261,8 +263,7 @@ export default function CalculatorPage() {
 
           {/* Not */}
           <div style={{ marginTop: '12px', padding: '12px 16px', background: '#f5f5f7', borderRadius: '8px', fontSize: '11px', color: '#8e8e93', lineHeight: '1.6' }}>
-            💡 <strong style={{ color: '#1d1d1f' }}>Not:</strong> Hesaplama Amazon referral ücreti (%15) + FBA fulfillment ücreti + VAT dahildir.
-            Gümrük, iade ve depolama maliyetleri hariçtir. Kur: EUR=0.92, GBP=0.79, CAD=1.36, JPY=149.
+            💡 <strong style={{ color: '#1d1d1f' }}>{t('calc.note')}:</strong> {t('calc.note_text')}
           </div>
         </div>
       )}
@@ -271,8 +272,8 @@ export default function CalculatorPage() {
       {!result && !loading && (
         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#8e8e93' }}>
           <div style={{ fontSize: '40px', marginBottom: '16px' }}>🧮</div>
-          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '6px' }}>Pan-EU Kar Hesabı</div>
-          <div style={{ fontSize: '13px' }}>Amazon ve Alibaba fiyatını girerek 9 pazarı karşılaştır</div>
+          <div style={{ fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '6px' }}>{t('calc.empty_title')}</div>
+          <div style={{ fontSize: '13px' }}>{t('calc.empty_desc')}</div>
         </div>
       )}
     </div>
