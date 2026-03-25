@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { scanUnavailable, searchProducts } from '../lib/api'
 import axios from 'axios'
+import CategoryDrillDown from '../components/CategoryDrillDown'
 
 const API = import.meta.env.VITE_API_URL || ''
-
-const CATEGORIES = [
-  'Home & Kitchen', 'Sports & Outdoors', 'Electronics', 'Baby',
-  'Pet Supplies', 'Patio, Lawn & Garden', 'Health & Household',
-  'Arts, Crafts & Sewing', 'Automotive', 'Clothing, Shoes & Jewelry',
-  'Toys & Games', 'Tools & Home Improvement', 'Grocery & Gourmet Food',
-  'Office Products', 'Musical Instruments', 'Industrial & Scientific',
-]
 
 export default function UnavailablePage() {
   const [tab, setTab] = useState('asin')
@@ -306,32 +299,20 @@ export default function UnavailablePage() {
       {/* Sekme 3: Kategori */}
       {tab === 'category' && (
         <div>
-          <div style={{ background: 'white', borderRadius: '11px', border: '0.5px solid #e5e5ea', padding: '20px', marginBottom: '14px' }}>
-            <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', marginBottom: '12px' }}>
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', marginBottom: '10px' }}>
               Kategori seç — o kategorideki stokta olmayan ürünleri listeler
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-              {CATEGORIES.map(cat => (
-                <div key={cat} onClick={() => setSelectedCat(cat)} style={{
-                  fontSize: '12px', padding: '5px 12px', borderRadius: '20px',
-                  border: `0.5px solid ${selectedCat === cat ? '#1d1d1f' : '#d2d2d7'}`,
-                  background: selectedCat === cat ? '#1d1d1f' : 'white',
-                  color: selectedCat === cat ? 'white' : '#3c3c43',
-                  cursor: 'pointer', whiteSpace: 'nowrap'
-                }}>
-                  {cat}
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '12px', color: selectedCat ? '#0071e3' : '#8e8e93' }}>
-                {selectedCat ? `Seçili: ${selectedCat}` : 'Kategori seçilmedi'}
+            <CategoryDrillDown selected={selectedCat} onSelect={setSelectedCat} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#8e8e93' }}>
+                💡 En alt hiyerarşiye kadar kategori seçebilirsin. Rakip boşluklarını tespit etmek için idealdir.
               </div>
               <button onClick={handleCatScan} disabled={catLoading || !selectedCat} style={{
                 background: selectedCat ? '#0071e3' : '#d2d2d7', color: 'white', border: 'none',
                 padding: '9px 20px', borderRadius: '8px', fontSize: '13px',
                 fontWeight: '500', cursor: selectedCat ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: '8px'
+                display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', flexShrink: 0
               }}>
                 {catLoading ? (
                   <>
@@ -340,9 +321,6 @@ export default function UnavailablePage() {
                   </>
                 ) : '🔍 Tara'}
               </button>
-            </div>
-            <div style={{ fontSize: '12px', color: '#8e8e93', marginTop: '8px' }}>
-              💡 Seçilen kategoride Amazon'da stokta olmayan ürünler listelenir. Rakip boşluklarını tespit etmek için harika!
             </div>
           </div>
           {catResults && (
