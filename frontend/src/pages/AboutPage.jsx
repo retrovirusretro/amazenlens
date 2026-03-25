@@ -239,7 +239,7 @@ export default function AboutPage() {
             </thead>
             <tbody>
               {[
-                ['Fiyat', '$19/ay', '$97/ay', '$49/ay', '$49/ay'],
+                ['Fiyat', '$24/ay', '$97/ay', '$49/ay', '$49/ay'],
                 ['Niş Skoru (4 boyut)', '✅ 100pt', '⚠️ Sınırlı', '⚠️ Orta', '⚠️ 7/10'],
                 ['Love/Hate AI Analizi', '✅ Claude AI', '⚠️ Zayıf', '⚠️ Zayıf', '⚠️ Zayıf'],
                 ['Euro Flips Arbitraj', '✅', '❌', '❌', '❌'],

@@ -37,7 +37,7 @@ Türk kullanıcıya özel: Trendyol arbitrajı + Alibaba entegrasyonu + Türkçe
 ## 📁 Proje Yapısı
 
 ```
-C:\Users\Gökhan Ustaosmanoğlu\amazenlens\
+D:\amazenlens\
 ├── CLAUDE.md
 ├── .gitignore                    ← .env dahil ✅
 ├── backend/
@@ -93,12 +93,13 @@ C:\Users\Gökhan Ustaosmanoğlu\amazenlens\
 
 ```powershell
 # Backend
-cd "C:\Users\Gökhan Ustaosmanoğlu\amazenlens\backend"
+cd "D:\amazenlens\backend"
 venv\Scripts\activate
 py main.py
 
 # Frontend
-cd "C:\Users\Gökhan Ustaosmanoğlu\amazenlens\frontend"
+cd "D:\amazenlens\frontend"
+
 npm run dev
 
 # Stripe webhook test (ayrı terminal)
@@ -123,7 +124,8 @@ STRIPE_STARTER_PRICE_ID ✅
 STRIPE_PRO_PRICE_ID ✅
 STRIPE_AGENCY_PRICE_ID ✅
 FRONTEND_URL=http://localhost:5173 ✅
-KEEPA_API_KEY ❌ (alınacak, $20/ay)
+KEEPA_API_KEY ✅ (aktif, ~60 token/dk)
+SCRAPERAPI_KEY ✅ (5000 req/ay, reviews için)
 ```
 
 ---

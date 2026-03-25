@@ -190,7 +190,7 @@ export default function AuthPage() {
           {mode !== 'forgot' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
               <div style={{ flex: 1, height: '0.5px', background: '#e5e5ea' }}></div>
-              <span style={{ fontSize: '12px', color: '#aeaeb2' }}>{t('auth.or')} email ile</span>
+              <span style={{ fontSize: '12px', color: '#aeaeb2' }}>{t('auth.or_with_email')}</span>
               <div style={{ flex: 1, height: '0.5px', background: '#e5e5ea' }}></div>
             </div>
           )}

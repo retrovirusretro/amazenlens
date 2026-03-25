@@ -203,11 +203,11 @@ export default function Dashboard() {
           </div>
           <div style={{ padding: '8px 16px' }}>
             {[
-              { text: 'yoga mat araması — 48 sonuç', time: '2 dk önce', color: '#0071e3' },
-              { text: 'B07YX93GFC niş skoru — 82/100', time: '15 dk önce', color: '#34c759' },
-              { text: 'Alibaba tedarikçi — silikon spatula', time: '1 saat önce', color: '#ff9f0a' },
-              { text: '15 ASIN toplu analiz tamamlandı', time: '3 saat önce', color: '#af52de' },
-              { text: 'Trendyol arbitraj — yoga mat $8.91', time: 'Dün 22:14', color: '#0071e3' },
+              { text: t('dashboard_activity.act1'), time: t('dashboard_activity.time1'), color: '#0071e3' },
+              { text: t('dashboard_activity.act2'), time: t('dashboard_activity.time2'), color: '#34c759' },
+              { text: t('dashboard_activity.act3'), time: t('dashboard_activity.time3'), color: '#ff9f0a' },
+              { text: t('dashboard_activity.act4'), time: t('dashboard_activity.time4'), color: '#af52de' },
+              { text: t('dashboard_activity.act5'), time: t('dashboard_activity.time5'), color: '#0071e3' },
             ].map((a, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 0', borderBottom: i < 4 ? '0.5px solid #f5f5f7' : 'none' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: a.color, flexShrink: 0, marginTop: '4px' }}></div>

@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from services.easyparser import search_products, get_product, check_availability, get_easyparser_stats
 from services.niche_calculator import calculate_niche_score, calculate_niche_score_with_keepa
 from typing import List
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import random
+
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/api/amazon", tags=["Amazon"])
 
@@ -15,7 +19,14 @@ QUICK_PICKS_KEYWORDS = [
 
 @router.get("/search")
 async def search(keyword: str = Query(...), page: int = Query(1)):
-    return await search_products(keyword, page)
+    result = await search_products(keyword, page)
+    for product in result.get("results", []):
+        try:
+            niche = calculate_niche_score(product)
+            product["niche_score"] = niche.get("total_score", 0)
+        except Exception:
+            product["niche_score"] = 0
+    return result
 
 @router.get("/product/{asin}")
 async def product_detail(asin: str):
@@ -37,7 +48,8 @@ async def unavailable_scanner(asins: List[str]):
             "available_count": len(available), "unavailable": unavailable, "available": available}
 
 @router.get("/niche-score/{asin}")
-async def niche_score(asin: str, use_keepa: bool = Query(True)):
+@limiter.limit("10/minute")
+async def niche_score(request: Request, asin: str, use_keepa: bool = Query(True)):
     """
     use_keepa=true  → Gerçek BSR geçmişi + Gini + RVI (1 Keepa token)
     use_keepa=false → Hızlı, token harcamaz

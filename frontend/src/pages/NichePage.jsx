@@ -293,12 +293,12 @@ export default function NichePage() {
               {!nicheData?.keepa?.enhanced && (
                 <button onClick={handleKeepaEnhance} disabled={keepaLoading}
                   style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '8px', border: '0.5px solid #ff9f0a', background: keepaLoading ? '#fff4e0' : 'white', color: '#b45309', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {keepaLoading ? '⏳' : '🔑'} {keepaLoading ? 'Yükleniyor...' : 'Keepa ile Güçlendir'}
+                  {keepaLoading ? '⏳' : '🔑'} {keepaLoading ? t('niche.keepa_loading') : t('niche.keepa_enhance')}
                 </button>
               )}
               {nicheData?.keepa?.enhanced && (
                 <span style={{ fontSize: '11px', padding: '6px 10px', borderRadius: '8px', background: '#e8f9ee', color: '#1a7f37', fontWeight: '500' }}>
-                  ✅ Keepa aktif
+                  {t('niche.keepa_active')}
                 </span>
               )}
             </div>
@@ -424,22 +424,22 @@ export default function NichePage() {
           {/* Kültürel Takvim */}
           {calendar?.best_listing_time && (
             <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>📅 En İyi Listeleme Zamanı</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>{t('niche.calendar_title')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 <div style={{ background: '#f0fdf4', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Önerilen Listeleme</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>{t('niche.calendar_recommended')}</div>
                   <div style={{ fontSize: '18px', fontWeight: '700', color: '#16a34a' }}>{calendar.best_listing_time.month_name}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{calendar.best_listing_time.for_event} için</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{calendar.best_listing_time.for_event} {t('niche.calendar_for_event')}</div>
                 </div>
                 <div style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Aciliyet</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>{t('niche.calendar_urgency')}</div>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f' }}>{calendar.best_listing_time.urgency}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>Boost: {calendar.best_listing_time.boost_score}/100</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{t('niche.calendar_boost')}: {calendar.best_listing_time.boost_score}/100</div>
                 </div>
               </div>
               {calendar.upcoming_events?.length > 0 && (
                 <div>
-                  <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px' }}>Yaklaşan Fırsatlar</div>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', marginBottom: '6px' }}>{t('niche.calendar_upcoming')}</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {calendar.upcoming_events.map((ev, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '12px' }}>

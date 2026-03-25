@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import axios from 'axios'
 import { searchProducts } from '../lib/api'
 import { track, Events } from '../lib/analytics'
+
+const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 const MARKETS = [
   { flag: '🇺🇸', label: 'amazon.com', value: 'US' },
@@ -89,27 +92,359 @@ const SortHeader = ({ label, sortKey, currentKey, currentDir, onClick }) => (
   </div>
 )
 
+const AMAZON_CATEGORIES = [
+  { label: 'Tüm Kategoriler', value: '', icon: '🌐' },
+  { label: 'Elektronik', value: 'Electronics', icon: '💻', children: [
+    { label: 'Bilgisayar & Aksesuarlar', value: 'Computers & Accessories', children: [
+      { label: 'Dizüstü Bilgisayar', value: 'Laptops' },
+      { label: 'Masaüstü Bilgisayar', value: 'Desktop Computers' },
+      { label: 'Monitör', value: 'Monitors' },
+      { label: 'Klavye & Fare', value: 'Keyboards & Mice' },
+      { label: 'Depolama', value: 'Data Storage' },
+      { label: 'Ağ Ekipmanı', value: 'Networking' },
+    ]},
+    { label: 'Kamera & Fotoğraf', value: 'Camera & Photo', children: [
+      { label: 'DSLR Kameralar', value: 'DSLR Cameras' },
+      { label: 'Aynasız Kameralar', value: 'Mirrorless Cameras' },
+      { label: 'Aksiyon Kameraları', value: 'Action Cameras' },
+      { label: 'Tripod & Aksesuar', value: 'Tripods & Accessories' },
+    ]},
+    { label: 'Cep Telefonu & Aksesuar', value: 'Cell Phones & Accessories', children: [
+      { label: 'Telefon Kılıfları', value: 'Cases & Covers' },
+      { label: 'Ekran Koruyucu', value: 'Screen Protectors' },
+      { label: 'Kablosuz Şarj', value: 'Wireless Charging' },
+      { label: 'Kulaklık', value: 'Headphones' },
+    ]},
+    { label: 'TV & Video', value: 'TV & Video' },
+    { label: 'Ses & Ev Sineması', value: 'Audio & Home Theater' },
+    { label: 'Araba Elektroniği', value: 'Car Electronics' },
+    { label: 'Giyilebilir Teknoloji', value: 'Wearable Technology', children: [
+      { label: 'Akıllı Saat', value: 'Smartwatches' },
+      { label: 'Fitness Takipçi', value: 'Fitness Trackers' },
+      { label: 'Kablosuz Kulaklık', value: 'Wireless Earbuds' },
+    ]},
+    { label: 'Video Oyunları', value: 'Video Games', children: [
+      { label: 'PS5 Oyunları', value: 'PlayStation 5 Games' },
+      { label: 'Xbox Oyunları', value: 'Xbox Games' },
+      { label: 'Nintendo Switch', value: 'Nintendo Switch Games' },
+      { label: 'Gaming Aksesuarları', value: 'Gaming Accessories' },
+    ]},
+    { label: 'Akıllı Ev', value: 'Smart Home', children: [
+      { label: 'Akıllı Hoparlör', value: 'Smart Speakers' },
+      { label: 'Akıllı Aydınlatma', value: 'Smart Lighting' },
+      { label: 'Güvenlik Kamerası', value: 'Security Cameras' },
+    ]},
+  ]},
+  { label: 'Ev & Mutfak', value: 'Home & Kitchen', icon: '🏠', children: [
+    { label: 'Mutfak & Yemek', value: 'Kitchen & Dining', children: [
+      { label: 'Pişirme Kapları', value: 'Cookware' },
+      { label: 'Bıçaklar & Kesiciler', value: 'Cutlery' },
+      { label: 'Küçük Mutfak Aletleri', value: 'Small Appliances' },
+      { label: 'Yemek Servisi', value: 'Dinnerware' },
+    ]},
+    { label: 'Yatak Odası', value: 'Bedding', children: [
+      { label: 'Nevresim Takımı', value: 'Comforters' },
+      { label: 'Yastık', value: 'Pillows' },
+      { label: 'Çarşaf', value: 'Sheets' },
+    ]},
+    { label: 'Banyo', value: 'Bath' },
+    { label: 'Mobilya', value: 'Furniture', children: [
+      { label: 'Oturma Odası', value: 'Living Room Furniture' },
+      { label: 'Yatak Odası Mobilyası', value: 'Bedroom Furniture' },
+      { label: 'Ofis Mobilyası', value: 'Office Furniture' },
+    ]},
+    { label: 'Depolama & Organizasyon', value: 'Storage & Organization' },
+    { label: 'Süpürge & Zemin', value: 'Vacuums & Floor Care' },
+    { label: 'Isıtma & Soğutma', value: 'Heating, Cooling & Air Quality' },
+    { label: 'Dekorasyon', value: 'Home Décor' },
+    { label: 'Aydınlatma', value: 'Lighting' },
+  ]},
+  { label: 'Giyim, Ayakkabı & Mücevher', value: 'Clothing, Shoes & Jewelry', icon: '👗', children: [
+    { label: 'Kadın', value: "Women's Clothing" },
+    { label: 'Erkek', value: "Men's Clothing" },
+    { label: 'Kız Çocuk', value: "Girls' Clothing" },
+    { label: 'Erkek Çocuk', value: "Boys' Clothing" },
+    { label: 'Bebek Giyim', value: 'Baby Clothing' },
+    { label: 'Saat', value: 'Watches' },
+    { label: 'Mücevher', value: 'Jewelry' },
+    { label: 'Bavul & Seyahat', value: 'Luggage & Travel Gear' },
+    { label: 'Güneş Gözlüğü', value: 'Sunglasses' },
+  ]},
+  { label: 'Spor & Outdoor', value: 'Sports & Outdoors', icon: '⚽', children: [
+    { label: 'Egzersiz & Fitness', value: 'Exercise & Fitness', children: [
+      { label: 'Ağırlık & Dambıl', value: 'Weight Training' },
+      { label: 'Kardiyo Ekipmanı', value: 'Cardio Training' },
+      { label: 'Yoga Ekipmanı', value: 'Yoga Equipment' },
+      { label: 'Direnç Bantları', value: 'Resistance Bands' },
+    ]},
+    { label: 'Yoga & Pilates', value: 'Yoga' },
+    { label: 'Outdoor Rekreasyon', value: 'Outdoor Recreation', children: [
+      { label: 'Kamp Ekipmanı', value: 'Camping Gear' },
+      { label: 'Yürüyüş', value: 'Hiking' },
+      { label: 'Tırmanma', value: 'Climbing' },
+    ]},
+    { label: 'Takım Sporları', value: 'Team Sports' },
+    { label: 'Golf', value: 'Golf' },
+    { label: 'Bisiklet', value: 'Cycling' },
+    { label: 'Yüzme', value: 'Swimming' },
+    { label: 'Kamp & Yürüyüş', value: 'Camping & Hiking' },
+    { label: 'Avcılık & Balıkçılık', value: 'Hunting & Fishing' },
+  ]},
+  { label: 'Sağlık & Ev', value: 'Health & Household', icon: '💊', children: [
+    { label: 'Sağlık Hizmetleri', value: 'Health Care' },
+    { label: 'Ev Temizlik', value: 'Household Supplies' },
+    { label: 'Kişisel Bakım', value: 'Personal Care' },
+    { label: 'Bebek & Çocuk Bakımı', value: 'Baby & Child Care' },
+    { label: 'Vitamin & Takviye', value: 'Vitamins & Dietary Supplements' },
+    { label: 'Spor Beslenmesi', value: 'Sports Nutrition' },
+    { label: 'Diyet & Kilo', value: 'Diet & Weight Management' },
+  ]},
+  { label: 'Güzellik & Kişisel Bakım', value: 'Beauty & Personal Care', icon: '💄', children: [
+    { label: 'Cilt Bakımı', value: 'Skin Care' },
+    { label: 'Saç Bakımı', value: 'Hair Care' },
+    { label: 'Makyaj', value: 'Makeup' },
+    { label: 'Parfüm', value: 'Fragrance' },
+    { label: 'Erkek Bakımı', value: "Men's Grooming" },
+    { label: 'Tırnak Bakımı', value: 'Nail Care' },
+    { label: 'Güneş Kremi', value: 'Sunscreen' },
+  ]},
+  { label: 'Oyuncak & Oyun', value: 'Toys & Games', icon: '🧸', children: [
+    { label: 'Aksiyon Figürleri', value: 'Action Figures' },
+    { label: 'Lego & Yapım Setleri', value: 'Building Toys' },
+    { label: 'Bebekler & Aksesuarlar', value: 'Dolls & Accessories' },
+    { label: 'Eğitim & Öğrenme', value: 'Learning & Education' },
+    { label: 'Bulmacalar', value: 'Puzzles' },
+    { label: 'Açık Hava Oyunları', value: 'Sports & Outdoor Play' },
+    { label: 'RC & Drone', value: 'Remote Control & Play Vehicles' },
+    { label: 'Masa Oyunları', value: 'Board Games' },
+  ]},
+  { label: 'Bebek', value: 'Baby', icon: '🍼', children: [
+    { label: 'Araba Koltukları', value: 'Car Seats' },
+    { label: 'Bebek Arabası', value: 'Strollers' },
+    { label: 'Beslenme', value: 'Feeding' },
+    { label: 'Bez & Bakım', value: 'Diapering' },
+    { label: 'Uyku', value: 'Baby Sleep' },
+    { label: 'Bebek Güvenliği', value: 'Baby Safety' },
+    { label: 'Bebek Monitörü', value: 'Baby Monitors' },
+  ]},
+  { label: 'Evcil Hayvan', value: 'Pet Supplies', icon: '🐾', children: [
+    { label: 'Köpek', value: 'Dog Supplies' },
+    { label: 'Kedi', value: 'Cat Supplies' },
+    { label: 'Kuş', value: 'Bird Supplies' },
+    { label: 'Balık & Akvaryum', value: 'Fish & Aquatic Pets' },
+    { label: 'Küçük Hayvanlar', value: 'Small Animals' },
+    { label: 'Sürüngenler', value: 'Reptiles' },
+  ]},
+  { label: 'Otomotiv', value: 'Automotive', icon: '🚗', children: [
+    { label: 'Araba Bakımı', value: 'Car Care' },
+    { label: 'Dış Aksesuarlar', value: 'Exterior Accessories' },
+    { label: 'İç Aksesuarlar', value: 'Interior Accessories' },
+    { label: 'Parçalar & Ekipman', value: 'Parts & Accessories' },
+    { label: 'Araç & Ekipman', value: 'Automotive Tools' },
+    { label: 'Motosiklet & ATV', value: 'Motorcycles & ATVs' },
+    { label: 'GPS & Navigasyon', value: 'GPS & Navigation' },
+  ]},
+  { label: 'Alet & Yapı', value: 'Tools & Home Improvement', icon: '🔧', children: [
+    { label: 'Elektrikli Aletler', value: 'Power Tools' },
+    { label: 'El Aletleri', value: 'Hand Tools' },
+    { label: 'Elektrik', value: 'Electrical' },
+    { label: 'Aydınlatma', value: 'Lighting & Ceiling Fans' },
+    { label: 'Sıhhi Tesisat', value: 'Plumbing' },
+    { label: 'Boya', value: 'Paint' },
+    { label: 'Güvenlik', value: 'Safety & Security' },
+  ]},
+  { label: 'Bahçe & Dış Mekan', value: 'Patio, Lawn & Garden', icon: '🌿', children: [
+    { label: 'Bahçe Aletleri', value: 'Gardening Tools' },
+    { label: 'Çim Bakımı', value: 'Lawn Mowers' },
+    { label: 'Bitki & Tohum', value: 'Plants & Seeds' },
+    { label: 'Açık Hava Mobilyası', value: 'Patio Furniture' },
+    { label: 'BBQ & Izgara', value: 'Grills & Outdoor Cooking' },
+    { label: 'Sulama', value: 'Watering Equipment' },
+  ]},
+  { label: 'Sanat & El Sanatları', value: 'Arts, Crafts & Sewing', icon: '🎨', children: [
+    { label: 'Boyama', value: 'Painting' },
+    { label: 'Çizim', value: 'Drawing' },
+    { label: 'Dikiş', value: 'Sewing' },
+    { label: 'Örgü & Tığ', value: 'Knitting & Crochet' },
+    { label: 'Takı Yapımı', value: 'Beading & Jewelry Making' },
+    { label: 'Scrapbooking', value: 'Scrapbooking' },
+  ]},
+  { label: 'Ofis Ürünleri', value: 'Office Products', icon: '📎', children: [
+    { label: 'Ofis Elektroniği', value: 'Office Electronics' },
+    { label: 'Ofis Mobilyası', value: 'Office Furniture' },
+    { label: 'Kırtasiye', value: 'Office & School Supplies' },
+    { label: 'Yazı Araçları', value: 'Writing Instruments' },
+    { label: 'Dosyalama', value: 'Filing & Storage' },
+  ]},
+  { label: 'Gıda & İçecek', value: 'Grocery & Gourmet Food', icon: '🍎', children: [
+    { label: 'Atıştırmalık', value: 'Snacks & Sweets' },
+    { label: 'İçecekler', value: 'Beverages' },
+    { label: 'Kahvaltılık', value: 'Breakfast Foods' },
+    { label: 'Organik', value: 'Natural & Organic' },
+    { label: 'Uluslararası Gıdalar', value: 'International Foods' },
+    { label: 'Kahve & Çay', value: 'Coffee & Tea' },
+  ]},
+  { label: 'Müzik Aletleri', value: 'Musical Instruments', icon: '🎸', children: [
+    { label: 'Gitarlar', value: 'Guitars' },
+    { label: 'Davul & Perküsyon', value: 'Drums & Percussion' },
+    { label: 'Klavye & MIDI', value: 'Keyboards & MIDI' },
+    { label: 'Kayıt Ekipmanı', value: 'Recording Equipment' },
+    { label: 'Nefesli Çalgılar', value: 'Wind & Woodwind' },
+  ]},
+  { label: 'Endüstriyel & Bilimsel', value: 'Industrial & Scientific', icon: '🔬', children: [
+    { label: 'Lab & Bilimsel', value: 'Lab & Scientific' },
+    { label: 'Endüstriyel Donanım', value: 'Industrial Hardware' },
+    { label: 'İş Güvenliği', value: 'Safety' },
+    { label: 'Temizlik', value: 'Janitorial' },
+    { label: 'Test & Ölçüm', value: 'Test & Measurement' },
+  ]},
+]
+
+// Dile göre kategori adı — TR: Türkçe label, diğerleri: İngilizce value
+const getCatLabel = (cat, lang) => lang === 'tr' ? cat.label : (cat.value || cat.label)
+
+function CategoryDrillDown({ selected, onSelect }) {
+  const { i18n } = useTranslation()
+  const lang = i18n.language?.split('-')[0] || 'tr'
+  const [hoveredL1, setHoveredL1] = useState(null)
+  const [hoveredL2, setHoveredL2] = useState(null)
+  const [path, setPath] = useState(() => {
+    if (!selected) return []
+    for (const l1 of AMAZON_CATEGORIES) {
+      if (l1.value === selected) return [l1.value]
+      for (const l2 of (l1.children || [])) {
+        if (l2.value === selected) return [l1.value, l2.value]
+        for (const l3 of (l2.children || [])) {
+          if (l3.value === selected) return [l1.value, l2.value, l3.value]
+        }
+      }
+    }
+    return []
+  })
+  const hoverTimerRef = useRef(null)
+
+  const clearHover = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => { setHoveredL1(null); setHoveredL2(null) }, 200)
+  }
+  const keepHover = () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current) }
+
+  const selectCat = (val, level) => {
+    if (level === 1) setPath(val ? [val] : [])
+    else if (level === 2) setPath([path[0] || hoveredL1, val])
+    else if (level === 3) setPath([path[0] || hoveredL1, path[1] || hoveredL2, val])
+    onSelect(val)
+    setHoveredL1(null)
+    setHoveredL2(null)
+  }
+
+  // Breadcrumb
+  const getBreadcrumb = () => {
+    const result = []
+    if (path[0]) { const n = AMAZON_CATEGORIES.find(c => c.value === path[0]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 1 }) }
+    if (path[1]) { const l1 = AMAZON_CATEGORIES.find(c => c.value === path[0]); const n = l1?.children?.find(c => c.value === path[1]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 2 }) }
+    if (path[2]) { const l1 = AMAZON_CATEGORIES.find(c => c.value === path[0]); const l2 = l1?.children?.find(c => c.value === path[1]); const n = l2?.children?.find(c => c.value === path[2]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 3 }) }
+    return result
+  }
+  const breadcrumb = getBreadcrumb()
+
+  const chipStyle = (active) => ({
+    display: 'inline-flex', alignItems: 'center', gap: '5px',
+    padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
+    fontSize: '12px', fontWeight: active ? '500' : '400', whiteSpace: 'nowrap',
+    background: active ? '#1d1d1f' : 'white',
+    color: active ? 'white' : '#3c3c43',
+    border: `0.5px solid ${active ? '#1d1d1f' : '#d2d2d7'}`,
+    transition: 'all 0.12s', flexShrink: 0,
+  })
+
+  return (
+    <div style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '12px 14px', marginBottom: '12px', overflow: 'hidden' }}>
+      {/* Breadcrumb */}
+      {breadcrumb.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <span onClick={() => { setPath([]); onSelect('') }}
+            style={{ fontSize: '11px', color: '#0071e3', cursor: 'pointer', fontWeight: '500' }}>
+            {lang === 'tr' ? 'Tüm Kategoriler' : 'All Categories'}
+          </span>
+          {breadcrumb.map((b, i) => (
+            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <svg width="10" height="10" fill="none" stroke="#aeaeb2" strokeWidth="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+              <span onClick={() => { const np = path.slice(0, b.pathIndex); setPath(np); onSelect(np[np.length-1] || '') }}
+                style={{ fontSize: '11px', color: i === breadcrumb.length-1 ? '#1d1d1f' : '#0071e3', fontWeight: i === breadcrumb.length-1 ? '600' : '500', cursor: i === breadcrumb.length-1 ? 'default' : 'pointer' }}>
+                {b.label}
+              </span>
+            </span>
+          ))}
+          <span onClick={() => { setPath([]); onSelect('') }}
+            style={{ marginLeft: 'auto', fontSize: '11px', color: '#8e8e93', cursor: 'pointer', padding: '2px 8px', borderRadius: '6px', background: '#f5f5f7' }}>
+            ✕
+          </span>
+        </div>
+      )}
+
+      {/* Level 1 — hover dropdown */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        {AMAZON_CATEGORIES.map(cat => {
+          const hasL2 = cat.children?.length > 0
+          const isActive = path[0] === cat.value
+          const isHovered = hoveredL1 === cat.value
+          return (
+            <div key={cat.value} style={{ position: 'relative', flexShrink: 0 }}
+              onMouseEnter={() => { keepHover(); setHoveredL1(cat.value); setHoveredL2(null) }}
+              onMouseLeave={clearHover}>
+              <div onClick={() => selectCat(cat.value, 1)} style={chipStyle(isActive)}>
+                {cat.icon && <span>{cat.icon}</span>}
+                <span>{getCatLabel(cat, lang)}</span>
+                {hasL2 && <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><polyline points="6 9 12 15 18 9"/></svg>}
+              </div>
+              {/* L2 Dropdown */}
+              {hasL2 && isHovered && (
+                <div onMouseEnter={keepHover} onMouseLeave={clearHover}
+                  style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 200, minWidth: '200px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
+                  {cat.children.map(l2 => {
+                    const hasL3 = l2.children?.length > 0
+                    const isL2Hovered = hoveredL2 === l2.value
+                    return (
+                      <div key={l2.value} style={{ position: 'relative' }}
+                        onMouseEnter={() => { keepHover(); setHoveredL2(l2.value) }}
+                        onMouseLeave={() => setHoveredL2(null)}>
+                        <div onClick={() => selectCat(l2.value, 2)}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '7px', cursor: 'pointer', fontSize: '12.5px', color: path[1] === l2.value ? '#0071e3' : '#1d1d1f', fontWeight: path[1] === l2.value ? '500' : '400', background: isL2Hovered ? '#f5f5f7' : 'transparent' }}>
+                          <span>{getCatLabel(l2, lang)}</span>
+                          {hasL3 && <svg width="10" height="10" fill="none" stroke="#aeaeb2" strokeWidth="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>}
+                        </div>
+                        {/* L3 Dropdown */}
+                        {hasL3 && isL2Hovered && (
+                          <div onMouseEnter={keepHover}
+                            style={{ position: 'absolute', top: 0, left: '100%', marginLeft: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 300, minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
+                            {l2.children.map(l3 => (
+                              <div key={l3.value} onClick={() => selectCat(l3.value, 3)}
+                                style={{ padding: '7px 10px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', color: path[2] === l3.value ? '#0071e3' : '#1d1d1f', fontWeight: path[2] === l3.value ? '500' : '400' }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f7'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                {getCatLabel(l3, lang)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function SearchPage() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
-
-  const CATEGORIES = [
-    { label: t('search.cat_all'), value: '' },
-    { label: '🏠 Home & Kitchen', value: 'Home & Kitchen' },
-    { label: '🏃 Sports', value: 'Sports & Outdoors' },
-    { label: '🔌 Electronics', value: 'Electronics' },
-    { label: '👶 Baby', value: 'Baby' },
-    { label: '🐾 Pet Supplies', value: 'Pet Supplies' },
-    { label: '🌿 Garden', value: 'Patio, Lawn & Garden' },
-    { label: '💊 Health', value: 'Health & Household' },
-    { label: '🎨 Arts & Crafts', value: 'Arts, Crafts & Sewing' },
-    { label: '🚗 Automotive', value: 'Automotive' },
-    { label: '👗 Clothing', value: 'Clothing, Shoes & Jewelry' },
-    { label: '🧸 Toys', value: 'Toys & Games' },
-    { label: '🔧 Tools', value: 'Tools & Home Improvement' },
-    { label: '🍕 Grocery', value: 'Grocery & Gourmet Food' },
-  ]
 
   const [keyword, setKeyword] = useState(searchParams.get('q') || '')
   const [selectedCat, setSelectedCat] = useState(searchParams.get('cat') || '')
@@ -123,6 +458,22 @@ function SearchPage() {
   const [sortDir, setSortDir] = useState('desc')
   const [filters, setFilters] = useState({ priceMin: '', priceMax: '', bsrMax: '', reviewsMax: '', ratingMin: '', revenueMin: '', fbaOnly: false, maxSellers: '' })
 
+  // Watchlist state (localStorage)
+  const [watchlist, setWatchlist] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('watchlist_asins') || '[]')) }
+    catch { return new Set() }
+  })
+  const [watchTooltip, setWatchTooltip] = useState(null) // asin of recently added
+  const tooltipTimerRef = useRef(null)
+
+  // Trend Radar
+  const [trendData, setTrendData] = useState(null)
+  const [trendLoading, setTrendLoading] = useState(false)
+
+  // AI Keyword Suggestions
+  const [aiSuggestions, setAiSuggestions] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
+
   const currentMarket = MARKETS.find(m => m.value === selectedMarket) || MARKETS[0]
 
   useEffect(() => {
@@ -130,17 +481,87 @@ function SearchPage() {
     if (q) { setKeyword(q); doSearch(q) }
   }, [])
 
+  const toggleWatchlist = (product) => {
+    const newSet = new Set(watchlist)
+    const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+    if (newSet.has(product.asin)) {
+      newSet.delete(product.asin)
+    } else {
+      newSet.add(product.asin)
+      // Show tooltip
+      if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current)
+      setWatchTooltip(product.asin)
+      tooltipTimerRef.current = setTimeout(() => setWatchTooltip(null), 1500)
+      // POST to backend (fire-and-forget)
+      if (user.email) {
+        axios.post(`${API}/api/amazon/watchlist`, {
+          user_email: user.email,
+          asin: product.asin,
+          title: product.title || '',
+          price: product.price || 0,
+          image: product.image || '',
+          niche_score: product.niche_score || 0,
+          bsr: product.bestseller_rank || 0,
+        }).catch(() => {})
+      }
+    }
+    localStorage.setItem('watchlist_asins', JSON.stringify([...newSet]))
+    setWatchlist(newSet)
+  }
+
+  const fetchTrend = async (term) => {
+    setTrendLoading(true)
+    setTrendData(null)
+    try {
+      const res = await axios.get(`${API}/api/trends/keyword`, { params: { keyword: term, timeframe: 'today+12-m' }, timeout: 6000 })
+      setTrendData(res.data)
+    } catch {
+      setTrendData(null)
+    } finally {
+      setTrendLoading(false)
+    }
+  }
+
+  const fetchAiSuggestions = async (term, resultList) => {
+    setAiLoading(true)
+    setAiSuggestions(null)
+    try {
+      const avgPrice = resultList.length
+        ? resultList.reduce((s, p) => s + (p.price || 0), 0) / resultList.length
+        : 0
+      const avgBsr = resultList.length
+        ? Math.round(resultList.reduce((s, p) => s + (p.bestseller_rank || getMockData(p.asin).bsr), 0) / resultList.length)
+        : 0
+      const res = await axios.post(`${API}/api/amazon/keyword-suggest`, {
+        keyword: term,
+        results_count: resultList.length,
+        avg_price: parseFloat(avgPrice.toFixed(2)),
+        avg_bsr: avgBsr,
+      }, { timeout: 15000 })
+      setAiSuggestions(res.data.suggestions || [])
+    } catch {
+      setAiSuggestions(null)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   const doSearch = async (q) => {
     const term = q || keyword
     if (!term.trim()) return
     setLoading(true)
     setError('')
+    setAiSuggestions(null)
+    setTrendData(null)
     try {
-      const res = await searchProducts(term)
+      const res = await searchProducts(term, 1, selectedMarket)
       const resultList = res.data.results || []
       setResults(resultList)
       setSearchParams({ q: term, cat: selectedCat, market: selectedMarket })
       track(Events.KEYWORD_SEARCH, { keyword: term, market: selectedMarket, results_count: resultList.length })
+      // Fire off async extras
+      fetchTrend(term)
+      if (resultList.length > 0) fetchAiSuggestions(term, resultList)
     } catch (err) {
       setError(t('search.error'))
     } finally {
@@ -189,6 +610,48 @@ function SearchPage() {
     }, 0)
   }, [filtered])
 
+  const marketSummary = useMemo(() => {
+    if (!filtered.length) return null
+    const prices = filtered.map(p => p.price || 0).filter(v => v > 0)
+    const bsrs = filtered.map(p => p.bestseller_rank || getMockData(p.asin).bsr)
+    const niches = filtered.map(p => p.niche_score || 0)
+    const sellers = filtered.map(p => p.sellers_count || getMockData(p.asin).sellers)
+    const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0
+    const avgBsr = bsrs.length ? Math.round(bsrs.reduce((a, b) => a + b, 0) / bsrs.length) : 0
+    const avgNiche = niches.length ? Math.round(niches.reduce((a, b) => a + b, 0) / niches.length) : 0
+    const avgSellers = sellers.length ? Math.round(sellers.reduce((a, b) => a + b, 0) / sellers.length) : 0
+    const bsrUnder5k = filtered.filter(p => (p.bestseller_rank || getMockData(p.asin).bsr) < 5000).length
+    const opportunityScore = filtered.length ? Math.round((bsrUnder5k / filtered.length) * 5) : 0
+    const competition = avgSellers <= 3 ? 'Düşük' : avgSellers <= 7 ? 'Orta' : 'Yüksek'
+    const competitionPct = Math.min(100, Math.round((avgSellers / 15) * 100))
+    return { avgPrice, avgBsr, avgNiche, avgSellers, opportunityScore, competition, competitionPct, bsrUnder5k }
+  }, [filtered])
+
+  // Seçili kategori label'ını bul
+  const selectedCatLabel = (() => {
+    for (const cat of AMAZON_CATEGORIES) {
+      if (cat.value === selectedCat) return cat.label
+      if (cat.children) {
+        const child = cat.children.find(c => c.value === selectedCat)
+        if (child) return child.label
+      }
+    }
+    return 'Tüm Kategoriler'
+  })()
+
+  // Trend direction from trendData
+  const trendInfo = (() => {
+    if (!trendData || !trendData.interest_over_time) return null
+    const vals = trendData.interest_over_time.map(d => d.value || 0)
+    if (vals.length < 6) return null
+    const half = Math.floor(vals.length / 2)
+    const recent = vals.slice(-3).reduce((a, b) => a + b, 0) / 3
+    const prev = vals.slice(half - 3, half).reduce((a, b) => a + b, 0) / 3
+    if (recent > prev * 1.1) return { label: 'Yükselen trend', icon: '📈', color: '#1a7f37', bg: '#e8f9ee' }
+    if (recent < prev * 0.9) return { label: 'Düşen trend', icon: '📉', color: '#c00', bg: '#fff1f0' }
+    return { label: 'Stabil', icon: '➡️', color: '#8e8e93', bg: '#f5f5f7' }
+  })()
+
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
@@ -215,7 +678,7 @@ function SearchPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <input type="text" value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && doSearch()}
@@ -230,15 +693,13 @@ function SearchPage() {
             {t('search.filter')} {activeFilterCount > 0 && `(${activeFilterCount})`}
           </button>
         </div>
-
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-          {CATEGORIES.map(cat => (
-            <div key={cat.value} onClick={() => setSelectedCat(cat.value)}
-              style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '20px', border: `0.5px solid ${selectedCat === cat.value ? '#1d1d1f' : '#d2d2d7'}`, background: selectedCat === cat.value ? '#1d1d1f' : 'white', color: selectedCat === cat.value ? 'white' : '#3c3c43', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {cat.label}
-            </div>
-          ))}
-        </div>
+        {selectedCat && (
+          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '11px', color: '#8e8e93' }}>Kategori:</span>
+            <span style={{ fontSize: '11px', fontWeight: '500', color: '#0071e3', background: '#e8f0fe', padding: '2px 10px', borderRadius: '10px' }}>{selectedCatLabel}</span>
+            <span onClick={() => setSelectedCat('')} style={{ fontSize: '11px', color: '#8e8e93', cursor: 'pointer', padding: '2px 6px', borderRadius: '6px', background: '#f5f5f7' }}>✕ Temizle</span>
+          </div>
+        )}
       </div>
 
       {/* Filtre Paneli */}
@@ -288,21 +749,86 @@ function SearchPage() {
         </div>
       )}
 
+      {/* Kategori Drill-Down */}
+      <CategoryDrillDown selected={selectedCat} onSelect={setSelectedCat} />
+
       {error && <p style={{ color: '#ff3b30', marginBottom: '12px', fontSize: '13px' }}>{error}</p>}
 
+      <div style={{ flex: 1, minWidth: 0 }}>
+
       {filtered.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
-          <div style={{ fontSize: '13px', color: '#8e8e93' }}>
-            {filtered.length} {t('search.products')} · {keyword && `"${keyword}"`}
-            {selectedCat && ` · ${selectedCat}`}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ fontSize: '11px', color: '#8e8e93' }}>{t('search.est_market')}</div>
-            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1a7f37', background: '#e8f9ee', padding: '4px 12px', borderRadius: '20px' }}>
-              🔥 ${totalMarketSize >= 1000000 ? `${(totalMarketSize / 1000000).toFixed(1)}M` : totalMarketSize >= 1000 ? `${(totalMarketSize / 1000).toFixed(0)}K` : totalMarketSize.toFixed(0)}/{t('search.per_month')}
+        <>
+          {/* Results info bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', padding: '0 4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ fontSize: '13px', color: '#8e8e93' }}>
+                {filtered.length} {t('search.products')} · {keyword && `"${keyword}"`}
+                {selectedCat && ` · ${selectedCat}`}
+              </div>
+              {trendInfo && (
+                <span style={{ fontSize: '11px', fontWeight: '500', color: trendInfo.color, background: trendInfo.bg, padding: '3px 9px', borderRadius: '12px' }}>
+                  {trendInfo.icon} {trendInfo.label}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ fontSize: '11px', color: '#8e8e93' }}>{t('search.est_market')}</div>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1a7f37', background: '#e8f9ee', padding: '4px 12px', borderRadius: '20px' }}>
+                🔥 ${totalMarketSize >= 1000000 ? `${(totalMarketSize / 1000000).toFixed(1)}M` : totalMarketSize >= 1000 ? `${(totalMarketSize / 1000).toFixed(0)}K` : totalMarketSize.toFixed(0)}/{t('search.per_month')}
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* Market Summary Card */}
+          {marketSummary && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '1.5px solid transparent', backgroundImage: 'linear-gradient(white,white), linear-gradient(90deg,#0071e3,#34c759)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box,border-box', padding: '16px 20px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d1d1f' }}>
+                  📊 Pazar Analizi
+                  {keyword && <span style={{ fontWeight: '400', color: '#8e8e93', marginLeft: '6px' }}>"{keyword}" · {filtered.length} ürün</span>}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '14px' }}>
+                {[
+                  { label: 'Ort. Fiyat', value: marketSummary.avgPrice ? `$${marketSummary.avgPrice.toFixed(1)}` : '-' },
+                  { label: 'Ort. BSR', value: marketSummary.avgBsr ? `#${marketSummary.avgBsr.toLocaleString()}` : '-' },
+                  { label: 'Ort. Niş', value: marketSummary.avgNiche ? `${marketSummary.avgNiche}/100` : '-' },
+                  { label: 'Toplam Pazar', value: totalMarketSize >= 1000000 ? `$${(totalMarketSize / 1000000).toFixed(1)}M/ay` : totalMarketSize >= 1000 ? `$${(totalMarketSize / 1000).toFixed(0)}K/ay` : '-' },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div style={{ fontSize: '10px', color: '#8e8e93', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>{item.label}</div>
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: '#1d1d1f' }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Competition bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', width: '70px', flexShrink: 0 }}>Rekabet:</div>
+                  <div style={{ flex: 1, height: '6px', background: '#f0f0f5', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: '3px', background: marketSummary.competition === 'Düşük' ? '#34c759' : marketSummary.competition === 'Orta' ? '#ff9f0a' : '#ff3b30', width: `${marketSummary.competitionPct}%`, transition: 'width 0.4s ease' }} />
+                  </div>
+                  <div style={{ fontSize: '11px', fontWeight: '500', color: marketSummary.competition === 'Düşük' ? '#1a7f37' : marketSummary.competition === 'Orta' ? '#b45309' : '#c00', whiteSpace: 'nowrap' }}>
+                    {marketSummary.competition} (ort. {marketSummary.avgSellers} satıcı)
+                  </div>
+                </div>
+                {/* Opportunity score */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ fontSize: '11px', color: '#8e8e93', width: '70px', flexShrink: 0 }}>Fırsat:</div>
+                  <div style={{ display: 'flex', gap: '3px' }}>
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} style={{ width: '12px', height: '12px', borderRadius: '50%', background: i <= marketSummary.opportunityScore ? '#0071e3' : '#e5e5ea' }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#8e8e93' }}>
+                    {marketSummary.opportunityScore >= 4 ? 'Mükemmel' : marketSummary.opportunityScore >= 3 ? 'İyi' : marketSummary.opportunityScore >= 2 ? 'Orta' : 'Düşük'}
+                    {marketSummary.bsrUnder5k > 0 && ` — BSR < 5K: ${marketSummary.bsrUnder5k} ürün`}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {loading && (
@@ -322,19 +848,61 @@ function SearchPage() {
 
       {!loading && filtered.length > 0 && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px', gap: '7px', padding: '0 16px 8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px 28px', gap: '7px', padding: '0 16px 8px' }}>
             <div></div>
             <div style={{ fontSize: '10px', color: '#aeaeb2', textTransform: 'uppercase', letterSpacing: '0.4px' }}>{t('search.col_product')}</div>
             <SortHeader label={t('search.col_price')} sortKey="price" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('price')} />
             <div style={{ fontSize: '10px', color: '#aeaeb2', textTransform: 'uppercase', letterSpacing: '0.4px', textAlign: 'center' }}>{t('search.col_trend')}</div>
             <SortHeader label="BSR" sortKey="bsr" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('bsr')} />
             <SortHeader label={t('search.col_reviews')} sortKey="reviews" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('reviews')} />
-            <SortHeader label="Est.Sales" sortKey="sales" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('sales')} />
-            <SortHeader label="🔥 Revenue" sortKey="revenue" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('revenue')} />
+            <SortHeader label={t('search.col_sales')} sortKey="sales" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('sales')} />
+            <SortHeader label={`🔥 ${t('search.col_revenue')}`} sortKey="revenue" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('revenue')} />
             <SortHeader label={t('search.col_sellers')} sortKey="sellers" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('sellers')} />
             <SortHeader label={t('search.col_rating')} sortKey="rating" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('rating')} />
             <SortHeader label={t('search.col_niche')} sortKey="niche" currentKey={sortKey} currentDir={sortDir} onClick={() => handleSort('niche')} />
+            <div></div>
           </div>
+
+          {/* AI Keyword Suggestions — above product list */}
+          {(aiLoading || (aiSuggestions && aiSuggestions.length > 0)) && (
+            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}>
+                💡 AI Öneri — {keyword && `"${keyword}"`} için alternatif keyword'ler
+              </div>
+              {aiLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#8e8e93', fontSize: '12px' }}>
+                  <div style={{ width: '14px', height: '14px', border: '2px solid #f0f0f5', borderTop: '2px solid #0071e3', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                  AI analiz ediyor...
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {aiSuggestions.map((s, i) => {
+                    const oColor = s.opportunity === 'high' ? '#1a7f37' : s.opportunity === 'medium' ? '#b45309' : '#8e8e93'
+                    const oBg = s.opportunity === 'high' ? '#e8f9ee' : s.opportunity === 'medium' ? '#fff4e0' : '#f5f5f7'
+                    const oIcon = s.opportunity === 'high' ? '🟢' : s.opportunity === 'medium' ? '🟡' : '🔴'
+                    const oLabel = s.opportunity === 'high' ? 'Yüksek fırsat' : s.opportunity === 'medium' ? 'Orta fırsat' : 'Düşük fırsat'
+                    return (
+                      <div key={i}
+                        onClick={() => { setKeyword(s.keyword); doSearch(s.keyword) }}
+                        style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', padding: '10px 12px', borderRadius: '8px', background: '#f9f9fb', cursor: 'pointer', transition: 'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f0f0f8'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#f9f9fb'}
+                      >
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: '14px', flexShrink: 0 }}>{oIcon}</span>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: '500', color: '#1d1d1f', marginBottom: '2px' }}>{s.keyword}</div>
+                            <div style={{ fontSize: '11px', color: '#8e8e93' }}>{s.reason}</div>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '10px', fontWeight: '500', color: oColor, background: oBg, padding: '3px 9px', borderRadius: '10px', whiteSpace: 'nowrap', flexShrink: 0 }}>{oLabel}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {filtered.map((product) => {
@@ -349,10 +917,13 @@ function SearchPage() {
               const sellers = product.sellers_count || mock.sellers
               const fba = product.fba_status || (mock.fba ? 'FBA' : 'FBM')
 
+              const isWatched = watchlist.has(product.asin)
+              const showTip = watchTooltip === product.asin
+
               return (
                 <div key={product.asin}
                   onClick={() => { track(Events.PRODUCT_VIEW, { asin: product.asin, title: product.title, price: product.price }); navigate(`/app/product/${product.asin}`) }}
-                  style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '11px 16px', cursor: 'pointer', transition: 'border-color 0.15s', display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px', gap: '7px', alignItems: 'center' }}
+                  style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '11px 16px', cursor: 'pointer', transition: 'border-color 0.15s', display: 'grid', gridTemplateColumns: '46px 1fr 58px 65px 75px 72px 62px 78px 75px 50px 36px 28px', gap: '7px', alignItems: 'center', position: 'relative' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = '#0071e3'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e5ea'}
                 >
@@ -389,12 +960,29 @@ function SearchPage() {
                       {score || '-'}
                     </div>
                   </div>
+                  {/* Watchlist button */}
+                  <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); toggleWatchlist(product) }}
+                      style={{ cursor: 'pointer', fontSize: '16px', color: isWatched ? '#0071e3' : '#d2d2d7', transition: 'color 0.15s', lineHeight: 1 }}
+                      title={isWatched ? 'Listeden çıkar' : 'Watchlist\'e ekle'}
+                    >
+                      {isWatched ? '🔖' : '🏷️'}
+                    </div>
+                    {showTip && (
+                      <div style={{ position: 'absolute', bottom: '24px', right: 0, background: '#1d1d1f', color: 'white', fontSize: '10px', padding: '4px 8px', borderRadius: '6px', whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none' }}>
+                        Eklendi ✓
+                      </div>
+                    )}
+                  </div>
                 </div>
               )
             })}
           </div>
         </>
       )}
+
+      </div>{/* sonuç alanı */}
     </div>
   )
 }

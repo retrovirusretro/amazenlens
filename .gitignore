@@ -56,3 +56,4 @@ config/secrets*
 *.log
 logs/
 npm-debug.log*
+.vercel
