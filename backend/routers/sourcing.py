@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query
-from services.alibaba import search_suppliers, calculate_profit, calculate_pan_eu, search_dhgate, search_turkish_suppliers
+from fastapi import APIRouter, Query, HTTPException
+from services.alibaba import search_suppliers, calculate_profit, calculate_pan_eu, search_dhgate
+from services.turkish_suppliers import get_suppliers_by_keyword, search_trendyol_api
 from services.global_arbitrage import get_global_prices, AMAZON_MARKETS, VAT_RATES, calc_profit
 
 router = APIRouter(prefix="/api/sourcing", tags=["Sourcing"])
@@ -22,8 +23,20 @@ async def dhgate_search(
 async def turkish_suppliers(
     keyword: str = Query(..., description="Arama kelimesi")
 ):
-    """Türk tedarikçi arama — Made in Turkey, gümrüksüz AB teslimatı"""
-    return await search_turkish_suppliers(keyword)
+    """Türk tedarikçi ağı — Sahibinden + TurkishExporter + Trendyol pazar referansı"""
+    return await get_suppliers_by_keyword(keyword)
+
+
+@router.get("/trendyol")
+async def trendyol_market(
+    keyword: str = Query(..., description="Arama kelimesi"),
+    max_results: int = Query(10, description="Maksimum sonuç sayısı")
+):
+    """Trendyol pazar fiyatları — Playwright gerektirmez, doğrudan JSON API"""
+    result = await search_trendyol_api(keyword, max_results=max_results)
+    if result.get("error") and not result.get("results"):
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
 
 @router.get("/all")
 async def all_suppliers(
@@ -34,7 +47,7 @@ async def all_suppliers(
     alibaba, dhgate, turkish = await asyncio.gather(
         search_suppliers(keyword),
         search_dhgate(keyword),
-        search_turkish_suppliers(keyword)
+        get_suppliers_by_keyword(keyword)
     )
     return {
         "keyword": keyword,
