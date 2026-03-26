@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Helmet } from 'react-helmet-async'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import gsap from 'gsap'
 
 const SITE = 'https://amazenlens.com'
 const softwareSchema = {
@@ -34,6 +35,7 @@ export default function LandingPage() {
   const [scrollY, setScrollY] = useState(0)
   const [openFaq, setOpenFaq] = useState(null)
   const [activeVideo, setActiveVideo] = useState(0)
+  const heroRef = useRef(null)
 
   // Demo video ID'leri — YouTube video ID'lerini buraya girin
   const DEMO_VIDEOS = [
@@ -47,6 +49,18 @@ export default function LandingPage() {
     const handleScroll = () => setScrollY(window.scrollY)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!heroRef.current) return
+    const ctx = gsap.context(() => {
+      gsap.from('.hero-badge', { opacity: 0, y: 24, duration: 0.6, ease: 'power3.out' })
+      gsap.from('.hero-h1', { opacity: 0, y: 32, duration: 0.7, ease: 'power3.out', delay: 0.12 })
+      gsap.from('.hero-desc', { opacity: 0, y: 20, duration: 0.6, ease: 'power3.out', delay: 0.28 })
+      gsap.from('.hero-btns', { opacity: 0, y: 16, duration: 0.5, ease: 'power2.out', delay: 0.42 })
+      gsap.from('.hero-chip', { opacity: 0, y: 12, duration: 0.4, ease: 'power2.out', stagger: 0.07, delay: 0.55 })
+    }, heroRef)
+    return () => ctx.revert()
   }, [])
 
   const FEATURES = [
@@ -134,26 +148,26 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #701a75 100%)', minHeight: '90vh', display: 'flex', alignItems: 'center', padding: '80px 60px', position: 'relative', overflow: 'hidden' }}>
+      <div ref={heroRef} style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 70%, #701a75 100%)', minHeight: '90vh', display: 'flex', alignItems: 'center', padding: '80px 60px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
-        <div style={{ maxWidth: '560px', position: 'relative', zIndex: 1, animation: 'fadeUp 0.6s ease' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: '12px', fontWeight: '500', marginBottom: '28px', backdropFilter: 'blur(10px)' }}>
+        <div style={{ maxWidth: '560px', position: 'relative', zIndex: 1 }}>
+          <div className="hero-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '100px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: '12px', fontWeight: '500', marginBottom: '28px', backdropFilter: 'blur(10px)' }}>
             <div style={{ width: '6px', height: '6px', background: '#34d399', borderRadius: '50%', animation: 'glow 2s ease-in-out infinite' }}></div>
             {t('hero.badge')}
           </div>
 
-          <h1 style={{ fontSize: '68px', fontWeight: '700', lineHeight: '1', letterSpacing: '-2px', color: 'white', marginBottom: '20px' }}>
+          <h1 className="hero-h1" style={{ fontSize: '68px', fontWeight: '700', lineHeight: '1', letterSpacing: '-2px', color: 'white', marginBottom: '20px' }}>
             {t('hero.title_line1')}<br />
             <span style={{ background: 'linear-gradient(135deg, #a78bfa, #f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('hero.title_highlight')}</span><br />
             {t('hero.title_line3')}
           </h1>
 
-          <p style={{ fontSize: '17px', color: 'rgba(255,255,255,0.65)', lineHeight: '1.7', marginBottom: '36px', maxWidth: '480px' }}>
+          <p className="hero-desc" style={{ fontSize: '17px', color: 'rgba(255,255,255,0.65)', lineHeight: '1.7', marginBottom: '36px', maxWidth: '480px' }}>
             {t('hero.desc')}
           </p>
 
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '40px' }}>
+          <div className="hero-btns" style={{ display: 'flex', gap: '12px', marginBottom: '40px' }}>
             <button className="hero-btn" onClick={() => navigate('/auth')} style={{ background: 'white', color: '#09090b', border: 'none', padding: '14px 28px', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', fontFamily: 'inherit', transition: 'transform 0.2s' }}>
               {t('hero.cta_primary')}
             </button>
@@ -164,7 +178,7 @@ export default function LandingPage() {
 
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {['🎯 Niş Skoru AI', '💚 Love/Hate', '🇪🇺 Euro Flips', '🔑 API v1', '📦 Toplu Import'].map(chip => (
-              <div key={chip} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: '500' }}>
+              <div key={chip} className="hero-chip" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', fontSize: '12px', fontWeight: '500' }}>
                 {chip}
               </div>
             ))}

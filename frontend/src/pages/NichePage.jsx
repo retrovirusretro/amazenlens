@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
+import gsap from 'gsap'
 import { track, Events } from '../lib/analytics'
 
 const API = import.meta.env.VITE_API_URL || ''
@@ -29,6 +30,9 @@ export default function NichePage() {
   const [error, setError] = useState('')
   const [showMethodology, setShowMethodology] = useState(false)
   const [keepaLoading, setKeepaLoading] = useState(false)
+  const [displayScore, setDisplayScore] = useState(0)
+  const scoreRef = useRef(null)
+  const circleRef = useRef(null)
 
   const handleKeepaEnhance = async () => {
     if (!result?.asin) return
@@ -106,6 +110,29 @@ export default function NichePage() {
 
   const score = result?.niche_score?.total_score || result?.total_score || 0
   const nicheData = result?.niche_score || result || {}
+
+  useEffect(() => {
+    if (!score) { setDisplayScore(0); return }
+    const obj = { val: 0 }
+    const tween = gsap.to(obj, {
+      val: score,
+      duration: 1.4,
+      ease: 'power2.out',
+      onUpdate: () => setDisplayScore(Math.round(obj.val)),
+    })
+    // SVG daire dash animasyonu
+    if (circleRef.current) {
+      gsap.fromTo(circleRef.current,
+        { strokeDasharray: '0 314.2' },
+        { strokeDasharray: `${(score / 100) * 314.2} 314.2`, duration: 1.4, ease: 'power2.out' }
+      )
+    }
+    // Kart fade-in
+    if (scoreRef.current) {
+      gsap.from(scoreRef.current, { opacity: 0, scale: 0.92, duration: 0.5, ease: 'back.out(1.4)' })
+    }
+    return () => tween.kill()
+  }, [score])
   const dims = nicheData?.dimensions || {}
   const flags = nicheData?.flags || {}
   const unmet = nicheData?.unmet_demand || {}
@@ -271,7 +298,7 @@ export default function NichePage() {
       {result && (
         <div style={{ animation: 'fadeIn 0.3s ease', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '52px', height: '52px', borderRadius: '10px', background: SCORE_BG(score), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: SCORE_TEXT(score), flexShrink: 0 }}>{score}</div>
+            <div style={{ width: '52px', height: '52px', borderRadius: '10px', background: SCORE_BG(score), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: SCORE_TEXT(score), flexShrink: 0 }}>{displayScore}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '14px', fontWeight: '600', color: '#1d1d1f', lineHeight: '1.4', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {result.title || result.asin}
@@ -305,14 +332,14 @@ export default function NichePage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '12px' }}>
-            <div style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div ref={scoreRef} style={{ background: 'white', borderRadius: '12px', border: '0.5px solid #e5e5ea', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '14px' }}>
                 <svg viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)', width: '120px', height: '120px' }}>
                   <circle cx="60" cy="60" r="50" fill="none" stroke="#f0f0f5" strokeWidth="10" />
-                  <circle cx="60" cy="60" r="50" fill="none" stroke={SCORE_COLOR(score)} strokeWidth="10" strokeDasharray={`${(score / 100) * 314.2} 314.2`} strokeLinecap="round" />
+                  <circle ref={circleRef} cx="60" cy="60" r="50" fill="none" stroke={SCORE_COLOR(score)} strokeWidth="10" strokeDasharray={`${(score / 100) * 314.2} 314.2`} strokeLinecap="round" />
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#1d1d1f' }}>{score}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '700', color: '#1d1d1f' }}>{displayScore}</div>
                   <div style={{ fontSize: '11px', color: '#8e8e93' }}>/100</div>
                 </div>
               </div>
