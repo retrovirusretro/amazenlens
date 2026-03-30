@@ -3,7 +3,7 @@ import { scanUnavailable, searchProducts } from '../lib/api'
 import axios from 'axios'
 import CategoryDrillDown from '../components/CategoryDrillDown'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 export default function UnavailablePage() {
   const [tab, setTab] = useState('asin')

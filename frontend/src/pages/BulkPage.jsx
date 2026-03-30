@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 function BulkPage() {
   const { t } = useTranslation()

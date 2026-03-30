@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 const QUICK_SEARCHES = [
   'yoga mat', 'silikon mutfak seti', 'led masa lambası',

@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet-async'
 import axios from 'axios'
 import { supabase } from '../lib/api'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 const PLAN_META = {
   free:    { label: 'Free',    color: '#8e8e93', bg: '#f5f5f7', searches: 5 },

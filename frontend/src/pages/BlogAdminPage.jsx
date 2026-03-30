@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 const CATEGORIES = ['Başlangıç', 'Ürün Araştırması', 'Arbitraj', 'Tedarik', 'Finansal', 'Araç & Teknoloji']
 
