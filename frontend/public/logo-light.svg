@@ -1,0 +1,14 @@
+<svg viewBox="0 0 320 60" width="320" height="60" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="60" fill="#F5FDFB" rx="0"/>
+  <path d="M 3 30 C 3 8 61 8 61 30 C 61 52 3 52 3 30 Z" fill="none" stroke="#0D1A2D" stroke-width="1.8"/>
+  <circle cx="32" cy="30" r="14" fill="none" stroke="#0D1A2D" stroke-width="1.2"/>
+  <line x1="18" y1="30" x2="46" y2="30" stroke="#0D1A2D" stroke-width="0.9" opacity="0.3"/>
+  <line x1="32" y1="16" x2="32" y2="44" stroke="#0D1A2D" stroke-width="0.9" opacity="0.3"/>
+  <path d="M19,23 L19,17 L25,17" fill="none" stroke="#0D1A2D" stroke-width="1" stroke-linecap="round" opacity="0.22"/>
+  <path d="M45,23 L45,17 L39,17" fill="none" stroke="#0D1A2D" stroke-width="1" stroke-linecap="round" opacity="0.22"/>
+  <path d="M19,37 L19,43 L25,43" fill="none" stroke="#0D1A2D" stroke-width="1" stroke-linecap="round" opacity="0.22"/>
+  <path d="M45,37 L45,43 L39,43" fill="none" stroke="#0D1A2D" stroke-width="1" stroke-linecap="round" opacity="0.22"/>
+  <circle cx="32" cy="30" r="4.5" fill="#0EC9A2"/>
+  <text x="76" y="37" font-family="'Syne', 'DM Sans', sans-serif" font-size="28" font-weight="300" fill="#0D1A2D" letter-spacing="-0.5">Amazen</text>
+  <text x="196" y="37" font-family="'Syne', 'DM Sans', sans-serif" font-size="28" font-weight="700" fill="#0EC9A2" letter-spacing="-0.5">Lens</text>
+</svg>

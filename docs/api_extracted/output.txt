@@ -1,0 +1,622 @@
+=== AmazenLens_API_Strateji_Fiyatlandirma.docx ===
+AMAZENLENS  ·  API MONETİZASYON STRATEJİSİ
+AmazenLens API
+Gelir Stratejisi ve
+Fiyatlandırma Planı
+Algoritmalarınızı ve veri altyapınızı B2B gelir koluna dönüştürmek için kapsamlı strateji rehberi.
+Mart 2026  ·  Gizli — Dahili Kullanım
+Neden API Satmak SaaS'tan Daha Büyük Olabilir?
+AmazenLens'in şu an bir SaaS platformu olarak çalışıyor. Kullanıcılar aylık plan alıyor, arayüzü kullanıyor ve çıkıyor. Bu model işe yarıyor — ama gelir tavanı var.
+API monetizasyonu farklı bir oyun. Burada müşteriniz artık bireysel satıcı değil — Türkiye'deki bir e-ticaret ajansı, Almanya'daki bir SaaS startup'ı veya Japonya'da bir toptan satış platformu. Tek bir B2B API müşterisi, yüzlerce bireysel SaaS müşterisinin getirisini aşabilir.
+Stripe, Twilio ve SendGrid'in ortak noktası nedir? Hepsi bir servisi önce kendi ürünlerine entegre etti, sonra o servisi API olarak sattı. AmazenLens'in algoritmaları aynı potansiyele sahip.
+Rakamlarla somutlaştıralım: AmazenLens'in Niş Skoru algoritması bir e-ticaret ajansının 200 müşterisine hizmet vermek için API aracılığıyla sorgu yapabilir. Bu ajans aylık $300 öder. 10 böyle ajans: $3.000/ay — bu rakama SaaS tarafında ulaşmak çok daha zordur.
+1. Satılabilecek API'ler: Envanter
+AmazenLens'in şu an sahip olduğu algoritmalar ve veriler doğrudan API'ye dönüştürülebilir. Her biri için pazar potansiyeli, hedef müşteri profili ve fiyatlandırma yaklaşımı aşağıda incelenmiştir.
+API #1 — Niş Skoru (Niche Intelligence API)
+Özellik
+Detay
+Endpoint
+/v1/niche/score
+Input
+ASIN listesi veya keyword + marketplace
+Output
+0-100 skor, 4 alt metrik, karar önerisi, rakip analizi
+Veri Kaynağı
+Easyparser + Keepa + hesaplama motoru
+Yanıt Süresi
+< 3 saniye (önbellekli)
+Benzersiz Değer
+BSR→satış tahmini + Gini katsayısı + Review Velocity Index
+Bu API'yi kim satın alır?
+Dropshipping araçları (AutoDS, Zik Analytics benzerleri) — ürün seçim skoru olarak
+Amazon danışmanlık ajansları — müşteri raporları için toplu niş analizi
+Wholesale/toptan platform yazılımları — kategori analizi
+Yatırımcılar ve M&A firmaları — Amazon satıcısı değerleme
+ERP ve muhasebe yazılımları — stok kararı desteği
+Pazar Potansiyeli
+Helium 10'un sadece Chrome eklentisi 500.000+ kullanıcıya sahip. Bu kullanıcıların %1'ine API erişimi satmak bile yılda milyonluk bir pazar. AmazenLens algoritması farklılaştırıcı: Gini katsayısı + IEEE onaylı BSR formülü rakiplerde yok.
+API #2 — Keyword Intelligence API
+Özellik
+Detay
+Endpoint
+/v1/keyword/analyze, /v1/keyword/expand, /v1/keyword/intent
+Input
+Seed keyword + marketplace + dil
+Output
+Hacim skoru, buyer intent, long-tail listesi, IQ skoru, COSMO uyum skoru
+Benzersiz Değer
+Amazon autocomplete + Gemini CoT buyer intent + COSMO anlam analizi
+Dil Desteği
+EN, TR, DE, FR (Faz 1) — JP, KO, RU (Faz 2)
+Bu API'yi kim satın alır?
+PPC yönetim araçları — kampanya keyword keşfi
+SEO ajansları — Amazon SEO kolu için
+Listing optimizasyon SaaS'ları — keyword önerisi motoru
+İçerik ajansları — ürün açıklaması yazan firmalar
+Amazon reklam yazılımları — negative keyword filtreleme
+API #3 — Review Intelligence API (ABSA)
+Özellik
+Detay
+Endpoint
+/v1/review/sentiment, /v1/review/absa, /v1/review/helpfulness
+Input
+Review metni listesi (veya ASIN) + dil
+Output
+5 boyut skoru, top kritik yorumlar, pain point özeti, trend analizi
+Benzersiz Değer
+Springer AI Review 2024 metodolojisi · 100+ dil · Boyut bazlı analiz
+Kullanım Hacmi
+ASIN başına 500 yorum → ~2 saniye
+Bu API'yi kim satın alır?
+Marka izleme platformları (brand monitoring SaaS)
+Müşteri deneyimi araçları (CX platformları)
+E-ticaret danışmanlık firmaları — rekabet analizi
+Perakende zincirlerinin dijital ekipleri
+Ürün geliştirme ajansları — pazar araştırması
+Rakip Avantajı
+Mevcut sentiment API'leri (Google NLP, AWS Comprehend) genel sentiment veriyor. AmazenLens'in ABSA API'si Amazon'a özgü, 5 boyutlu, Türkçe dahil çok dilli. Bu niş, kurumsal müşteriler için yüksek değerli.
+API #4 — Product Potential API (Cold-Start)
+Özellik
+Detay
+Endpoint
+/v1/product/potential
+Input
+Ürün görseli URL + fiyat + kategori + ağırlık (isteğe bağlı: Alibaba fiyatı)
+Output
+0-100 potansiyel skoru, marj tahmini, lojistik skoru, karar
+Benzersiz Değer
+BSR geçmişi olmadan yeni ürün tahmini · EfficientNet + CatBoost
+Bu API'yi kim satın alır?
+Dropship araçları — tedarikçiden ürün seçim kararı
+Tedarikçi platformları — Alibaba/DHgate ürün puanlama
+Wholesale yazılımları — stok kararı desteği
+Yatırım fonları — Amazon varlık değerleme
+API #5 — Demand Forecast API
+Özellik
+Detay
+Endpoint
+/v1/demand/forecast
+Input
+ASIN veya keyword + marketplace + horizon (gün sayısı)
+Output
+90 günlük tahmin, mevsimsellik, trend yönü, güven aralığı
+Veri Kaynağı
+Keepa BSR geçmişi + Google Trends + NeuralProphet
+Bu API'yi kim satın alır?
+Depo ve lojistik yazılımları — stok planlama
+Amazon reklam araçları — sezonsal kampanya zamanlaması
+Muhasebe ve ERP entegrasyonları — nakit akışı tahmini
+2. Üç Gelir Modeli: Hangisi Senin İçin?
+API monetizasyonunda üç temel yaklaşım var. Bunların hepsini aynı anda uygulayabilirsin — farklı müşteri tipleri için farklı modeller.
+Model A: Usage-Based (Tüketim Bazlı)
+Her API çağrısı için ücretlendirme. Küçük geliştiriciler ve startup'lar için giriş bariyeri düşük. RapidAPI gibi platformlarda listelenmesi kolay.
+API
+Ücretsiz Tier
+Paid Birim Fiyat
+Notlar
+Niş Skoru
+100 sorgu/ay
+$0.05/sorgu
+Tek ASIN skoru
+Keyword Analizi
+500 sorgu/ay
+$0.02/sorgu
+Tek keyword analizi
+Review ABSA
+50 ASIN/ay
+$0.10/ASIN
+500 yoruma kadar/ASIN
+Product Potential
+100 sorgu/ay
+$0.03/sorgu
+Görsel + fiyat input
+Demand Forecast
+20 sorgu/ay
+$0.25/sorgu
+90 günlük tahmin
+Model B: Tier Abonelik
+Aylık sabit ücret, belirlenen kota dahilinde sınırsız kullanım hissi. Ajanslar ve kurumsal müşteriler için öngörülebilir maliyet sağlar.
+Plan
+Aylık Fiyat
+Aylık Kota
+Hedef Müşteri
+Developer
+$49/ay
+5.000 sorgu (tüm API'ler)
+Bireysel geliştiriciler, MVP'ler
+Startup
+$149/ay
+25.000 sorgu
+Küçük SaaS'lar, ajanslar
+Growth
+$399/ay
+100.000 sorgu
+Büyüyen SaaS'lar, orta ajanslar
+Business
+$999/ay
+500.000 sorgu
+Kurumsal müşteriler, büyük ajanslar
+Enterprise
+Özel fiyat
+Sınırsız
+White-label + SLA garantisi
+Önerilen Başlangıç
+İlk 3 ayda usage-based modelle başla. Gerçek kullanım verilerini gör. Hangi API'nin en çok sorgu aldığını ölç. Sonra o verilere göre tier fiyatlarını optimize et. Fiyatlamayı tahmin etme — ölç.
+Model C: White-Label ve OEM
+Bu model en yüksek geliri getirir ama en az müşteriyle çalışırsın. Bir şirket AmazenLens algoritmalarını kendi markası altında müşterilerine sunar.
+Senaryo
+Örnek
+Aylık Gelir Hedefi
+SaaS White-Label
+Bir dropship aracı niş skorunu 'Powered by AmazenLens' ile sunar
+$500 – $2.000/ay
+Ajans OEM
+Bir Amazon ajansı müşteri raporlarını otomatik üretmek için kullanır
+$300 – $1.500/ay
+Platform Entegrasyon
+Bir ERP sistemi stok kararına niş skor entegre eder
+$1.000 – $5.000/ay
+Veri Lisansı
+Büyük bir firma yıllık sözleşmeyle veri akışı alır
+$10.000 – $50.000/yıl
+3. Nerede Satacaksın? Platform Stratejisi
+Kanal 1: RapidAPI — En Hızlı Lansman
+RapidAPI, dünyada 4 milyonun üzerinde geliştiriciye ulaşan en büyük API pazaryeridir. Kendi müşteri bulma yükünü üstüne almadan API'lerini listeleyebilirsin.
+Kurulum süresi: 1-2 gün
+Freemium model için ideal
+Ödeme entegrasyonu hazır
+Discovery kanalı olarak kullan — traffic getiriyor
+Kanal 2: Kendi Developer Portal'ın
+developers.amazenlens.com — Uzun vadede en değerli kanal. API anahtarı yönetimi, kullanım istatistikleri, sandbox ortamı, Swagger dokümantasyonu.
+Tier B ve C müşterileri buradan onboard edilir
+Stripe metered billing entegrasyonu
+Supabase'de api_keys ve usage_logs tabloları
+FastAPI'deki mevcut backend üzerine 2-3 günde kurulabilir
+Kanal 3: Doğrudan Satış (B2B Outreach)
+White-label ve OEM anlaşmalar için en etkili yol doğrudan ulaşmak. Hedef şirket listesi:
+AutoDS, Zik Analytics, Salehoo gibi dropshipping araçları
+Jungle Scout, Helium 10 gibi araçların API'si olmayan özellikleri için
+E-ticaret ajansları (Türkiye, Almanya, UK merkezli)
+Amazon lojistik yazılımları (ERP, WMS araçları)
+LinkedIn Sales Navigator ile 50 hedef şirket belirle. 'Amazon satıcı araçları geliştiriyor musunuz? ABSA API'mizi entegre ederek rakibinizden farklılaşabilirsiniz.' mesajı — dönüşüm oranı B2C outreach'ten 10 kat yüksek.
+4. Gelir Projeksiyonu: İlk 12 Ay
+Dönem
+SaaS Geliri
+API Geliri
+Toplam
+Notlar
+Ay 1-3
+$500 – $1.500
+$0 – $200
+$500 – $1.700
+API altyapı kurulum
+Ay 4-6
+$1.500 – $3.000
+$200 – $800
+$1.700 – $3.800
+RapidAPI lansmanı
+Ay 7-9
+$3.000 – $5.000
+$800 – $2.000
+$3.800 – $7.000
+İlk B2B anlaşmaları
+Ay 10-12
+$5.000 – $8.000
+$2.000 – $5.000
+$7.000 – $13.000
+White-label büyümesi
+Bu tahminler tutucu senaryoyu yansıtıyor. API tarafında tek bir kurumsal müşteri (aylık $1.000+) tüm tabloyu değiştirir.
+TÜBİTAK BiGG 1512 Bağlantısı
+API monetizasyonu, TÜBİTAK başvurusunda 'ölçeklenebilir gelir modeli' ve 'B2B pazar potansiyeli' kanıtı olarak kullanılabilir. Özellikle çok dilli destek ve akademik temel, uluslararası rekabet edebilirlik açısından değerli argümanlar.
+5. Teknik Altyapı: Ne Eksik?
+FastAPI backend, Supabase, Stripe — bunlar zaten mevcut. API monetizasyonu için eksik olan parçalar:
+Eksik Parça
+Açıklama
+Kurulum Süresi
+API Key Sistemi
+Her müşteriye unique key, Supabase'de api_keys tablosu
+1 gün
+Rate Limiting
+slowapi ile key bazlı limit (zaten kurulu — genişletme yeterli)
+4 saat
+Usage Tracking
+Her API çağrısını logla: key, endpoint, timestamp, token sayısı
+1 gün
+Stripe Metered Billing
+Kullanım bazlı faturalama — Stripe metered subscriptions
+1 gün
+Developer Portal
+Swagger UI + API key panel + kullanım istatistikleri
+2-3 gün
+Sandbox Ortamı
+Test API key'leri, mock data, limit olmadan deneme
+1 gün
+Toplam kurulum: 1 hafta. FastAPI + Supabase + Stripe altyapısı zaten hazır olduğu için bu parçalar eklenti niteliğinde.
+Sonuç
+AmazenLens'in algoritmaları yalnızca kendi kullanıcıları için değil, tüm e-ticaret ekosistemi için değer üretiyor. API monetizasyonu bu değeri farklı segmentlere satmanın en ölçeklenebilir yolu. Tek bir white-label anlaşması, onlarca bireysel SaaS aboneliğinin gelirine denk gelebilir.
+© 2026 AmazenLens  ·  API Gelir Stratejisi  ·  Gizli — Dahili Kullanım
+
+=== AmazenLens_API_Teknik_Dokumantasyon.docx ===
+AMAZENLENS DEVELOPER API  ·  v1.0
+AmazenLens
+Developer API
+Dokümantasyonu
+API referansı, kimlik doğrulama, endpoint açıklamaları, istek/yanıt örnekleri ve hata kodları.
+Mart 2026  ·  REST API  ·  JSON  ·  developers.amazenlens.com
+Genel Bakış
+AmazenLens API, Amazon satıcı araştırma altyapısına programatik erişim sağlar. REST mimarisine sahip, JSON formatında yanıt verir ve standart HTTP durum kodlarını kullanır.
+Bilgi
+Değer
+Base URL
+https://api.amazenlens.com/v1
+Format
+JSON (Content-Type: application/json)
+Kimlik Doğrulama
+API Key (Bearer Token)
+Rate Limit
+Plan bazlı — yanıt headerlarında gösterilir
+Yanıt Dili
+İngilizce (error mesajları), veri dili parametreye göre
+Versiyon
+v1 — geriye dönük uyumluluk garantisi
+Kimlik Doğrulama
+Tüm API istekleri bir API anahtarı gerektirir. Anahtarı developers.amazenlens.com adresinden alabilirsiniz. Her istek için Authorization header'ında Bearer token olarak gönderin.
+# Her istekte bu header gereklidir:
+Authorization: Bearer al_live_xxxxxxxxxxxxxxxxxxxxxxxx
+# Python örneği:
+import httpx
+headers = {
+"Authorization": "Bearer al_live_xxxxxxxxxxxxxxxxxxxxxxxx",
+"Content-Type": "application/json"
+}
+# cURL örneği:
+curl -H "Authorization: Bearer al_live_xxx" \
+https://api.amazenlens.com/v1/niche/score
+API Key Güvenliği
+API anahtarınızı kaynak kodunuza gömmeyin. .env dosyasında AMAZENLENS_API_KEY değişkeni olarak saklayın. Her ortam (dev/staging/prod) için ayrı anahtar kullanın. Sızan anahtarı hemen revoke edin.
+Rate Limiting
+Rate limit bilgisi her yanıtın headerlarında yer alır. Limiti aşmanız durumunda 429 Too Many Requests döner — Retry-After headerını kontrol edin.
+# Yanıt headerları:
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 847
+X-RateLimit-Reset: 1709856000
+X-Usage-Month: 12450
+X-Usage-Month-Limit: 25000
+Endpoint Referansı
+1. Niş Skoru API
+Bir ASIN veya keyword için 0-100 arası kapsamlı niş skoru hesaplar. BSR tabanlı satış tahmini, Gini katsayısı ile rekabet analizi ve Review Velocity Index içerir.
+POST /v1/niche/score
+Parametre
+Tip
+Zorunlu
+Açıklama
+asin
+string
+Evet*
+Amazon ASIN kodu (örn: B07X12345)
+keyword
+string
+Evet*
+Keyword (asin veya keyword'den biri zorunlu)
+marketplace
+string
+Hayır
+amazon.com (varsayılan), amazon.de, amazon.com.tr
+include_competitors
+boolean
+Hayır
+true: rakip ASIN listesi dahil edilir
+# İstek (Request):
+POST https://api.amazenlens.com/v1/niche/score
+{
+"asin": "B07X9KBYD6",
+"marketplace": "amazon.com",
+"include_competitors": true
+}
+# Yanıt (Response):
+{
+"asin": "B07X9KBYD6",
+"niche_score": 74,
+"verdict": "İyi — Araştırmaya Değer",
+"breakdown": {
+"volume": 20,
+"logistics": 18,
+"competition": 21,
+"profitability": 15
+},
+"details": {
+"monthly_sales_estimate": 312,
+"gini_coefficient": 0.42,
+"avg_bsr": 8500,
+"review_velocity": "stable",
+"top_competitors": ["B08A...", "B09K..."]
+},
+"cached": false,
+"processing_ms": 1840
+}
+2. Keyword Intelligence API
+Amazon autocomplete verisi, buyer intent analizi ve long-tail keyword genişletme. COSMO uyum skoru ile keyword'ün Amazon'un yeni AI algoritmasıyla ne kadar örtüştüğünü gösterir.
+POST /v1/keyword/analyze
+Parametre
+Tip
+Zorunlu
+Açıklama
+keyword
+string
+Evet
+Analiz edilecek keyword
+marketplace
+string
+Hayır
+amazon.com (varsayılan)
+locale
+string
+Hayır
+en, tr, de, fr — buyer intent dili
+expand
+boolean
+Hayır
+true: long-tail listesi dahil edilir
+# İstek:
+POST https://api.amazenlens.com/v1/keyword/analyze
+{
+"keyword": "yoga mat non-slip",
+"marketplace": "amazon.com",
+"locale": "en",
+"expand": true
+}
+# Yanıt:
+{
+"keyword": "yoga mat non-slip",
+"volume_score": 87,
+"buyer_intent": {
+"intent": "transactional",
+"stage": "decision",
+"score": 91,
+"conversion_potential": "high"
+},
+"cosmo_alignment": 0.82,
+"iq_score": 64.3,
+"long_tail": [
+{"keyword": "yoga mat non-slip extra thick", "volume": 72},
+{"keyword": "yoga mat non-slip for beginners", "volume": 61}
+],
+"rufus_ready": true
+}
+POST /v1/keyword/expand
+Tek bir seed keyword'den 50+ long-tail varyant üretir. Autocomplete + Claude AI kombinasyonu.
+POST https://api.amazenlens.com/v1/keyword/expand
+{"keyword": "yoga mat", "count": 50, "locale": "en"}
+# Yanıt: {"keywords": [{"text": "yoga mat thick", "score": 82}, ...]}
+3. Review Intelligence API
+ABSA metodolojisiyle ürün yorumlarını 5 boyut üzerinden analiz eder: fiyat, kalite, kargo, dayanıklılık, müşteri hizmetleri. 100+ dil desteği.
+POST /v1/review/absa
+Parametre
+Tip
+Zorunlu
+Açıklama
+reviews
+array
+Evet
+Yorum metin dizisi (maksimum 100)
+language
+string
+Hayır
+auto (otomatik tespiti), veya: en, tr, de, fr, ja, ko
+aspects
+array
+Hayır
+Analiz edilecek boyutlar (varsayılan: tüm 5 boyut)
+POST https://api.amazenlens.com/v1/review/absa
+{
+"reviews": [
+"Great quality but arrived late. Price is fair.",
+"Fiyatı çok iyi ama kargo çok geç geldi.",
+"Qualité excellente, livraison rapide!"
+],
+"language": "auto"
+}
+# Yanıt:
+{
+"aspects": {
+"price":    {"score": 0.72, "sentiment": "positive", "count": 2},
+"quality":  {"score": 0.81, "sentiment": "positive", "count": 3},
+"shipping": {"score": -0.45, "sentiment": "negative", "count": 2},
+"durability":{"score": 0.0, "sentiment": "neutral", "count": 0},
+"service":  {"score": 0.0, "sentiment": "neutral", "count": 0}
+},
+"pain_point": "shipping",
+"overall_score": 0.52,
+"languages_detected": ["en", "tr", "fr"],
+"review_count": 3
+}
+POST /v1/review/helpfulness
+Yorum listesinden en kritik ve faydalı 20 yorumu öne çıkarır. arXiv:2412.02884 metodolojisi.
+POST https://api.amazenlens.com/v1/review/helpfulness
+{
+"reviews": [{"text": "...", "image_count": 2, "reviewer_score": 45, "age_days": 30}, ...]
+}
+# Yanıt: {"top_reviews": [...sorted by helpfulness score...]}
+4. Product Potential API
+Sıfır satış geçmişi olan yeni ürünler için potansiyel skoru hesaplar. Görsel + fiyat + kategori inputuyla çalışır.
+POST /v1/product/potential
+POST https://api.amazenlens.com/v1/product/potential
+{
+"image_url": "https://ae01.alicdn.com/kf/xxx.jpg",
+"price": 24.99,
+"category": "Sports & Outdoors",
+"weight_kg": 0.8,
+"alibaba_price": 4.50
+}
+# Yanıt:
+{
+"potential_score": 78,
+"verdict": "🟢 Yüksek Potansiyel",
+"breakdown": {
+"margin_score": 85,
+"logistics_score": 80,
+"price_zone_score": 100
+},
+"estimated_margin_pct": 42,
+"fba_recommendation": true
+}
+5. Demand Forecast API
+BSR geçmişi + Google Trends + NeuralProphet ile 90 günlük talep tahmini. Mevsimsellik ve trend yönü dahil.
+POST /v1/demand/forecast
+POST https://api.amazenlens.com/v1/demand/forecast
+{
+"asin": "B07X9KBYD6",
+"marketplace": "amazon.com",
+"horizon_days": 90
+}
+# Yanıt:
+{
+"asin": "B07X9KBYD6",
+"trend": "rising",
+"forecast_90d": [312, 298, 334, 356, ...],
+"peak_period": "2026-11-15",
+"seasonality": "holiday_spike",
+"confidence_interval": {
+"lower": [280, 265, 300, 320, ...],
+"upper": [345, 330, 368, 392, ...]
+},
+"google_trend_score": 72
+}
+Hata Kodları
+HTTP Kodu
+Hata Kodu
+Açıklama
+Çözüm
+400
+INVALID_PARAMS
+Eksik veya hatalı parametre
+Request body'yi kontrol edin
+401
+INVALID_KEY
+API anahtarı geçersiz veya eksik
+Bearer token'ı kontrol edin
+403
+PLAN_LIMIT
+Bu özellik planınızda yok
+Plan yükseltin
+429
+RATE_LIMIT_EXCEEDED
+Rate limit aşıldı
+Retry-After header'ını bekleyin
+422
+ASIN_NOT_FOUND
+ASIN bulunamadı
+ASIN'in geçerli marketplace'te olduğunu doğrulayın
+500
+INTERNAL_ERROR
+Sunucu hatası
+support@amazenlens.com ile iletişime geçin
+503
+SERVICE_UNAVAILABLE
+Geçici kesinti
+Retry-After header'ını bekleyin
+# Hata yanıt formatı:
+{
+"error": {
+"code": "RATE_LIMIT_EXCEEDED",
+"message": "Monthly quota exceeded. Current: 25000/25000",
+"retry_after": 1709856000,
+"docs": "https://developers.amazenlens.com/errors"
+}
+}
+Webhook Desteği (Growth+ Planlar)
+Uzun süren analizler (bulk ASIN işleme, demand forecast) tamamlandığında webhook ile bildirim alabilirsiniz.
+# Webhook kaydı:
+POST https://api.amazenlens.com/v1/webhooks
+{
+"url": "https://yourdomain.com/amazenlens-webhook",
+"events": ["niche.score.completed", "demand.forecast.completed"],
+"secret": "your_webhook_secret"
+}
+# Webhook payload (örnek):
+{
+"event": "niche.score.completed",
+"timestamp": "2026-03-21T14:30:00Z",
+"data": { "asin": "B07X9KBYD6", "score": 74, ... },
+"signature": "sha256=abc123..."
+}
+SDK ve Kütüphane Desteği
+Dil/Platform
+Kurulum
+Kaynak
+Python
+pip install amazenlens
+github.com/amazenlens/python-sdk
+Node.js
+npm install @amazenlens/api
+github.com/amazenlens/node-sdk
+PHP
+composer require amazenlens/client
+github.com/amazenlens/php-sdk
+REST (cURL)
+Ek kurulum yok
+Bu dokümantasyon
+Postman
+Collection import
+developers.amazenlens.com/postman
+# Python SDK örneği:
+from amazenlens import Client
+client = Client(api_key="al_live_xxx")
+# Niş skoru
+result = client.niche.score(asin="B07X9KBYD6")
+print(result.niche_score)  # 74
+# Keyword analizi
+kw = client.keyword.analyze(keyword="yoga mat", locale="tr")
+print(kw.buyer_intent.stage)  # "decision"
+# Toplu review analizi
+reviews = client.review.absa(reviews=[...], language="auto")
+print(reviews.pain_point)  # "shipping"
+SLA ve Destek
+Plan
+Uptime SLA
+Yanıt Süresi
+Destek
+Developer
+99.0%
+< 5 sn
+Email (48 saat)
+Startup
+99.5%
+< 3 sn
+Email (24 saat)
+Growth
+99.9%
+< 2 sn
+Email + Slack (8 saat)
+Business
+99.95%
+< 1 sn
+Öncelikli (4 saat)
+Enterprise
+99.99%
+< 500 ms
+Dedicated + SLA garantisi
+Teknik destek için: api-support@amazenlens.com | Acil durum: +90 xxx xxx xx xx
+Status sayfası: status.amazenlens.com | Changelog: developers.amazenlens.com/changelog
+AmazenLens Developer API v1.0  ·  © 2026 AmazenLens  ·  developers.amazenlens.com
+

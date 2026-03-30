@@ -1,0 +1,167 @@
+# AmazenLens — pip Kütüphaneleri Tam Listesi
+# Tüm modüller için hemen kurulabilir ücretsiz kütüphaneler
+
+# ════════════════════════════════
+# TEMEL (Zaten requirements.txt'te)
+# ════════════════════════════════
+
+fastapi==0.115.0          # Backend API framework
+uvicorn==0.34.0           # ASGI server
+python-dotenv==1.0.0      # .env yönetimi
+httpx==0.28.0             # Async HTTP client (Easyparser için)
+supabase==2.10.0          # Veritabanı
+stripe==11.4.0            # Ödeme
+anthropic==0.40.0         # Claude API
+slowapi==0.1.9            # Rate limiting
+pydantic==2.10.0          # Veri validasyonu
+openpyxl==3.1.2           # Excel okuma (bulk import)
+requests==2.32.5          # HTTP client
+
+# ════════════════════════════════
+# NİŞ SKORU & BSR ANALİZİ
+# ════════════════════════════════
+
+keepa                     # Keepa API Python wrapper (BSR geçmişi)
+                          # github.com/akaszynski/keepa
+                          # pip install keepa
+
+numpy                     # Gini katsayısı hesabı
+scipy                     # İstatistiksel hesaplamalar
+
+# ════════════════════════════════
+# KEYWORD SCANNER
+# ════════════════════════════════
+
+# Amazon autocomplete API — API key gerektirmez, ücretsiz
+# httpx zaten kurulu — direkt kullanılır
+
+pytrends                  # Google Trends data
+                          # pip install pytrends
+                          # from pytrends.request import TrendReq
+
+# ════════════════════════════════
+# TEDARİKÇİ FINDER (Alibaba/DHgate)
+# ════════════════════════════════
+
+scrapy                    # Spider framework
+                          # github.com/scrapehero/alibaba-scraper
+                          # pip install scrapy
+
+playwright                # Headless browser (Trendyol, DHgate)
+                          # pip install playwright
+                          # playwright install chromium
+
+beautifulsoup4            # HTML parse
+lxml                      # XML/HTML parser (hızlı)
+
+# ════════════════════════════════
+# REVIEW ANALİZİ & NLP
+# ════════════════════════════════
+
+spacy                     # NLP framework
+                          # pip install spacy
+                          # python -m spacy download en_core_web_sm
+                          # python -m spacy download de_core_news_sm
+                          # python -m spacy download fr_core_news_sm
+
+transformers              # Hugging Face AI modelleri
+                          # Çok dilli sentiment, kategorileme
+                          # pip install transformers
+
+nltk                      # Klasik NLP
+textblob                  # Basit sentiment analizi
+
+# ════════════════════════════════
+# GÖRSEL ARAMA (SnapSearch - Faz 2)
+# ════════════════════════════════
+
+opencv-python             # Görsel eşleştirme
+Pillow                    # Görsel işleme
+torch                     # PyTorch (ML görsel modeller)
+torchvision               # Görsel ML kütüphanesi
+
+# ════════════════════════════════
+# VERİ ANALİZİ & GÖRSELLEŞTİRME
+# ════════════════════════════════
+
+pandas                    # Veri işleme (bulk import için de)
+matplotlib                # Grafik çizim
+plotly                    # İnteraktif grafikler
+
+# ════════════════════════════════
+# CACHE & KUYRUK SİSTEMİ
+# ════════════════════════════════
+
+redis                     # Cache (API maliyeti düşürür %60-70)
+                          # pip install redis
+celery                    # Task queue (bulk işlemler)
+apscheduler               # Cron jobs (Quick Picks için)
+
+# ════════════════════════════════
+# GÜVENLİK
+# ════════════════════════════════
+
+cryptography              # Şifreleme
+python-jose               # JWT token (zaten var)
+passlib                   # Şifre hash (zaten var)
+bcrypt                    # Hash algoritması (zaten var)
+
+# ════════════════════════════════
+# DİL DESTEĞİ
+# ════════════════════════════════
+
+# Almanca (Faz 1 - Şimdi)
+# pip install spacy && python -m spacy download de_core_news_sm
+
+# Fransızca (Faz 1 - Şimdi)
+# python -m spacy download fr_core_news_sm
+
+# Japonca (Faz 2)
+fugashi                   # Japonca morfem analizi
+unidic-lite               # Japonca sözlük
+
+# Korece (Faz 2)
+konlpy                    # Korece NLP
+
+# Rusça (Faz 3)
+natasha                   # Rusça NLP (Yandex ekibi)
+razdel                    # Rusça metin bölme
+
+# Çince (Faz 4)
+jieba                     # Çince metin segmentasyonu
+snownlp                   # Çince sentiment analizi
+
+# ════════════════════════════════
+# ML MODELLERİ
+# ════════════════════════════════
+
+catboost                  # Yandex'in ML kütüphanesi
+                          # BSR ranking tahmini için ideal
+                          # pip install catboost
+
+scikit-learn              # Genel ML araçları
+xgboost                   # Gradient boosting
+
+# ════════════════════════════════
+# TEST & DEBUGGING
+# ════════════════════════════════
+
+pytest                    # Test framework
+pytest-asyncio            # Async test
+httpx                     # Mock HTTP (zaten var)
+locust                    # Load testing
+
+# ════════════════════════════════
+# KURULUM KOMUTU
+# ════════════════════════════════
+
+# Faz 1 için tüm yeniler:
+# pip install keepa pytrends scrapy playwright beautifulsoup4 spacy numpy scipy redis apscheduler catboost
+
+# Playwright için ek:
+# playwright install chromium
+
+# spaCy dil modelleri:
+# python -m spacy download en_core_web_sm
+# python -m spacy download de_core_news_sm
+# python -m spacy download fr_core_news_sm

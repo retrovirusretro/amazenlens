@@ -1,0 +1,10 @@
+cd "C:\Users\Gökhan Ustaosmanoğlu\amazenlens\backend"
+python "..\blog_importer.py" --folder "C:\blog_dosyalari"
+
+
+python "..\blog_importer.py" --folder "C:\blog_dosyalari" --published
+```
+
+Blog admin paneli:
+```
+https://amazenlens.com/app/blog-admin

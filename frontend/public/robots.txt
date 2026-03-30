@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /blog/*
+Allow: /pricing
+Allow: /auth
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+Disallow: /app/
+Disallow: /app/blog-admin
+
+Sitemap: https://amazenlens.com/sitemap.xml

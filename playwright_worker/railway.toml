@@ -1,0 +1,18 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["chromium", "nss", "nspr", "atk", "at-spi2-atk", "xorg.libX11",
+           "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext",
+           "xorg.libXfixes", "xorg.libXrandr", "libxkbcommon",
+           "mesa", "libdrm", "cups", "pango", "cairo", "dbus"]
+
+[build.nixpacksPlan.phases.install]
+cmds = [
+  "pip install -r requirements.txt",
+  "playwright install chromium"
+]
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "on_failure"

@@ -1,0 +1,48 @@
+CLAUDE.MD güncelle
+
+Faz 1 — Hemen eklenebilir:*
+Basit Türk tedarikçi arama — Altın Sayfalar veya ITO veritabanı entegrasyonu. Kullanıcı kategori seçer, yakın tedarikçileri görür.
+
+tarayıcı diline göre otomatik algılamasını 
+
+FRONTEND_URL kontrol et — python -c "import os; from dotenv import load_dotenv; load_dotenv(); print(os.getenv('FRONTEND_URL'))"
+
+SorunÇözümStripe success URL localhost:3000'e gidiyorpayments.py'de FRONTEND_URL .env'den okunuyor — .env değerini kontrol etstripe_service.py'de API key hardcoded.env'e taşı, Stripe'ta key'i yenile
+
+
+
+Şu an tamamlanan liste:
+GörevDurumSupabase tablolar✅RLS politikaları✅Trigger (yeni kullanıcı → profil)✅searches_per_day kolonları✅
+
+
+
+
+→ Kullanıcı davranışından öğrenen öneri motoru
+→ "Bu kullanıcılar bunu da aradı"
+→ Quick Picks kişiselleşiyor
+→ Niş skoru kalibrasyonu gerçek veriye dayanıyor
+
+Bulk API — Bizim İçin Kritik
+Bulk API ile 1.000 isteği tek asenkron job olarak gönderebiliyorsun, sistem paralel işliyor ve tamamlanınca webhook bildirimi geliyor. 1.000 ürün için toplam süre yaklaşık 2 dakika. Easyparser
+Bulk API'nin öne çıkan özellikleri: webhook desteği (polling gerekmez), tek istekte 5.000 URL, asenkron işleme, pagination cezası yok. Easyparser
+AmazenLens'te kullanım:
+
+
+AmazenLens Keyword Scanner — Nasıl Yapılır?
+3 Katmanlı Mimari
+Katman 1 — Veri Toplama (Ücretsiz)
+├── Amazon Autocomplete API → search volume tahmini
+├── Easyparser Search → gerçek arama sonuçları
+└── Easyparser Product Detail → rakip listing analizi
+
+Katman 2 — Analiz Motoru
+├── IQ Score hesabı (volume / competing products)
+├── Title Density (kaç rakip başlığında kullanmış)
+├── Long-tail genişletme (Claude API ile)
+└── Trend analizi (Google Trends pytrends)
+
+Katman 3 — AI Katmanı (Claude API)
+├── Seed keyword'den 50+ ilgili keyword üret
+├── Her keyword için buyer intent analizi
+├── Türkçe/Almanca/Fransızca karşılıklar
+└── Listing önerisi (hangi keyword nereye gitmeli)

@@ -1,0 +1,285 @@
+# Diğer Ülke Platformları — Kaynaklar Rehberi
+# AmazenLens için Rusya, Çin, Japonya, Kore, Almanya
+# Faz 2-3 Geliştirme Kaynakları
+
+## ═══════════════════════════════════════
+## 🇨🇳 ÇİN — Gitee.com
+## ═══════════════════════════════════════
+
+### Gitee Nedir?
+Çin'in GitHub alternatifi. 10+ milyon geliştirici.
+URL: gitee.com
+
+### AmazenLens İçin Çin Kaynakları
+
+#### 1. 1688.com Scraper (Alibaba'nın Çin versiyonu)
+- 1688 fiyatları Alibaba'dan %10-30 daha ucuz
+- Gitee'de: site:gitee.com "1688" "爬虫" python
+- Kullanım: Tedarikçi finder'da en ucuz Çin fiyatı
+
+#### 2. JD.com Scraper (Çin'in Amazon'u)
+- Gitee'de aktif projeler mevcut
+- Kullanım: Çin pazarına açılınca
+
+#### 3. Pinduoduo Fiyat Tracker
+- Çin'in en ucuz e-ticaret platformu
+- Toplu alım indirimleri — tedarikçi karşılaştırma için
+
+### Gitee'de Arama Yapılacak Terimler
+```
+1688 爬虫 python           (1688 scraper)
+跨境电商 关键词 分析        (cross-border keyword analysis)
+亚马逊 选品 工具            (Amazon product selection tool)
+爬虫 价格比较               (price comparison scraper)
+```
+
+### Çin'den Kütüphaneler
+
+```python
+# jieba — Çince metin segmentasyonu
+pip install jieba
+# Kullanım: Çince keyword analizi
+
+import jieba
+keywords = jieba.cut("瑜伽垫 防滑 加厚")
+# Output: ['瑜伽垫', '防滑', '加厚'] → yoga mat, non-slip, thick
+
+# snownlp — Çince sentiment analizi
+pip install snownlp
+from snownlp import SnowNLP
+s = SnowNLP("这个产品质量很好")
+print(s.sentiments)  # 0-1 arası pozitiflik skoru
+```
+
+## ═══════════════════════════════════════
+## 🇷🇺 RUSYA — GitVerse & GitFlic
+## ═══════════════════════════════════════
+
+### GitVerse (Sberbank)
+URL: gitverse.ru
+- GigaCode AI asistanı dahil (ücretsiz)
+- Yandex, Sber açık kaynak projeleri burada
+- 15+ programlama dili desteği
+
+### GitFlic (Astra Group)
+URL: gitflic.ru
+- Rusya'nın en aktif GitHub alternatifi
+- Import/export araçları var
+- GitLab'dan import kolay
+
+### Rusya'dan Değerli Kütüphaneler
+
+```python
+# Natasha — Rusça NLP (Faz 3 için zorunlu)
+pip install natasha
+# Kullanım: Rusça keyword analizi, ürün ismi parse
+
+from natasha import (
+    Segmenter, MorphVocab,
+    NewsEmbedding, NewsMorphTagger,
+    Doc
+)
+segmenter = Segmenter()
+emb = NewsEmbedding()
+morph_tagger = NewsMorphTagger(emb)
+doc = Doc("Коврик для йоги противоскользящий")  # yoga mat non-slip
+doc.segment(segmenter)
+# Rusça keyword'leri parse eder
+
+# razdel — Rusça metin bölme
+pip install razdel
+
+# navec — Rusça word embeddings
+pip install navec
+
+# CatBoost (Yandex) — Ranking ML modeli
+pip install catboost
+# Kullanım: Niş skor ranking modeli için
+```
+
+### Yandex Açık Kaynak (GitHub'da)
+```
+github.com/yandex/catboost      — ML ranking (BSR trend tahmini)
+github.com/natasha/natasha      — Rusça NLP
+github.com/yandex/ClickHouse    — Büyük veri (event tracking için)
+```
+
+## ═══════════════════════════════════════
+## 🇯🇵 JAPONYA
+## ═══════════════════════════════════════
+
+### Japonya'ya Özgü Kaynaklar
+
+```python
+# MeCab — Japonca metin analizi
+pip install fugashi
+pip install unidic-lite
+
+import fugashi
+tagger = fugashi.Tagger()
+words = [word.surface for word in tagger("ヨガマット 滑り止め 厚手")]
+# Output: ['ヨガマット', '滑り', '止め', '厚手']
+
+# GiNZA — Japonca NLP
+pip install ginza
+
+# Japanocha — Japonca ürün analizi için
+pip install jaconv  # Japonca karakter dönüşümü
+```
+
+### Rakuten API (Japonya'nın Amazon'u)
+- Ücretsiz, açık API
+- URL: webservice.rakuten.co.jp
+```python
+# Rakuten Ichiba API — Japonya'nın Amazon'u
+import requests
+RAKUTEN_APP_ID = "your_app_id"
+resp = requests.get(
+    "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601",
+    params={
+        "applicationId": RAKUTEN_APP_ID,
+        "keyword": "ヨガマット",
+        "format": "json"
+    }
+)
+```
+
+## ═══════════════════════════════════════
+## 🇰🇷 GÜNEY KORE
+## ═══════════════════════════════════════
+
+### Kore'ye Özgün Kaynaklar
+
+```python
+# KoNLPy — Korece NLP
+pip install konlpy
+from konlpy.tag import Okt
+
+okt = Okt()
+words = okt.nouns("요가 매트 미끄럼 방지 두꺼운")
+# Output: ['요가', '매트', '미끄럼', '방지'] = yoga mat non-slip
+
+# Coupang API (Kore'nin Amazon'u)
+# Resmi API yok, scraping gerekiyor
+# GitHub'da: coupang scraper python
+```
+
+### tradeKorea API (Kore Tedarikçileri)
+- Resmi API mevcut (ücretsiz kayıt)
+- URL: tradekorea.com
+- Faz 2'de tedarikçi finder'a ekle
+
+## ═══════════════════════════════════════
+## 🇩🇪 ALMANYA & AB
+## ═══════════════════════════════════════
+
+### Almanca NLP
+
+```python
+# spaCy Almanca modeli
+pip install spacy
+python -m spacy download de_core_news_sm
+
+import spacy
+nlp = spacy.load("de_core_news_sm")
+doc = nlp("Yogamatte rutschfest extra dick")
+keywords = [token.lemma_ for token in doc if not token.is_stop]
+# Output: ['Yogamatte', 'rutschfest', 'dick']
+
+# GermanPolarityClues — Almanca sentiment
+pip install germansentiment
+```
+
+### Otto.de & Zalando Scraper
+- GitHub'da açık kaynak versiyonlar mevcut
+- Almanya arbitraj için
+- Arama: github.com "otto.de" scraper python
+
+## ═══════════════════════════════════════
+## 🇧🇷 BREZİLYA (Faz 3)
+## ═══════════════════════════════════════
+
+```python
+# NLTK Portekizce
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+stop_words = stopwords.words('portuguese')
+
+# Mercado Libre API (Latin Amerika'nın Amazon'u)
+# Resmi, ücretsiz API
+resp = requests.get(
+    "https://api.mercadolibre.com/sites/MLB/search",
+    params={"q": "tapete yoga antiderrapante"}
+)
+```
+
+## ═══════════════════════════════════════
+## 📦 HUGGING FACE — AI Modelleri
+## ═══════════════════════════════════════
+
+URL: huggingface.co
+
+### Ücretsiz, Hazır AI Modelleri
+
+```python
+# Çok dilli sentiment analizi (50+ dil)
+pip install transformers
+
+from transformers import pipeline
+sentiment = pipeline(
+    "sentiment-analysis",
+    model="cardiffnlp/twitter-xlm-roberta-base-sentiment"
+)
+result = sentiment("This yoga mat is amazing! Great quality")
+# Türkçe, Rusça, Japonca, Korece de çalışır
+
+# Ürün kategorileme (sıfır eğitim)
+classifier = pipeline(
+    "zero-shot-classification",
+    model="facebook/bart-large-mnli"
+)
+result = classifier(
+    "Non-slip yoga mat 6mm thick",
+    candidate_labels=["Sports", "Health", "Home", "Electronics"]
+)
+```
+
+## ═══════════════════════════════════════
+## 🔗 HIZLI REFERANS TABLOSU
+## ═══════════════════════════════════════
+
+| Dil/Ülke | Kütüphane | Modül | Faz |
+|----------|-----------|-------|-----|
+| Rusça | natasha | Review, Keyword | Faz 3 |
+| Çince | jieba | Keyword, Review | Faz 4 |
+| Japonca | fugashi | Keyword, Review | Faz 2 |
+| Korece | konlpy | Keyword, Review | Faz 2 |
+| Almanca | spacy de | Keyword, Review | Faz 1 |
+| Fransızca | spacy fr | Keyword, Review | Faz 1 |
+| Portekizce | nltk pt | Keyword | Faz 3 |
+| Çok dilli | transformers | Sentiment | Tüm Fazlar |
+
+## ═══════════════════════════════════════
+## ⚡ HEMEN KURULACAK PAKETLER
+## ═══════════════════════════════════════
+
+```bash
+# Faz 1 (Şimdi)
+pip install spacy
+python -m spacy download de_core_news_sm  # Almanca
+python -m spacy download fr_core_news_sm  # Fransızca
+pip install catboost  # ML ranking (Yandex, ücretsiz)
+
+# Faz 2
+pip install konlpy    # Korece
+pip install fugashi   # Japonca
+pip install unidic-lite
+
+# Faz 3
+pip install natasha   # Rusça
+pip install jieba     # Çince
+
+# Tüm Fazlar
+pip install transformers  # Hugging Face AI modelleri
+```
