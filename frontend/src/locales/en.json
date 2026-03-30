@@ -506,5 +506,28 @@
     "try_different": "Try a different keyword",
     "search_first_title": "Start searching",
     "search_first_desc": "Search for a product above to discover suppliers and profit opportunities"
+  },
+  "bulk": {
+    "title": "Bulk ASIN Analysis",
+    "subtitle": "Upload a CSV or Excel file to analyze hundreds of products at once",
+    "step_upload": "Upload File",
+    "step_confirm": "Confirm",
+    "step_results": "Results",
+    "upload_label": "Select File",
+    "upload_desc": "Upload an ASIN list in CSV or Excel (.xlsx) format",
+    "download_template": "Download Template",
+    "loading": "Loading...",
+    "analyzing": "Analyzing...",
+    "stat_total": "Total",
+    "stat_success": "Success",
+    "stat_error": "Error",
+    "col_asin": "ASIN",
+    "col_title": "Product Name",
+    "col_price": "Price",
+    "col_bsr": "BSR",
+    "col_reviews": "Reviews",
+    "col_rating": "Rating",
+    "col_status": "Status",
+    "start_analysis": "Start Analysis"
   }
 }

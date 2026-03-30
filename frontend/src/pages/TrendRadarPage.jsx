@@ -3,7 +3,7 @@ import axios from 'axios'
 import { scaleLinear } from 'd3-scale'
 import { line, area, curveCatmullRom } from 'd3-shape'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
 const MONTH_NAMES_FULL = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']

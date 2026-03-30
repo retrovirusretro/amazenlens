@@ -506,5 +506,28 @@
     "try_different": "Farklı anahtar kelime dene",
     "search_first_title": "Arama yapın",
     "search_first_desc": "Yukarıdan ürün arayarak tedarikçileri ve kâr fırsatlarını keşfedin"
+  },
+  "bulk": {
+    "title": "Toplu ASIN Analizi",
+    "subtitle": "CSV veya Excel dosyası yükleyerek yüzlerce ürünü aynı anda analiz et",
+    "step_upload": "Dosya Yükle",
+    "step_confirm": "Onayla",
+    "step_results": "Sonuçlar",
+    "upload_label": "Dosya Seç",
+    "upload_desc": "CSV veya Excel (.xlsx) formatında ASIN listesi yükleyin",
+    "download_template": "Şablon İndir",
+    "loading": "Yükleniyor...",
+    "analyzing": "Analiz ediliyor...",
+    "stat_total": "Toplam",
+    "stat_success": "Başarılı",
+    "stat_error": "Hatalı",
+    "col_asin": "ASIN",
+    "col_title": "Ürün Adı",
+    "col_price": "Fiyat",
+    "col_bsr": "BSR",
+    "col_reviews": "Yorum",
+    "col_rating": "Puan",
+    "col_status": "Durum",
+    "start_analysis": "Analizi Başlat"
   }
 }

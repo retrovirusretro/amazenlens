@@ -324,7 +324,7 @@ export default function CategoryDrillDown({ selected, onSelect }) {
                         {/* L3 Dropdown */}
                         {hasL3 && isL2Hovered && (
                           <div onMouseEnter={keepHover}
-                            style={{ position: 'absolute', top: 0, left: '100%', marginLeft: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 300, minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
+                            style={{ position: 'absolute', top: 0, right: '100%', left: 'auto', marginRight: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 300, minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
                             {l2.children.map(l3 => (
                               <div key={l3.value} onClick={() => selectCat(l3.value, 3)}
                                 style={{ padding: '7px 10px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', color: path[2] === l3.value ? '#0071e3' : '#1d1d1f', fontWeight: path[2] === l3.value ? '500' : '400' }}

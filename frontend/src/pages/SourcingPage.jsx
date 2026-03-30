@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API = import.meta.env.VITE_API_URL || 'https://amazenlens-production.up.railway.app'
 
 export default function SourcingPage() {
   const { t } = useTranslation()
@@ -108,7 +108,14 @@ export default function SourcingPage() {
 
       {/* Başlık */}
       <div style={{ marginBottom: '18px' }}>
-        <div style={{ fontSize: '19px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.3px' }}>{t('sourcing.title')}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '3px' }}>
+          <div style={{ fontSize: '19px', fontWeight: '600', color: '#1d1d1f', letterSpacing: '-0.3px' }}>{t('sourcing.title')}</div>
+          {searched && (suppliers[0]?.mock !== false || dhgate[0]?.mock !== false) && (
+            <span style={{ background: '#fff3cd', color: '#856404', border: '0.5px solid #ffc107', borderRadius: '6px', fontSize: '11px', fontWeight: '600', padding: '2px 8px' }}>
+              Demo Veri
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: '13px', color: '#8e8e93', marginTop: '3px' }}>
           {t('sourcing.subtitle')}
         </div>

@@ -404,5 +404,28 @@
     "creating": "Wird erstellt...",
     "queries_used": "Abfragen verwendet",
     "created": "Erstellt"
+  },
+  "bulk": {
+    "title": "Massen-ASIN-Analyse",
+    "subtitle": "Lade eine CSV- oder Excel-Datei hoch, um Hunderte von Produkten auf einmal zu analysieren",
+    "step_upload": "Datei hochladen",
+    "step_confirm": "Bestätigen",
+    "step_results": "Ergebnisse",
+    "upload_label": "Datei auswählen",
+    "upload_desc": "ASIN-Liste im CSV- oder Excel-Format (.xlsx) hochladen",
+    "download_template": "Vorlage herunterladen",
+    "loading": "Wird geladen...",
+    "analyzing": "Wird analysiert...",
+    "stat_total": "Gesamt",
+    "stat_success": "Erfolgreich",
+    "stat_error": "Fehler",
+    "col_asin": "ASIN",
+    "col_title": "Produktname",
+    "col_price": "Preis",
+    "col_bsr": "BSR",
+    "col_reviews": "Bewertungen",
+    "col_rating": "Bewertung",
+    "col_status": "Status",
+    "start_analysis": "Analyse starten"
   }
 }

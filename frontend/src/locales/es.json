@@ -404,5 +404,28 @@
     "creating": "Creando...",
     "queries_used": "consultas usadas",
     "created": "Creado"
+  },
+  "bulk": {
+    "title": "Análisis masivo de ASIN",
+    "subtitle": "Sube un archivo CSV o Excel para analizar cientos de productos a la vez",
+    "step_upload": "Subir archivo",
+    "step_confirm": "Confirmar",
+    "step_results": "Resultados",
+    "upload_label": "Seleccionar archivo",
+    "upload_desc": "Sube una lista de ASIN en formato CSV o Excel (.xlsx)",
+    "download_template": "Descargar plantilla",
+    "loading": "Cargando...",
+    "analyzing": "Analizando...",
+    "stat_total": "Total",
+    "stat_success": "Exitoso",
+    "stat_error": "Error",
+    "col_asin": "ASIN",
+    "col_title": "Nombre del producto",
+    "col_price": "Precio",
+    "col_bsr": "BSR",
+    "col_reviews": "Reseñas",
+    "col_rating": "Calificación",
+    "col_status": "Estado",
+    "start_analysis": "Iniciar análisis"
   }
 }
