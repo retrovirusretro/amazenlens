@@ -2,9 +2,11 @@ import httpx
 import certifi
 import asyncio
 import os
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 
-anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+anthropic = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+KEYWORD_SYSTEM = """You are an Amazon listing optimization expert and keyword researcher. You generate keyword analysis and ready-to-use listing content. Respond ONLY with valid JSON, no markdown, no explanation."""
 
 async def get_autocomplete(keyword: str, market: str = "US") -> list:
     domain_map = {"US": "com", "DE": "de", "UK": "co.uk", "FR": "fr"}
@@ -162,9 +164,14 @@ For the title_example, write a SPECIFIC, REAL product title for "{seed_keyword}"
 Generate 15-20 long_tail keywords."""
 
     try:
-        response = anthropic.messages.create(
+        response = await anthropic.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=2000,
+            system=[{
+                "type": "text",
+                "text": KEYWORD_SYSTEM,
+                "cache_control": {"type": "ephemeral"}
+            }],
             messages=[{"role": "user", "content": prompt}]
         )
         import json

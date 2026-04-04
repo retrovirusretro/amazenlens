@@ -171,3 +171,23 @@ async def analyze_image(req: ImageAnalysisRequest):
         return await analyze_product_image(req.image_url)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── RAG Endpoints ─────────────────────────────────────────────────────────────
+
+@router.get("/rag/stats")
+async def rag_stats():
+    """Qdrant koleksiyon istatistikleri."""
+    from services.qdrant_rag import get_collection_stats
+    return await get_collection_stats()
+
+
+@router.post("/rag/search")
+async def rag_search(req: dict):
+    """Qdrant'ta benzer ürün/keyword ara, Claude context metni döndür."""
+    query = req.get("query", "")
+    if not query:
+        raise HTTPException(status_code=400, detail="query gerekli")
+    from services.qdrant_rag import build_rag_context
+    context = await build_rag_context(query)
+    return {"context": context, "has_data": bool(context)}

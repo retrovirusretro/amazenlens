@@ -6,7 +6,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+# Static system prompt — cached by Anthropic (reduces cost ~90% on repeated calls)
+SYSTEM_PROMPT = """You are an Amazon product review analyst. Your job is to extract structured sentiment insights from customer reviews.
+
+Rules:
+- love: min 5, max 8 items — positive themes customers repeatedly mention
+- hate: min 3, max 6 items — negative themes customers repeatedly mention
+- Each word/phrase should be a natural language keyword (not a sentence)
+- count = estimated number of reviews mentioning this theme
+- example = one real-sounding example sentence in the requested language
+- sentiment_score: 0 (all negative) to 100 (all positive)
+- Return ONLY valid JSON, no markdown, no explanation"""
 
 LANG_PROMPTS = {
     "tr": "Türkçe olarak yaz. Tüm kelimeler, örnekler ve özet Türkçe olsun.",
@@ -27,38 +39,31 @@ async def analyze_reviews(asin: str, reviews: list, title: str = "", lang: str =
 
         lang_instruction = LANG_PROMPTS.get(lang, LANG_PROMPTS["tr"])
 
-        prompt = f"""Analyze these Amazon product reviews and return JSON only.
-
-Product: {title or asin}
-Language instruction: {lang_instruction}
+        user_message = f"""Product: {title or asin}
+Language: {lang_instruction}
 
 Reviews:
 {reviews_text}
 
-Return ONLY this JSON (no markdown, no explanation):
+Return ONLY this JSON:
 {{
-  "love": [
-    {{"word": "keyword/phrase", "count": estimated_count, "example": "example sentence"}}
-  ],
-  "hate": [
-    {{"word": "keyword/phrase", "count": estimated_count, "example": "example sentence"}}
-  ],
+  "love": [{{"word": "...", "count": 0, "example": "..."}}],
+  "hate": [{{"word": "...", "count": 0, "example": "..."}}],
   "summary": "2-3 sentence summary",
-  "sentiment_score": 0_to_100,
-  "total_reviews_analyzed": number,
+  "sentiment_score": 0,
+  "total_reviews_analyzed": 0,
   "mock": false
-}}
+}}"""
 
-Rules:
-- love: min 5, max 8 items
-- hate: min 3, max 6 items
-- {lang_instruction}
-- Return ONLY valid JSON"""
-
-        message = client.messages.create(
-            model="claude-opus-4-5",
+        message = await client.messages.create(
+            model="claude-sonnet-4-6",
             max_tokens=1500,
-            messages=[{"role": "user", "content": prompt}]
+            system=[{
+                "type": "text",
+                "text": SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"}
+            }],
+            messages=[{"role": "user", "content": user_message}]
         )
 
         response_text = message.content[0].text.strip()

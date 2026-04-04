@@ -3,7 +3,7 @@ import json
 import httpx
 import anthropic
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 PROMPT = """You are an expert Amazon product listing analyst. Analyze this product image and return ONLY valid JSON with this exact structure:
 {
@@ -32,7 +32,7 @@ async def analyze_product_image(image_url: str) -> dict:
     import base64
     img_b64 = base64.standard_b64encode(image_bytes).decode()
 
-    msg = client.messages.create(
+    msg = await client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=512,
         messages=[{
