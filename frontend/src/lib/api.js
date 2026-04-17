@@ -36,6 +36,16 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Mock data interceptor — backend mock veri dönüyorsa kullanıcıyı uyar
+api.interceptors.response.use((response) => {
+  if (response.data && response.data.mock === true) {
+    window.dispatchEvent(new CustomEvent('mock-data-detected', {
+      detail: { url: response.config.url }
+    }));
+  }
+  return response;
+});
+
 export const searchProducts = (keyword, page = 1, market = 'US') =>
   api.get(`/api/amazon/search?keyword=${encodeURIComponent(keyword)}&page=${page}&market=${market}`);
 

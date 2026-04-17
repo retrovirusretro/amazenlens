@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
 export const AMAZON_CATEGORIES = [
@@ -209,141 +210,218 @@ export const AMAZON_CATEGORIES = [
   ]},
 ]
 
-// Dile göre kategori adı — TR: Türkçe label, diğerleri: İngilizce value
+// Dile göre kategori adı
 export const getCatLabel = (cat, lang) => lang === 'tr' ? cat.label : (cat.value || cat.label)
+
+// Seçili kategoriyi bul (tüm seviyelerde)
+function findCatByValue(val) {
+  for (const l1 of AMAZON_CATEGORIES) {
+    if (l1.value === val) return l1
+    for (const l2 of (l1.children || [])) {
+      if (l2.value === val) return l2
+      for (const l3 of (l2.children || [])) {
+        if (l3.value === val) return l3
+      }
+    }
+  }
+  return null
+}
+
+const PANEL_WIDTH = 200
+const PANEL_MAX_HEIGHT = 380
 
 export default function CategoryDrillDown({ selected, onSelect }) {
   const { i18n } = useTranslation()
   const lang = i18n.language?.split('-')[0] || 'tr'
+  const [open, setOpen] = useState(false)
   const [hoveredL1, setHoveredL1] = useState(null)
   const [hoveredL2, setHoveredL2] = useState(null)
-  const [path, setPath] = useState(() => {
-    if (!selected) return []
-    for (const l1 of AMAZON_CATEGORIES) {
-      if (l1.value === selected) return [l1.value]
-      for (const l2 of (l1.children || [])) {
-        if (l2.value === selected) return [l1.value, l2.value]
-        for (const l3 of (l2.children || [])) {
-          if (l3.value === selected) return [l1.value, l2.value, l3.value]
-        }
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const selectedCat = selected ? findCatByValue(selected) : null
+
+  const openMenu = () => {
+    const rect = triggerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    // Menünün ekran dışına çıkmasını önle
+    const menuWidth = PANEL_WIDTH * 3
+    let left = rect.left
+    if (left + menuWidth > window.innerWidth - 16) {
+      left = Math.max(8, window.innerWidth - menuWidth - 16)
+    }
+    setPos({ top: rect.bottom + 6, left })
+    setOpen(true)
+  }
+
+  // Dışarı tıklamada kapat
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (
+        !menuRef.current?.contains(e.target) &&
+        !triggerRef.current?.contains(e.target)
+      ) {
+        setOpen(false)
       }
     }
-    return []
-  })
-  const hoverTimerRef = useRef(null)
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
 
-  const clearHover = () => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
-    hoverTimerRef.current = setTimeout(() => { setHoveredL1(null); setHoveredL2(null) }, 200)
-  }
-  const keepHover = () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current) }
-
-  const selectCat = (val, level) => {
-    if (level === 1) setPath(val ? [val] : [])
-    else if (level === 2) setPath([path[0] || hoveredL1, val])
-    else if (level === 3) setPath([path[0] || hoveredL1, path[1] || hoveredL2, val])
+  const selectAndClose = (val) => {
     onSelect(val)
-    setHoveredL1(null)
-    setHoveredL2(null)
+    setOpen(false)
   }
 
-  const getBreadcrumb = () => {
-    const result = []
-    if (path[0]) { const n = AMAZON_CATEGORIES.find(c => c.value === path[0]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 1 }) }
-    if (path[1]) { const l1 = AMAZON_CATEGORIES.find(c => c.value === path[0]); const n = l1?.children?.find(c => c.value === path[1]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 2 }) }
-    if (path[2]) { const l1 = AMAZON_CATEGORIES.find(c => c.value === path[0]); const l2 = l1?.children?.find(c => c.value === path[1]); const n = l2?.children?.find(c => c.value === path[2]); if (n) result.push({ label: getCatLabel(n, lang), pathIndex: 3 }) }
-    return result
-  }
-  const breadcrumb = getBreadcrumb()
-
-  const chipStyle = (active) => ({
-    display: 'inline-flex', alignItems: 'center', gap: '5px',
-    padding: '5px 12px', borderRadius: '20px', cursor: 'pointer',
-    fontSize: '12px', fontWeight: active ? '500' : '400', whiteSpace: 'nowrap',
-    background: active ? '#1d1d1f' : 'white',
-    color: active ? 'white' : '#3c3c43',
-    border: `0.5px solid ${active ? '#1d1d1f' : '#d2d2d7'}`,
-    transition: 'all 0.12s', flexShrink: 0,
-  })
+  const activeL1Cat = AMAZON_CATEGORIES.find(c => c.value === hoveredL1)
+  const activeL2Cat = activeL1Cat?.children?.find(c => c.value === hoveredL2)
 
   return (
-    <div style={{ background: 'white', borderRadius: '10px', border: '0.5px solid #e5e5ea', padding: '12px 14px', marginBottom: '12px', overflow: 'hidden' }}>
-      {breadcrumb.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          <span onClick={() => { setPath([]); onSelect('') }}
-            style={{ fontSize: '11px', color: '#0071e3', cursor: 'pointer', fontWeight: '500' }}>
-            {lang === 'tr' ? 'Tüm Kategoriler' : 'All Categories'}
-          </span>
-          {breadcrumb.map((b, i) => (
-            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <svg width="10" height="10" fill="none" stroke="#aeaeb2" strokeWidth="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-              <span onClick={() => { const np = path.slice(0, b.pathIndex); setPath(np); onSelect(np[np.length-1] || '') }}
-                style={{ fontSize: '11px', color: i === breadcrumb.length-1 ? '#1d1d1f' : '#0071e3', fontWeight: i === breadcrumb.length-1 ? '600' : '500', cursor: i === breadcrumb.length-1 ? 'default' : 'pointer' }}>
-                {b.label}
-              </span>
-            </span>
-          ))}
-          <span onClick={() => { setPath([]); onSelect('') }}
-            style={{ marginLeft: 'auto', fontSize: '11px', color: '#8e8e93', cursor: 'pointer', padding: '2px 8px', borderRadius: '6px', background: '#f5f5f7' }}>
-            ✕
-          </span>
-        </div>
-      )}
-
-      {/* Level 1 */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
-        {AMAZON_CATEGORIES.map(cat => {
-          const hasL2 = cat.children?.length > 0
-          const isActive = path[0] === cat.value
-          const isHovered = hoveredL1 === cat.value
-          return (
-            <div key={cat.value} style={{ position: 'relative', flexShrink: 0 }}
-              onMouseEnter={() => { keepHover(); setHoveredL1(cat.value); setHoveredL2(null) }}
-              onMouseLeave={clearHover}>
-              <div onClick={() => selectCat(cat.value, 1)} style={chipStyle(isActive)}>
-                {cat.icon && <span>{cat.icon}</span>}
-                <span>{getCatLabel(cat, lang)}</span>
-                {hasL2 && <svg width="9" height="9" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><polyline points="6 9 12 15 18 9"/></svg>}
-              </div>
-              {/* L2 Dropdown */}
-              {hasL2 && isHovered && (
-                <div onMouseEnter={keepHover} onMouseLeave={clearHover}
-                  style={{ position: 'absolute', top: '100%', left: 0, marginTop: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 200, minWidth: '200px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
-                  {cat.children.map(l2 => {
-                    const hasL3 = l2.children?.length > 0
-                    const isL2Hovered = hoveredL2 === l2.value
-                    return (
-                      <div key={l2.value} style={{ position: 'relative' }}
-                        onMouseEnter={() => { keepHover(); setHoveredL2(l2.value) }}
-                        onMouseLeave={() => setHoveredL2(null)}>
-                        <div onClick={() => selectCat(l2.value, 2)}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', borderRadius: '7px', cursor: 'pointer', fontSize: '12.5px', color: path[1] === l2.value ? '#0071e3' : '#1d1d1f', fontWeight: path[1] === l2.value ? '500' : '400', background: isL2Hovered ? '#f5f5f7' : 'transparent' }}>
-                          <span>{getCatLabel(l2, lang)}</span>
-                          {hasL3 && <svg width="10" height="10" fill="none" stroke="#aeaeb2" strokeWidth="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>}
-                        </div>
-                        {/* L3 Dropdown */}
-                        {hasL3 && isL2Hovered && (
-                          <div onMouseEnter={keepHover}
-                            style={{ position: 'absolute', top: 0, right: '100%', left: 'auto', marginRight: '4px', background: 'white', border: '0.5px solid #e5e5ea', borderRadius: '10px', padding: '6px', zIndex: 300, minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.10)' }}>
-                            {l2.children.map(l3 => (
-                              <div key={l3.value} onClick={() => selectCat(l3.value, 3)}
-                                style={{ padding: '7px 10px', borderRadius: '7px', cursor: 'pointer', fontSize: '12px', color: path[2] === l3.value ? '#0071e3' : '#1d1d1f', fontWeight: path[2] === l3.value ? '500' : '400' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f7'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                {getCatLabel(l3, lang)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
+    <>
+      {/* Trigger */}
+      <div ref={triggerRef} onClick={openMenu}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          padding: '7px 12px', borderRadius: '8px', cursor: 'pointer',
+          fontSize: '12.5px', fontWeight: selected ? '500' : '400',
+          background: selected ? '#1d1d1f' : 'white',
+          color: selected ? 'white' : '#3c3c43',
+          border: `0.5px solid ${selected ? '#1d1d1f' : '#d2d2d7'}`,
+          userSelect: 'none', transition: 'all 0.12s',
+          maxWidth: '240px',
+        }}>
+        <span style={{ fontSize: '14px' }}>
+          {selectedCat?.icon || '🌐'}
+        </span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selectedCat
+            ? getCatLabel(selectedCat, lang)
+            : (lang === 'tr' ? 'Tüm Kategoriler' : 'All Categories')}
+        </span>
+        {selected && (
+          <span onClick={e => { e.stopPropagation(); selectAndClose('') }}
+            style={{ marginLeft: '2px', opacity: 0.6, fontSize: '11px', lineHeight: 1 }}>✕</span>
+        )}
+        <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5"
+          viewBox="0 0 24 24" style={{ opacity: 0.5, flexShrink: 0 }}>
+          <polyline points={open ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} />
+        </svg>
       </div>
+
+      {/* Portal: Amazon-style 3-panel mega menu */}
+      {open && createPortal(
+        <div ref={menuRef}
+          style={{
+            position: 'fixed', top: pos.top, left: pos.left,
+            zIndex: 99999, display: 'flex', flexDirection: 'row',
+            background: 'white', border: '0.5px solid #e5e5ea',
+            borderRadius: '12px', boxShadow: '0 16px 48px rgba(0,0,0,0.18)',
+            overflow: 'hidden',
+          }}>
+
+          {/* Panel 1: L1 Kategoriler */}
+          <div style={{ width: PANEL_WIDTH, overflowY: 'auto', maxHeight: PANEL_MAX_HEIGHT }}>
+            <div style={sectionHeader}>
+              {lang === 'tr' ? 'Departman' : 'Department'}
+            </div>
+            <MenuItem
+              label={lang === 'tr' ? 'Tüm Kategoriler' : 'All Categories'}
+              icon="🌐"
+              active={!selected}
+              onClick={() => selectAndClose('')}
+            />
+            {AMAZON_CATEGORIES.slice(1).map(cat => (
+              <MenuItem
+                key={cat.value}
+                label={getCatLabel(cat, lang)}
+                icon={cat.icon}
+                hasChildren={!!cat.children}
+                active={selected === cat.value}
+                highlighted={hoveredL1 === cat.value}
+                onMouseEnter={() => { setHoveredL1(cat.value); setHoveredL2(null) }}
+                onClick={() => { if (!cat.children) { selectAndClose(cat.value) } else { setHoveredL1(cat.value) } }}
+              />
+            ))}
+          </div>
+
+          {/* Panel 2: L2 Alt kategoriler */}
+          {activeL1Cat?.children && (
+            <div style={{
+              width: PANEL_WIDTH, overflowY: 'auto', maxHeight: PANEL_MAX_HEIGHT,
+              borderLeft: '0.5px solid #f0f0f0',
+            }}>
+              <div style={sectionHeader}>{getCatLabel(activeL1Cat, lang)}</div>
+              {activeL1Cat.children.map(l2 => (
+                <MenuItem
+                  key={l2.value}
+                  label={getCatLabel(l2, lang)}
+                  hasChildren={!!l2.children}
+                  active={selected === l2.value}
+                  highlighted={hoveredL2 === l2.value}
+                  onMouseEnter={() => setHoveredL2(l2.value)}
+                  onClick={() => selectAndClose(l2.value)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Panel 3: L3 Alt-alt kategoriler */}
+          {activeL2Cat?.children && (
+            <div style={{
+              width: PANEL_WIDTH, overflowY: 'auto', maxHeight: PANEL_MAX_HEIGHT,
+              borderLeft: '0.5px solid #f0f0f0',
+            }}>
+              <div style={sectionHeader}>{getCatLabel(activeL2Cat, lang)}</div>
+              {activeL2Cat.children.map(l3 => (
+                <MenuItem
+                  key={l3.value}
+                  label={getCatLabel(l3, lang)}
+                  active={selected === l3.value}
+                  onClick={() => selectAndClose(l3.value)}
+                />
+              ))}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
+// ─── Alt bileşenler ──────────────────────────────────────────────────────────
+
+function MenuItem({ label, icon, hasChildren, active, highlighted, onMouseEnter, onClick }) {
+  return (
+    <div
+      onMouseEnter={onMouseEnter}
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '8px 12px', cursor: 'pointer', fontSize: '12.5px',
+        color: active ? '#0071e3' : '#1d1d1f',
+        fontWeight: active ? '500' : '400',
+        background: highlighted ? '#f5f5f7' : active ? '#f0f6ff' : 'transparent',
+        transition: 'background 0.08s',
+      }}>
+      {icon && <span style={{ fontSize: '13px', lineHeight: 1, flexShrink: 0 }}>{icon}</span>}
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+      {hasChildren && (
+        <svg width="9" height="9" fill="none" stroke="#aeaeb2" strokeWidth="2.5"
+          viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )}
     </div>
   )
+}
+
+const sectionHeader = {
+  fontSize: '10px', color: '#8e8e93', padding: '10px 12px 5px',
+  fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.6px',
+  borderBottom: '0.5px solid #f5f5f7',
 }

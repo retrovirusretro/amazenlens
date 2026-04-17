@@ -139,8 +139,8 @@ async def search_amazon_market(keyword: str, marketplace: str, amazon_us_price: 
 
 async def search_trendyol(keyword: str, amazon_price: float, rates: dict):
     try:
-        # SSL doğrulaması kapalı — Windows sertifika sorunu
-        async with httpx.AsyncClient(timeout=15, verify=certifi.where()) as client:
+        # SSL doğrulaması kapalı — Windows/Railway sertifika sorunu
+        async with httpx.AsyncClient(timeout=15, verify=False) as client:
             response = await client.get(
                 "https://public.trendyol.com/discovery-web-searchgw-service/api/filter/search/v2",
                 params={"q": keyword, "pi": 1},
@@ -172,59 +172,15 @@ async def search_trendyol(keyword: str, amazon_price: float, rates: dict):
         print(f"Trendyol error: {e}")
     return get_mock_trendyol(keyword, amazon_price, rates)
 
-async def search_ebay(keyword: str, amazon_price: float):
-    try:
-        async with httpx.AsyncClient(timeout=15, verify=certifi.where()) as client:
-            response = await client.get(
-                "https://svcs.ebay.com/services/search/FindingService/v1",
-                params={
-                    "OPERATION-NAME": "findItemsByKeywords",
-                    "SERVICE-VERSION": "1.0.0",
-                    "SECURITY-APPNAME": os.getenv("EBAY_APP_ID", ""),
-                    "RESPONSE-DATA-FORMAT": "JSON",
-                    "keywords": keyword,
-                    "paginationInput.entriesPerPage": 2
-                }
-            )
-            if response.status_code == 200:
-                data = response.json()
-                items = data.get("findItemsByKeywordsResponse", [{}])[0].get(
-                    "searchResult", [{}])[0].get("item", [])
-                results = []
-                for item in items[:2]:
-                    price = float(item.get("sellingStatus", [{}])[0].get(
-                        "currentPrice", [{}])[0].get("__value__", 0))
-                    calc = calc_profit(price, amazon_price, "US")
-                    results.append({
-                        "platform": "eBay", "flag": "🛒", "marketplace": "US",
-                        "title": item.get("title", [""])[0][:80],
-                        "price_local": price, "currency": "USD", "price_usd": price,
-                        "arbitrage_profit": calc["profit"], "margin": calc["margin"], "roi": calc["roi"],
-                        "vat_rate": "%0", "vat_amount": 0, "fba_fee": calc["fba_fee"],
-                        "url": item.get("viewItemURL", [""])[0], "mock": False
-                    })
-                return results
-    except Exception as e:
-        print(f"eBay error: {e}")
-    return get_mock_ebay(keyword, amazon_price)
-
 async def get_global_prices(keyword: str, amazon_price: float, include_euro_flips: bool = True):
     import asyncio
     rates = await get_exchange_rates()
 
-    trendyol, ebay = await asyncio.gather(
-        search_trendyol(keyword, amazon_price, rates),
-        search_ebay(keyword, amazon_price),
-        return_exceptions=True
-    )
+    trendyol_result = await search_trendyol(keyword, amazon_price, rates)
+    if isinstance(trendyol_result, Exception):
+        trendyol_result = get_mock_trendyol(keyword, amazon_price, rates)
 
-    # Exception gelirse mock kullan
-    if isinstance(trendyol, Exception):
-        trendyol = get_mock_trendyol(keyword, amazon_price, rates)
-    if isinstance(ebay, Exception):
-        ebay = get_mock_ebay(keyword, amazon_price)
-
-    all_results = list(trendyol) + list(ebay)
+    all_results = list(trendyol_result)
 
     euro_results = []
     if include_euro_flips:
@@ -293,14 +249,3 @@ def get_mock_trendyol(keyword: str, amazon_price: float, rates: dict) -> list:
         "url": "https://trendyol.com", "mock": True
     }]
 
-def get_mock_ebay(keyword: str, amazon_price: float) -> list:
-    price = round(amazon_price * 0.62, 2)
-    calc = calc_profit(price, amazon_price, "US")
-    return [{
-        "platform": "eBay", "flag": "🛒", "marketplace": "US",
-        "title": f"{keyword} - eBay",
-        "price_local": price, "currency": "USD", "price_usd": price,
-        "arbitrage_profit": calc["profit"], "margin": calc["margin"], "roi": calc["roi"],
-        "vat_rate": "%0", "vat_amount": 0, "fba_fee": calc["fba_fee"],
-        "url": "https://ebay.com", "mock": True
-    }]

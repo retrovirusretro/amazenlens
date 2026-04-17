@@ -4,6 +4,7 @@ from services.niche_calculator import calculate_niche_score, calculate_niche_sco
 from typing import List
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import asyncio
 import random
 
 limiter = Limiter(key_func=get_remote_address)
@@ -20,12 +21,31 @@ QUICK_PICKS_KEYWORDS = [
 @router.get("/search")
 async def search(keyword: str = Query(...), page: int = Query(1)):
     result = await search_products(keyword, page)
-    for product in result.get("results", []):
+    products = result.get("results", [])
+
+    for product in products:
         try:
             niche = calculate_niche_score(product)
             product["niche_score"] = niche.get("total_score", 0)
         except Exception:
             product["niche_score"] = 0
+
+    # Keepa ile BSR zenginleştirme — best-effort, 8 sn timeout
+    try:
+        from services.keepa_service import enrich_search_with_bsr
+        bsr_map = await asyncio.wait_for(
+            enrich_search_with_bsr(products[:10]),
+            timeout=8.0
+        )
+        for product in products:
+            asin = product.get("asin", "")
+            if asin in bsr_map and bsr_map[asin]:
+                product["bestseller_rank"] = bsr_map[asin]
+    except asyncio.TimeoutError:
+        print(f"[Search] BSR enrichment timeout — BSR'sız döndürülüyor")
+    except Exception as e:
+        print(f"[Search] BSR enrichment hata: {e}")
+
     return result
 
 @router.get("/product/{asin}")
@@ -68,55 +88,36 @@ async def niche_score(request: Request, asin: str, use_keepa: bool = Query(True)
 @router.get("/quick-picks")
 async def quick_picks(limit: int = Query(6)):
     from datetime import date
-    today_seed = int(date.today().strftime("%Y%m%d"))
-    mock_picks = [
-        {"asin": "B07QK955LS", "title": "Silikon Spatula Seti 6 Parça Non-Stick", "price": 24.99,
-         "image": "https://placehold.co/80x80/0071e3/white?text=S", "bestseller_rank": 2340,
-         "reviews_count": 1847, "rating": 4.6, "category": "Home & Kitchen", "niche_score": 87,
-         "score_color": "#34c759", "badge": "🔥 Trend", "badge_bg": "#fff4e0", "badge_color": "#b45309",
-         "est_revenue": "$22K/ay", "fba": "FBA"},
-        {"asin": "B08N5WRWNW", "title": "LED Masa Lambası USB Şarjlı Dokunmatik 3 Mod", "price": 22.99,
-         "image": "https://placehold.co/80x80/34c759/white?text=L", "bestseller_rank": 3102,
-         "reviews_count": 156, "rating": 4.2, "category": "Electronics", "niche_score": 91,
-         "score_color": "#0071e3", "badge": "⭐ Yüksek Skor", "badge_bg": "#e8f0fe", "badge_color": "#0071e3",
-         "est_revenue": "$18K/ay", "fba": "FBA"},
-        {"asin": "B07WDMFGDB", "title": "Bambu Kesme Tahtası 3'lü Set Farklı Boyut", "price": 29.99,
-         "image": "https://placehold.co/80x80/ff9f0a/white?text=B", "bestseller_rank": 890,
-         "reviews_count": 421, "rating": 4.5, "category": "Home & Kitchen", "niche_score": 78,
-         "score_color": "#ff9f0a", "badge": "📈 BSR Düşük", "badge_bg": "#e8f9ee", "badge_color": "#1a7f37",
-         "est_revenue": "$31K/ay", "fba": "FBA"},
-        {"asin": "B07YHQGNMR", "title": "Resistance Bands Set 5 Seviye Egzersiz", "price": 18.99,
-         "image": "https://placehold.co/80x80/af52de/white?text=R", "bestseller_rank": 2450,
-         "reviews_count": 3892, "rating": 4.7, "category": "Sports & Outdoors", "niche_score": 74,
-         "score_color": "#af52de", "badge": "🌍 Global", "badge_bg": "#f3e8ff", "badge_color": "#7c3aed",
-         "est_revenue": "$15K/ay", "fba": "FBM"},
-        {"asin": "B083XTFWXS", "title": "Protein Shaker Bottle 700ml Leak Proof", "price": 15.99,
-         "image": "https://placehold.co/80x80/ff3b30/white?text=P", "bestseller_rank": 1205,
-         "reviews_count": 2341, "rating": 4.4, "category": "Sports & Outdoors", "niche_score": 82,
-         "score_color": "#34c759", "badge": "🔥 Trend", "badge_bg": "#fff4e0", "badge_color": "#b45309",
-         "est_revenue": "$19K/ay", "fba": "FBA"},
-        {"asin": "B09HMKFDZ8", "title": "Laptop Stand Adjustable Aluminum Portable", "price": 32.99,
-         "image": "https://placehold.co/80x80/34aadc/white?text=L", "bestseller_rank": 3891,
-         "reviews_count": 89, "rating": 4.3, "category": "Electronics", "niche_score": 88,
-         "score_color": "#0071e3", "badge": "🆕 Yeni Fırsat", "badge_bg": "#e8f0fe", "badge_color": "#0071e3",
-         "est_revenue": "$26K/ay", "fba": "FBA"},
-        {"asin": "B07XMPJJK9", "title": "Foam Roller High Density Exercise Recovery", "price": 19.99,
-         "image": "https://placehold.co/80x80/1d1d1f/white?text=F", "bestseller_rank": 1780,
-         "reviews_count": 678, "rating": 4.5, "category": "Sports & Outdoors", "niche_score": 79,
-         "score_color": "#ff9f0a", "badge": "📈 BSR Düşük", "badge_bg": "#e8f9ee", "badge_color": "#1a7f37",
-         "est_revenue": "$17K/ay", "fba": "FBA"},
-        {"asin": "B08BHXG144", "title": "Desk Organizer Bamboo 6 Compartment", "price": 26.99,
-         "image": "https://placehold.co/80x80/ff9f0a/white?text=D", "bestseller_rank": 4210,
-         "reviews_count": 234, "rating": 4.6, "category": "Home & Kitchen", "niche_score": 85,
-         "score_color": "#34c759", "badge": "⭐ Yüksek Skor", "badge_bg": "#e8f0fe", "badge_color": "#0071e3",
-         "est_revenue": "$20K/ay", "fba": "FBA"},
-    ]
-    rng = random.Random(today_seed)
-    shuffled = mock_picks.copy()
-    rng.shuffle(shuffled)
-    shuffled.sort(key=lambda x: x["niche_score"], reverse=True)
-    return {"picks": shuffled[:limit], "total": len(shuffled),
-            "date": str(date.today()), "keywords_scanned": QUICK_PICKS_KEYWORDS[:4], "mock": True}
+    from services.redis_cache import cache_get
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Redis cache'den oku (scheduler her sabah 06:00 UTC doldurur)
+    cached = await cache_get("quick_picks:daily")
+    if cached and cached.get("picks"):
+        picks = cached["picks"][:limit]
+        return {**cached, "picks": picks}
+
+    # Cache boşsa: scheduler logic'ini inline çalıştır (gerçek EasyParser verisi)
+    logger.warning("[QuickPicks] Redis cache boş — gerçek veri için scheduler çalıştırılıyor")
+    try:
+        from services.scheduler_service import run_quick_picks
+        payload = await run_quick_picks()
+        if payload and payload.get("picks"):
+            picks = payload["picks"][:limit]
+            return {**payload, "picks": picks}
+    except Exception as e:
+        logger.error(f"[QuickPicks] Gerçek veri alınamadı: {e}")
+
+    # API de başarısız olduysa boş sonuç döndür — asla mock değil
+    return {
+        "picks": [],
+        "total": 0,
+        "date": str(date.today()),
+        "keywords_scanned": [],
+        "error": "data_unavailable",
+        "message": "Veriler hazırlanıyor, lütfen kısa süre içinde tekrar deneyin."
+    }
 
 
 @router.get("/cache/stats")
@@ -128,6 +129,53 @@ async def easyparser_cache_stats():
         "easyparser": get_easyparser_stats(),
         "keepa": get_token_stats(),
         "redis": get_redis_stats(),
+    }
+
+@router.get("/debug/service-status")
+async def service_status():
+    """Tüm veri kaynaklarının gerçek/mock durumunu döndür"""
+    import os
+    from services.keepa_service import get_token_stats, KEEPA_API_KEY, KEEPA_AVAILABLE, TOKEN_GUARD, _get_keepa_api
+    from services.redis_cache import cache_get as redis_get
+
+    # EasyParser durumu
+    ep_key = os.getenv("EASYPARSER_API_KEY", "")
+    ep_stats = get_easyparser_stats()
+    ep_status = "real" if ep_key else "mock_no_key"
+
+    # Keepa durumu
+    keepa_stats = get_token_stats()
+    keepa_api = _get_keepa_api()
+    tokens_left = keepa_api.tokens_left if keepa_api else 0
+    keepa_status = "real" if (KEEPA_AVAILABLE and KEEPA_API_KEY and tokens_left >= TOKEN_GUARD) else (
+        "mock_no_tokens" if (KEEPA_AVAILABLE and KEEPA_API_KEY) else "mock_no_key"
+    )
+
+    # QuickPicks cache durumu
+    qp_cached = await redis_get("quick_picks:daily")
+    qp_status = "real_cached" if (qp_cached and not qp_cached.get("mock")) else (
+        "mock_cached" if (qp_cached and qp_cached.get("mock")) else "no_cache"
+    )
+
+    return {
+        "easyparser": {
+            "status": ep_status,
+            "has_key": bool(ep_key),
+            "stats": ep_stats,
+        },
+        "keepa": {
+            "status": keepa_status,
+            "has_key": bool(KEEPA_API_KEY),
+            "available": KEEPA_AVAILABLE,
+            "tokens_left": tokens_left,
+            "token_guard": TOKEN_GUARD,
+            "stats": keepa_stats,
+        },
+        "quick_picks": {
+            "status": qp_status,
+            "cache_date": qp_cached.get("date") if qp_cached else None,
+            "picks_count": len(qp_cached.get("picks", [])) if qp_cached else 0,
+        },
     }
 
 @router.post("/cache/flush")

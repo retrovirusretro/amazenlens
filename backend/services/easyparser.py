@@ -3,8 +3,11 @@ import certifi
 import os
 import time
 import json
+import logging
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -93,6 +96,7 @@ async def search_products(keyword: str, page: int = 1, marketplace: str = ".com"
         return cached
 
     if not EASYPARSER_API_KEY:
+        logger.error(f"[EasyParser] MOCK SEARCH: API key yok — keyword='{keyword}'")
         return get_mock_search(keyword)
 
     try:
@@ -107,10 +111,10 @@ async def search_products(keyword: str, page: int = 1, marketplace: str = ".com"
                 result = format_search_results(response.json())
                 await cache_set(cache_key, result)
                 return result
-            print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
+            logger.error(f"[EasyParser] MOCK SEARCH: HTTP {response.status_code} — keyword='{keyword}' — {response.text[:200]}")
             return get_mock_search(keyword)
     except Exception as e:
-        print(f"Easyparser exception: {e}")
+        logger.error(f"[EasyParser] MOCK SEARCH: exception — keyword='{keyword}' — {e}")
         return get_mock_search(keyword)
 
 def _merge_search_into_product(item: dict, asin: str) -> dict:
@@ -178,6 +182,7 @@ async def get_product(asin: str):
         if sa_result and sa_result.get("title") and sa_result.get("price", 0) > 0:
             await cache_set(cache_key, sa_result)
             return sa_result
+        logger.error(f"[EasyParser] MOCK PRODUCT: API key yok ve ScraperAPI başarısız — asin={asin}")
         return get_mock_product(asin)
 
     try:
@@ -219,7 +224,7 @@ async def get_product(asin: str):
                             result["image"] = sa["image"]
                 await cache_set(cache_key, result)
                 return result
-            print(f"Easyparser error: {response.status_code} — {response.text[:200]}")
+            logger.error(f"[EasyParser] DETAIL HTTP {response.status_code} — asin={asin} — {response.text[:200]}")
             # 402/404'te SEARCH ile fallback
             search_res = await client.get(BASE_URL, params={
                 "api_key": EASYPARSER_API_KEY, "platform": "AMZ",
@@ -233,9 +238,10 @@ async def get_product(asin: str):
                     result = _merge_search_into_product(matched, asin)
                     await cache_set(cache_key, result)
                     return result
+            logger.error(f"[EasyParser] MOCK PRODUCT: tüm fallback'ler başarısız — asin={asin}")
             return get_mock_product(asin)
     except Exception as e:
-        print(f"Easyparser exception: {e}")
+        logger.error(f"[EasyParser] MOCK PRODUCT: exception — asin={asin} — {e}")
         return get_mock_product(asin)
 
 async def check_availability(asin: str):

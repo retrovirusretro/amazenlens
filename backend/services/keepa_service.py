@@ -1,9 +1,12 @@
 import os
 import asyncio
 import json
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 # Supabase cache
 try:
@@ -13,7 +16,7 @@ except Exception:
     SUPABASE_AVAILABLE = False
 
 CACHE_TTL_HOURS = 168  # 7 gün cache — BSR haftalık değişmez, token tasarrufu kritik
-TOKEN_GUARD = 10       # Bu sayının altında token varsa API'ye gitme, cache/mock dön
+TOKEN_GUARD = 50       # Bu sayının altında token varsa API'ye gitme, cache/mock dön
 
 # Token tasarruf istatistikleri
 _token_stats = {
@@ -303,11 +306,14 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
         return cached
 
     if not KEEPA_AVAILABLE or not KEEPA_API_KEY:
+        logger.error(f"[Keepa] MOCK: keepa kütüphanesi veya API key yok — asin={asin}")
         return _mock_keepa_data(asin, category)
 
     # Token guard — yetersiz token varsa mock dön
     if not _has_enough_tokens():
-        print(f"⚠️ Keepa token guard: yetersiz token, mock dönüyor ({asin})")
+        api = _get_keepa_api()
+        tokens_left = api.tokens_left if api else 0
+        logger.warning(f"[Keepa] MOCK: token guard devreye girdi — tokens_left={tokens_left}, guard={TOKEN_GUARD}, asin={asin}")
         return _mock_keepa_data(asin, category)
 
     try:
@@ -323,6 +329,7 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
 
         _token_stats["api_calls"] += 1
         if not products:
+            logger.error(f"[Keepa] MOCK: Keepa API boş sonuç döndürdü — asin={asin}")
             return _mock_keepa_data(asin, category)
 
         product = products[0]
@@ -401,7 +408,7 @@ async def get_keepa_data(asin: str, category: str = "default") -> dict:
         return result
 
     except Exception as e:
-        print(f"Keepa error for {asin}: {e}")
+        logger.error(f"[Keepa] MOCK: exception — asin={asin} — {e}")
         return _mock_keepa_data(asin, category)
 
 
@@ -416,6 +423,69 @@ async def get_keepa_batch(asins: list, category: str = "default") -> list:
         results.append(data)
         await asyncio.sleep(0.5)
     return results
+
+
+async def enrich_search_with_bsr(products: list, max_live_calls: int = 5) -> dict:
+    """
+    Arama sonuçlarını Keepa BSR verisiyle zenginleştir.
+
+    Güvenlik katmanları:
+    - Sadece ilk 10 ürün işlenir
+    - Önce Supabase cache kontrol edilir (0 token)
+    - Cache miss için max max_live_calls paralel Keepa çağrısı
+    - Semaphore ile eş zamanlı istek limiti (2 aynı anda)
+    - Çağıran taraf 8 sn timeout uygulamalı
+
+    Returns: {asin: current_bsr} dict
+    """
+    if not products:
+        return {}
+
+    targets = [p for p in products[:10] if p.get("asin")]
+    bsr_map = {}
+
+    # 1. Cache'e bak — token harcamadan
+    uncached_asins = []
+    for p in targets:
+        asin = p["asin"]
+        cached = await _get_cache(asin)
+        if cached and cached.get("current_bsr"):
+            bsr_map[asin] = cached["current_bsr"]
+        else:
+            uncached_asins.append(p)
+
+    if not uncached_asins:
+        return bsr_map
+
+    # 2. Token guard kontrolü
+    if not _has_enough_tokens(min_tokens=TOKEN_GUARD + max_live_calls):
+        print(f"[BSR Enrich] Token guard: yetersiz token, sadece cache dönüyor")
+        return bsr_map
+
+    # 3. Cache miss olanlar için paralel Keepa çağrısı (max max_live_calls)
+    sem = asyncio.Semaphore(2)  # Aynı anda max 2 istek
+
+    async def fetch_one(product: dict) -> tuple:
+        asin = product["asin"]
+        category = product.get("category", "default") or "default"
+        async with sem:
+            try:
+                data = await get_keepa_data(asin, category)
+                return asin, data.get("current_bsr", 0)
+            except Exception as e:
+                print(f"[BSR Enrich] {asin} hata: {e}")
+                return asin, 0
+
+    live_targets = uncached_asins[:max_live_calls]
+    results = await asyncio.gather(*[fetch_one(p) for p in live_targets], return_exceptions=True)
+
+    for r in results:
+        if isinstance(r, tuple):
+            asin, bsr = r
+            if bsr:
+                bsr_map[asin] = bsr
+
+    return bsr_map
 
 
 def get_token_status() -> dict:

@@ -25,8 +25,6 @@ import TermsPage from './pages/TermsPage'
 import ContactPage from './pages/ContactPage'
 import ApiDocsPage from './pages/ApiDocsPage'
 import TrendRadarPage from './pages/TrendRadarPage'
-import RankTrackerPage from './pages/RankTrackerPage'
-
 import './App.css'
 
 // Backend'i canlı tutmak için keep-alive ping
@@ -185,7 +183,6 @@ function App() {
           <Route path="keywords" element={<KeywordPage />} />
           <Route path="api-docs" element={<ApiDocsPage />} />
           <Route path="trends" element={<TrendRadarPage />} />
-          <Route path="rank-tracker" element={<RankTrackerPage />} />
         </Route>
 
         {/* Eski + dış URL'leri yeni yapıya yönlendir */}

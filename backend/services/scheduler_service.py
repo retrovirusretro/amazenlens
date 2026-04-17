@@ -25,53 +25,138 @@ _scheduler: "AsyncIOScheduler | None" = None
 
 # ─── JOB FONKSİYONLARI ───────────────────────────────────────────────────────
 
-async def _daily_quick_picks():
+FALLBACK_KEYWORDS = [
+    "yoga mat", "led masa lambası", "resistance bands",
+    "protein shaker", "laptop stand", "desk organizer",
+]
+
+BADGE_MAP = [
+    {"badge": "🔥 Trend",       "badge_bg": "#fff4e0", "badge_color": "#b45309"},
+    {"badge": "⭐ Yüksek Skor", "badge_bg": "#e8f0fe", "badge_color": "#0071e3"},
+    {"badge": "📈 BSR Düşük",   "badge_bg": "#e8f9ee", "badge_color": "#1a7f37"},
+    {"badge": "🆕 Yeni Fırsat", "badge_bg": "#e8f0fe", "badge_color": "#0071e3"},
+    {"badge": "🌍 Global",      "badge_bg": "#f3e8ff", "badge_color": "#7c3aed"},
+]
+
+def _score_color(score: int) -> str:
+    if score >= 85: return "#34c759"
+    if score >= 70: return "#0071e3"
+    return "#ff9f0a"
+
+async def run_quick_picks() -> dict | None:
     """
-    Günlük Quick Picks hesapla ve Supabase'e kaydet.
-    Kullanıcı giriş yapmasa da platform arka planda çalışıyor.
+    Gerçek EasyParser verisiyle Quick Picks hesapla ve döndür.
+    Hem scheduler hem de cache-miss endpoint tarafından çağrılır.
     """
-    print(f"[Scheduler] daily_quick_picks başlıyor — {datetime.utcnow().isoformat()}")
+    import random
+    from services.easyparser import search_products
+    from services.niche_calculator import calculate_niche_score
+
+    # Kullanıcı event'lerinden top keyword'leri almayı dene
+    keywords_to_search = []
     try:
         from supabase import create_client
         sb = create_client(
             os.getenv("SUPABASE_URL", ""),
             os.getenv("SUPABASE_SERVICE_KEY", "")
         )
-
-        # Son 24 saatte en çok aranan keyword'leri al
-        since = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        since = (datetime.utcnow() - timedelta(hours=48)).isoformat()
         events = sb.table("user_events") \
             .select("metadata") \
             .eq("event_type", "keyword_search") \
             .gte("created_at", since) \
             .limit(200) \
             .execute()
+        if events.data:
+            from collections import Counter
+            kw_counter = Counter()
+            for ev in events.data:
+                meta = ev.get("metadata") or {}
+                kw = meta.get("keyword", "")
+                if kw:
+                    kw_counter[kw.lower()] += 1
+            keywords_to_search = [kw for kw, _ in kw_counter.most_common(3)]
+    except Exception:
+        pass
 
-        if not events.data:
-            print("[Scheduler] Yeterli event yok, quick picks atlandı")
-            return
+    if len(keywords_to_search) < 3:
+        sampled = random.sample(FALLBACK_KEYWORDS, min(3, len(FALLBACK_KEYWORDS)))
+        keywords_to_search = (keywords_to_search + sampled)[:3]
 
-        # En çok aranan keyword'leri say
-        from collections import Counter
-        kw_counter = Counter()
-        for ev in events.data:
-            meta = ev.get("metadata") or {}
-            kw = meta.get("keyword", "")
-            if kw:
-                kw_counter[kw.lower()] += 1
+    print(f"[QuickPicks] Aranacak keyword'ler: {keywords_to_search}")
 
-        top_keywords = [kw for kw, _ in kw_counter.most_common(10)]
+    all_products = []
+    for kw in keywords_to_search:
+        try:
+            result = await search_products(kw)
+            products = result.get("results", [])[:5]
+            for p in products:
+                p["_source_keyword"] = kw
+            all_products.extend(products)
+            await asyncio.sleep(1)
+        except Exception as e:
+            print(f"[QuickPicks] '{kw}' arama hatası: {e}")
 
-        # Supabase'e kaydet
-        sb.table("quick_picks").upsert({
-            "date": datetime.utcnow().strftime("%Y-%m-%d"),
-            "top_keywords": top_keywords,
-            "generated_at": datetime.utcnow().isoformat(),
-            "event_count": len(events.data),
-        }).execute()
+    if not all_products:
+        print("[QuickPicks] Ürün bulunamadı")
+        return None
 
-        print(f"[Scheduler] Quick Picks kaydedildi: {top_keywords[:5]}")
+    scored = []
+    for p in all_products:
+        try:
+            niche = calculate_niche_score(p)
+            score = niche.get("total_score", 0) if isinstance(niche, dict) else 0
+            price = p.get("price", 0)
+            if isinstance(price, dict):
+                price = price.get("value", price.get("current", 0)) or 0
+            bsr = p.get("bsr", p.get("bestseller_rank", 0))
+            if isinstance(bsr, list) and bsr:
+                bsr = bsr[0].get("rank", 0) if isinstance(bsr[0], dict) else bsr[0]
 
+            badge_info = random.choice(BADGE_MAP)
+            scored.append({
+                "asin": p.get("asin", ""),
+                "title": p.get("title", "")[:80],
+                "price": float(price) if price else 0,
+                "image": p.get("image", ""),
+                "bestseller_rank": int(bsr) if bsr else 0,
+                "reviews_count": p.get("reviews_count", p.get("ratings_total", 0)),
+                "rating": p.get("rating", p.get("stars", 0)),
+                "category": p.get("category", "General"),
+                "niche_score": score,
+                "score_color": _score_color(score),
+                **badge_info,
+                "fba": "FBA" if p.get("is_fba") else "FBM",
+            })
+        except Exception as e:
+            print(f"[QuickPicks] niche score hatası: {e}")
+
+    scored.sort(key=lambda x: x["niche_score"], reverse=True)
+    top_picks = [p for p in scored if p["asin"]][:8]
+
+    if not top_picks:
+        return None
+
+    return {
+        "picks": top_picks,
+        "total": len(top_picks),
+        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+        "keywords_scanned": keywords_to_search,
+        "mock": False,
+    }
+
+
+async def _daily_quick_picks():
+    """Scheduler job: run_quick_picks çalıştır ve Redis'e kaydet."""
+    print(f"[Scheduler] daily_quick_picks başlıyor — {datetime.utcnow().isoformat()}")
+    try:
+        from services.redis_cache import cache_set
+        payload = await run_quick_picks()
+        if payload:
+            await cache_set("quick_picks:daily", payload, "quick_picks")
+            print(f"[Scheduler] Quick Picks Redis'e kaydedildi — {len(payload['picks'])} ürün")
+        else:
+            print("[Scheduler] Quick Picks: veri yok, cache güncellenmedi")
     except Exception as e:
         print(f"[Scheduler] daily_quick_picks hata: {e}")
 

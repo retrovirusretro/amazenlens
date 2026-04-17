@@ -1,5 +1,32 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import LanguageSwitcher from './LanguageSwitcher'
+
+function MockWarningBanner() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const handler = () => setVisible(true)
+    window.addEventListener('mock-data-detected', handler)
+    return () => window.removeEventListener('mock-data-detected', handler)
+  }, [])
+
+  if (!visible) return null
+
+  return (
+    <div style={{
+      background: '#fff8e1', borderBottom: '1px solid #ffcc02',
+      padding: '8px 24px', display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', fontSize: '12px', color: '#7a5c00',
+    }}>
+      <span>⚠️ Bazı veriler geçici olarak simüle edilmektedir. Sistem gerçek verileri hazırlıyor.</span>
+      <button onClick={() => setVisible(false)} style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: '14px', color: '#7a5c00', padding: '0 4px',
+      }}>✕</button>
+    </div>
+  )
+}
 
 const NAV = [
   {
@@ -17,7 +44,6 @@ const NAV = [
       { to: '/app/niche', label: 'Nis Skoru', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
       { to: '/app/keywords', label: 'Keyword Scanner', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg> },
       { to: '/app/trends', label: 'Trend Radar', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>, isNew: true },
-      { to: '/app/rank-tracker', label: 'Rank Tracker', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>, isNew: true },
       { to: '/app/sourcing', label: 'Tedarik & Arbitraj', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg> },
       { to: '/app/unavailable', label: 'Stok Takibi', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
       { to: '/app/bulk', label: 'Toplu Import', icon: <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg> },
@@ -173,6 +199,7 @@ function Layout() {
           <div className="top-bar">
             <LanguageSwitcher />
           </div>
+          <MockWarningBanner />
           <div className="page-content">
             <Outlet />
           </div>
